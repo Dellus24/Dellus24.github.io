@@ -64,10 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Position popup smartly
             if (pos.y > 60) {
                 popup.style.bottom = '100%';
-                popup.style.marginBottom = '8px';
+                popup.classList.add('popup-above');
             } else {
                 popup.style.top = '100%';
-                popup.style.marginTop = '8px';
             }
 
             if (pos.x > 60) {
@@ -76,15 +75,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 popup.style.left = '0';
             }
 
-            // Hover events
+            // Use a timeout to prevent flickering
+            let hideTimeout;
+
             el.addEventListener('mouseenter', () => {
+                clearTimeout(hideTimeout);
+                // Raise this word above all others
+                el.classList.add('hovered');
+                // Colorize word
                 link.style.color = wordData.color;
+                // Show popup
                 popup.classList.add('active');
             });
 
             el.addEventListener('mouseleave', () => {
-                link.style.color = '';
-                popup.classList.remove('active');
+                hideTimeout = setTimeout(() => {
+                    el.classList.remove('hovered');
+                    link.style.color = '';
+                    popup.classList.remove('active');
+                }, 150);
+            });
+
+            // Keep popup alive when hovering the popup itself
+            popup.addEventListener('mouseenter', () => {
+                clearTimeout(hideTimeout);
+            });
+
+            popup.addEventListener('mouseleave', () => {
+                hideTimeout = setTimeout(() => {
+                    el.classList.remove('hovered');
+                    link.style.color = '';
+                    popup.classList.remove('active');
+                }, 150);
             });
 
         } else {

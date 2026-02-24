@@ -23,10 +23,15 @@
     white-space: nowrap;
     opacity: 0;
     transition: opacity 0.6s ease;
+    z-index: 1;
 }
 
 .word.visible {
     opacity: 1;
+}
+
+.word.hovered {
+    z-index: 200;
 }
 
 /* === CLICKABLE WORDS === */
@@ -47,9 +52,15 @@
     width: 280px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease;
     transform: translateY(5px);
-    z-index: 100;
+    z-index: 200;
+    padding-top: 12px;
+}
+
+.word-popup.popup-above {
+    padding-top: 0;
+    padding-bottom: 12px;
 }
 
 .word-popup.active {
