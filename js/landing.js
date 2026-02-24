@@ -7,8 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pick a random layout
     const layout = layouts[Math.floor(Math.random() * layouts.length)];
 
-    // Create all word elements first (invisible)
-    const elements = words.map((wordData, index) => {
+    words.forEach((wordData, index) => {
         const pos = layout.position(index, total);
 
         const el = document.createElement('div');
@@ -21,50 +20,82 @@ document.addEventListener('DOMContentLoaded', () => {
             const link = document.createElement('a');
             link.href = wordData.link;
             link.classList.add('word-link');
+            link.textContent = wordData.text;
             el.appendChild(link);
+
+            // Create popup
+            const popup = document.createElement('div');
+            popup.classList.add('word-popup');
+
+            // Popup image
+            const imageContainer = document.createElement('div');
+            imageContainer.classList.add('word-popup-image');
+
+            if (wordData.image) {
+                const img = document.createElement('img');
+                img.src = wordData.image;
+                img.alt = wordData.text + ' preview';
+                img.onerror = () => {
+                    imageContainer.innerHTML = '';
+                    const placeholder = document.createElement('span');
+                    placeholder.classList.add('word-popup-image-placeholder');
+                    placeholder.textContent = '[ ' + wordData.text + ' ]';
+                    imageContainer.appendChild(placeholder);
+                };
+                imageContainer.appendChild(img);
+            } else {
+                const placeholder = document.createElement('span');
+                placeholder.classList.add('word-popup-image-placeholder');
+                placeholder.textContent = '[ ' + wordData.text + ' ]';
+                imageContainer.appendChild(placeholder);
+            }
+
+            popup.appendChild(imageContainer);
+
+            // Popup arrow link
+            const arrowLink = document.createElement('a');
+            arrowLink.href = wordData.link;
+            arrowLink.classList.add('word-popup-arrow');
+            arrowLink.textContent = '→';
+            popup.appendChild(arrowLink);
+
+            el.appendChild(popup);
+
+            // Position popup smartly
+            if (pos.y > 60) {
+                popup.style.bottom = '100%';
+                popup.style.marginBottom = '8px';
+            } else {
+                popup.style.top = '100%';
+                popup.style.marginTop = '8px';
+            }
+
+            if (pos.x > 60) {
+                popup.style.right = '0';
+            } else {
+                popup.style.left = '0';
+            }
+
+            // Hover events
+            el.addEventListener('mouseenter', () => {
+                link.style.color = wordData.color;
+                popup.classList.add('active');
+            });
+
+            el.addEventListener('mouseleave', () => {
+                link.style.color = '';
+                popup.classList.remove('active');
+            });
+
+        } else {
+            el.textContent = wordData.text;
         }
 
         container.appendChild(el);
 
-        return { el, wordData };
+        // Fade in one by one with delay
+        setTimeout(() => {
+            el.classList.add('visible');
+        }, 300 + (index * 250));
     });
-
-    // Typewriter function: types one word, then calls next
-    function typeWord(index) {
-        if (index >= elements.length) return;
-
-        const { el, wordData } = elements[index];
-        const text = wordData.text;
-        const target = wordData.link ? el.querySelector('.word-link') : el;
-        let charIndex = 0;
-
-        el.classList.add('typing');
-
-        // Measure the full width we need
-        target.textContent = text;
-        el.style.width = el.scrollWidth + 'px';
-        target.textContent = '';
-        el.style.width = '0';
-
-        function typeChar() {
-            if (charIndex < text.length) {
-                target.textContent = text.substring(0, charIndex + 1);
-                el.style.width = el.scrollWidth + 'px';
-                charIndex++;
-                setTimeout(typeChar, 30);
-            } else {
-                // Word complete
-                el.classList.remove('typing');
-                el.classList.add('done');
-                el.style.width = el.scrollWidth + 'px';
-                // Pause then start next word
-                setTimeout(() => typeWord(index + 1), 150);
-            }
-        }
-
-        typeChar();
-    }
-
-    // Start typing the first word after a short delay
-    setTimeout(() => typeWord(0), 400);
 });
