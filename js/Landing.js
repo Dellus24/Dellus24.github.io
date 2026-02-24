@@ -68,7 +68,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start typing the first word after a short delay
     setTimeout(() => typeWord(0), 400);
 });
-
-
-
-
