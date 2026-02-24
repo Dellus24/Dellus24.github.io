@@ -12,3 +12,7 @@ const words = [
     { text: "Contact", link: "pages/contact.html" },
     { text: "CV", link: "assets/docs/cv.pdf" },
 ];
+
+
+
+
