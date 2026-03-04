@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pick a random layout
     const layout = layouts[Math.floor(Math.random() * layouts.length)];
 
+    // Store element references for exit animation
+    const wordElements = [];
+
     words.forEach((wordData, index) => {
         const pos = layout.position(index, total);
 
@@ -16,11 +19,21 @@ document.addEventListener('DOMContentLoaded', () => {
         el.style.top = pos.y + '%';
         el.style.transform = 'translate(-50%, -50%)';
 
+        // Store reference
+        wordElements.push({ el, wordData, pos });
+
         if (wordData.link) {
             const link = document.createElement('a');
             link.href = wordData.link;
             link.classList.add('word-link');
             link.textContent = wordData.text;
+
+            // Intercept click for exit animation
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                triggerExitAnimation(wordData.link);
+            });
+
             el.appendChild(link);
 
             // Create popup
@@ -57,8 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {
             arrowLink.href = wordData.link;
             arrowLink.classList.add('word-popup-arrow');
             arrowLink.textContent = '→';
-            popup.appendChild(arrowLink);
 
+            // Also intercept arrow click
+            arrowLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                triggerExitAnimation(wordData.link);
+            });
+
+            popup.appendChild(arrowLink);
             el.appendChild(popup);
 
             // Position popup smartly
@@ -75,16 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 popup.style.left = '0';
             }
 
-            // Use a timeout to prevent flickering
+            // Hover behavior
             let hideTimeout;
 
             el.addEventListener('mouseenter', () => {
                 clearTimeout(hideTimeout);
-                // Raise this word above all others
                 el.classList.add('hovered');
-                // Colorize word
                 link.style.color = wordData.color;
-                // Show popup
                 popup.classList.add('active');
             });
 
@@ -96,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 150);
             });
 
-            // Keep popup alive when hovering the popup itself
             popup.addEventListener('mouseenter', () => {
                 clearTimeout(hideTimeout);
             });
@@ -120,4 +135,90 @@ document.addEventListener('DOMContentLoaded', () => {
             el.classList.add('visible');
         }, 300 + (index * 250));
     });
+
+    // ============================================
+    // EXIT ANIMATION
+    // ============================================
+    let isAnimating = false;
+
+    function triggerExitAnimation(targetLink) {
+        if (isAnimating) return;
+        isAnimating = true;
+
+        // Hide all popups immediately
+        document.querySelectorAll('.word-popup').forEach(p => {
+            p.classList.remove('active');
+            p.style.display = 'none';
+        });
+
+        // Get the container rect to calculate absolute positions
+        const containerRect = container.getBoundingClientRect();
+
+        // Separate linked and non-linked words
+        const linkedWords = wordElements.filter(w => w.wordData.link);
+        const nonLinkedWords = wordElements.filter(w => !w.wordData.link);
+
+        // Fade out non-linked words
+        nonLinkedWords.forEach((w, i) => {
+            w.el.style.transition = `opacity 0.4s ease ${i * 0.03}s`;
+            w.el.style.opacity = '0';
+        });
+
+        // Calculate target positions for linked words (top-left stack)
+        // Target: top-left of the viewport, small nav row
+        const targetTop = 20; // px from top of viewport
+        const targetLeftStart = 28; // px from left
+
+        // Get linked words sorted in their original order
+        const navOrder = linkedWords.sort((a, b) => {
+            const orderA = words.indexOf(a.wordData);
+            const orderB = words.indexOf(b.wordData);
+            return orderA - orderB;
+        });
+
+        // Move each linked word to its target position
+        navOrder.forEach((w, i) => {
+            const el = w.el;
+            const currentRect = el.getBoundingClientRect();
+
+            // Calculate where this word needs to go
+            // Stack them vertically with small gap
+            const targetX = targetLeftStart;
+            const targetY = targetTop + (i * 22);
+
+            // Calculate delta from current position
+            const deltaX = targetX - currentRect.left;
+            const deltaY = targetY - currentRect.top;
+
+            // Apply transition
+            el.style.transition = `transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${i * 0.05}s, 
+                                   font-size 0.5s ease ${i * 0.05}s,
+                                   opacity 0.5s ease ${i * 0.05}s`;
+            el.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+            el.style.fontSize = '0.6rem';
+
+            // Remove color/bold from links
+            const link = el.querySelector('.word-link');
+            if (link) {
+                link.style.color = '';
+                link.style.fontWeight = '';
+            }
+        });
+
+        // Store transition info and navigate
+        sessionStorage.setItem('nav-transition', JSON.stringify({
+            from: 'landing',
+            target: targetLink,
+            linkedWords: navOrder.map(w => ({
+                text: w.wordData.text,
+                link: w.wordData.link,
+                color: w.wordData.color,
+            }))
+        }));
+
+        // Navigate after animation completes
+        setTimeout(() => {
+            window.location.href = targetLink;
+        }, 600);
+    }
 });

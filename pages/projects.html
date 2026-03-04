@@ -53,22 +53,53 @@
             overflow: hidden;
         }
 
-        /* === BACK NAV === */
-        .back-nav {
-            padding: 20px 28px 12px 28px;
-            font-size: 0.6rem;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+        /* === TOP NAV (linked words from landing) === */
+        .top-nav {
+            padding: 20px 28px 0 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
             flex-shrink: 0;
         }
 
-        .back-link {
-            transition: opacity 0.2s ease;
+        .top-nav-item {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
             cursor: pointer;
+            transition: color 0.25s ease, font-weight 0.2s ease, opacity 0.3s ease;
+            line-height: 1.5;
+            user-select: none;
+            opacity: 0;
+            transform: translateY(-4px);
         }
 
-        .back-link:hover {
+        .top-nav-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .top-nav-item.active-page {
             opacity: 0.35;
+        }
+
+        .top-nav-item:not(.active-page):hover {
+            font-weight: bold;
+        }
+
+        /* Separator between nav and content */
+        .nav-separator {
+            margin: 14px 28px 0 28px;
+            border: none;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            flex-shrink: 0;
+            opacity: 0;
+            transition: opacity 0.4s ease 0.3s;
+        }
+
+        .nav-separator.visible {
+            opacity: 1;
         }
 
         /* === LEFT CONTENT AREA === */
@@ -107,11 +138,6 @@
         }
 
         .category-item:hover {
-            font-weight: bold;
-            color: #569CD6;
-        }
-
-        .category-item.active {
             font-weight: bold;
         }
 
@@ -174,7 +200,6 @@
 
         .project-list-item:hover {
             font-weight: bold;
-            color: #569CD6;
         }
 
         /* ============================
@@ -355,10 +380,6 @@
             z-index: 50;
         }
 
-        .scatter-item:hover .scatter-img {
-            filter: contrast(1.08);
-        }
-
         .scatter-img {
             width: 100%;
             height: 100%;
@@ -369,9 +390,9 @@
 
         .scatter-item:hover .scatter-img {
             transform: scale(1.02);
+            filter: contrast(1.08);
         }
 
-        /* Hover tooltip on scatter images */
         .scatter-tooltip {
             position: absolute;
             bottom: -8px;
@@ -501,22 +522,33 @@
 <body>
     <div class="page">
         <div class="left-panel" id="leftPanel">
-            <div class="back-nav">
-                <a class="back-link" href="../index.html">← Back</a>
-            </div>
-            <div class="left-content" id="leftContent">
-            </div>
+            <!-- Top Nav — linked words from landing -->
+            <div class="top-nav" id="topNav"></div>
+            <hr class="nav-separator" id="navSeparator">
+            <!-- Main content area -->
+            <div class="left-content" id="leftContent"></div>
         </div>
 
         <div class="divider" id="divider">
             <div class="divider-handle">&lt; &gt;</div>
         </div>
 
-        <div class="right-panel" id="rightPanel">
-        </div>
+        <div class="right-panel" id="rightPanel"></div>
     </div>
 
     <script>
+    // ============================================
+    // NAV WORDS — same data as words.js linked items
+    // ============================================
+    const navWords = [
+        { text: "Projects", link: "projects.html", color: "#569CD6" },
+        { text: "About", link: "about.html", color: "#CE9178" },
+        { text: "Contact", link: "contact.html", color: "#4EC9B0" },
+        { text: "CV", link: "../assets/docs/cv.pdf", color: "#C586C0" },
+    ];
+
+    const currentPage = "Projects";
+
     // ============================================
     // PROJECT DATA
     // ============================================
@@ -715,6 +747,63 @@
     }
 
     // ============================================
+    // RENDER TOP NAV
+    // ============================================
+    function renderTopNav() {
+        const nav = document.getElementById('topNav');
+        const separator = document.getElementById('navSeparator');
+        nav.innerHTML = '';
+
+        // Check if coming from landing page transition
+        const transition = sessionStorage.getItem('nav-transition');
+        const hasTransition = !!transition;
+        if (hasTransition) sessionStorage.removeItem('nav-transition');
+
+        // Base delay: if transitioning, start immediately; otherwise small delay
+        const baseDelay = hasTransition ? 0 : 200;
+
+        navWords.forEach((word, i) => {
+            const item = document.createElement('a');
+            item.classList.add('top-nav-item');
+            item.textContent = word.text;
+
+            if (word.text === currentPage) {
+                item.classList.add('active-page');
+                item.href = '#';
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    renderView1();
+                });
+            } else {
+                item.href = word.link;
+            }
+
+            // Hover: color + bold (same as landing page)
+            item.addEventListener('mouseenter', () => {
+                if (word.text !== currentPage) {
+                    item.style.color = word.color;
+                }
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.color = '';
+            });
+
+            nav.appendChild(item);
+
+            // Staggered entrance
+            setTimeout(() => {
+                item.style.transition = `opacity 0.4s ease, transform 0.4s ease, color 0.25s ease, font-weight 0.2s ease`;
+                item.classList.add('visible');
+            }, baseDelay + (i * 80));
+        });
+
+        // Show separator after nav appears
+        setTimeout(() => {
+            separator.classList.add('visible');
+        }, baseDelay + (navWords.length * 80) + 100);
+    }
+
+    // ============================================
     // RENDER VIEW 1 — Categories
     // ============================================
     function renderView1() {
@@ -728,9 +817,15 @@
         const wrap = document.createElement('div');
         wrap.classList.add('categories-view');
 
+        // Check transition timing
+        const transition = sessionStorage.getItem('nav-transition-content');
+        const contentDelay = transition ? 0 : (navWords.length * 80 + 300);
+
         data.categories.forEach((cat, i) => {
             const item = document.createElement('div');
-            item.classList.add('category-item', 'view-enter', `stagger-${i + 1}`);
+            item.classList.add('category-item', 'view-enter');
+            item.style.animationDelay = (contentDelay + i * 80) + 'ms';
+            item.style.opacity = '0';
             item.textContent = cat.name;
             item.addEventListener('mouseenter', () => {
                 item.style.color = cat.color;
@@ -747,7 +842,7 @@
         });
 
         left.appendChild(wrap);
-        renderScatterGallery(getAllProjects());
+        renderScatterGallery(getAllProjects(), contentDelay + 200);
     }
 
     // ============================================
@@ -763,19 +858,25 @@
         left.innerHTML = '';
 
         const wrap = document.createElement('div');
-        wrap.classList.add('projects-list-view', 'view-enter');
+        wrap.classList.add('projects-list-view');
 
-        data.categories.forEach((c, i) => {
+        let staggerIdx = 0;
+
+        data.categories.forEach((c) => {
             if (c.name === categoryName) {
                 const header = document.createElement('div');
-                header.classList.add('category-header', 'view-enter', `stagger-${i + 1}`);
+                header.classList.add('category-header', 'view-enter');
+                header.style.animationDelay = (staggerIdx * 60) + 'ms';
                 header.textContent = c.name;
                 header.addEventListener('click', () => renderView1());
                 wrap.appendChild(header);
+                staggerIdx++;
 
-                c.years.forEach((yg, yi) => {
+                c.years.forEach((yg) => {
                     const yearGroup = document.createElement('div');
-                    yearGroup.classList.add('year-group', 'view-enter', `stagger-${yi + 3}`);
+                    yearGroup.classList.add('year-group', 'view-enter');
+                    yearGroup.style.animationDelay = (staggerIdx * 60) + 'ms';
+                    staggerIdx++;
 
                     const yearLabel = document.createElement('div');
                     yearLabel.classList.add('year-label');
@@ -802,15 +903,17 @@
                 });
             } else {
                 const header = document.createElement('div');
-                header.classList.add('category-item', 'dimmed', 'view-enter', `stagger-${i + 1}`);
+                header.classList.add('category-item', 'dimmed', 'view-enter');
+                header.style.animationDelay = (staggerIdx * 60) + 'ms';
                 header.textContent = c.name;
                 header.addEventListener('click', () => renderView2(c.name));
                 wrap.appendChild(header);
+                staggerIdx++;
             }
         });
 
         left.appendChild(wrap);
-        renderScatterGallery(getCategoryProjects(categoryName));
+        renderScatterGallery(getCategoryProjects(categoryName), 100);
     }
 
     // ============================================
@@ -825,11 +928,12 @@
         left.innerHTML = '';
 
         const wrap = document.createElement('div');
-        wrap.classList.add('project-detail-view', 'view-enter');
+        wrap.classList.add('project-detail-view');
 
         // Breadcrumb
         const breadcrumb = document.createElement('div');
-        breadcrumb.classList.add('breadcrumb', 'view-enter', 'stagger-1');
+        breadcrumb.classList.add('breadcrumb', 'view-enter');
+        breadcrumb.style.animationDelay = '0ms';
 
         const bcAll = document.createElement('span');
         bcAll.classList.add('breadcrumb-link');
@@ -845,20 +949,22 @@
         breadcrumb.appendChild(bcCat);
         breadcrumb.appendChild(document.createTextNode(' / '));
 
-        const bcYear = document.createElement('span');
-        bcYear.textContent = project.year;
-        breadcrumb.appendChild(bcYear);
+        const bcProject = document.createElement('span');
+        bcProject.textContent = project.title;
+        breadcrumb.appendChild(bcProject);
         wrap.appendChild(breadcrumb);
 
         // Title
         const title = document.createElement('div');
-        title.classList.add('detail-title', 'view-enter', 'stagger-2');
+        title.classList.add('detail-title', 'view-enter');
+        title.style.animationDelay = '60ms';
         title.textContent = project.title;
         wrap.appendChild(title);
 
         // Meta
         const meta = document.createElement('div');
-        meta.classList.add('detail-meta', 'view-enter', 'stagger-3');
+        meta.classList.add('detail-meta', 'view-enter');
+        meta.style.animationDelay = '120ms';
 
         [
             { label: 'Year', value: project.year },
@@ -875,13 +981,15 @@
 
         // Description
         const text = document.createElement('div');
-        text.classList.add('detail-text', 'view-enter', 'stagger-4');
+        text.classList.add('detail-text', 'view-enter');
+        text.style.animationDelay = '180ms';
         text.textContent = project.description;
         wrap.appendChild(text);
 
         // Tags
         const tags = document.createElement('div');
-        tags.classList.add('detail-tags', 'view-enter', 'stagger-5');
+        tags.classList.add('detail-tags', 'view-enter');
+        tags.style.animationDelay = '240ms';
         project.tags.forEach(t => {
             const tag = document.createElement('span');
             tag.classList.add('tag');
@@ -897,7 +1005,8 @@
     // ============================================
     // SCATTER GALLERY (Views 1 & 2)
     // ============================================
-    function renderScatterGallery(projects) {
+    function renderScatterGallery(projects, delay) {
+        delay = delay || 0;
         const panel = document.getElementById('rightPanel');
         panel.innerHTML = '';
         panel.scrollTop = 0;
@@ -947,7 +1056,7 @@
 
             setTimeout(() => {
                 el.classList.add('visible');
-            }, 150 + (index * 100));
+            }, delay + 150 + (index * 100));
         });
 
         canvas.style.minHeight = maxBottom + 60 + 'px';
@@ -1003,7 +1112,6 @@
             }, 200);
         }
 
-        // Scroll to switch images
         let scrollCooldown = false;
         wrap.addEventListener('wheel', (e) => {
             e.preventDefault();
@@ -1020,7 +1128,6 @@
             setTimeout(() => { scrollCooldown = false; }, 500);
         }, { passive: false });
 
-        // Arrow keys
         const keyHandler = (e) => {
             if (currentView !== 3) {
                 document.removeEventListener('keydown', keyHandler);
@@ -1073,11 +1180,37 @@
                 divider.classList.remove('dragging');
             }
         });
+
+        // Touch support for mobile
+        divider.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            document.body.classList.add('resizing');
+            divider.classList.add('dragging');
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            const pageWidth = page.getBoundingClientRect().width;
+            const newWidth = (touch.clientX / pageWidth) * 100;
+            const clamped = Math.max(15, Math.min(70, newWidth));
+            leftPanel.style.width = clamped + '%';
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.classList.remove('resizing');
+                divider.classList.remove('dragging');
+            }
+        });
     })();
 
     // ============================================
     // INIT
     // ============================================
+    renderTopNav();
     renderView1();
 
     </script>
