@@ -43,7 +43,7 @@
         /* === LEFT PANEL === */
         .left-panel {
             width: 38%;
-            min-width: 220px;
+            min-width: 14px;
             max-width: 70%;
             height: 100vh;
             display: flex;
@@ -51,15 +51,22 @@
             position: relative;
             z-index: 10;
             overflow: hidden;
+            /* Gradient fade-mask on the right edge — applied dynamically by JS */
         }
 
-        /* === TOP ROW NAV (About, Contact, CV) === */
+        /* === TOP ROW NAV (Home, About, Contact, CV) === */
         .top-row-nav {
             padding: 18px 28px 0 28px;
             display: flex;
             flex-direction: row;
-            gap: 16px;
+            flex-wrap: wrap;
+            gap: 4px 16px;
             flex-shrink: 0;
+        }
+
+        .top-row-nav.collapsed-column {
+            flex-direction: column;
+            gap: 2px;
         }
 
         .top-row-item {
@@ -85,13 +92,15 @@
 
         /* === LEFT CONTENT AREA === */
         .left-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
             padding: 0 28px;
             overflow-y: auto;
             scrollbar-width: none;
+            max-height: 60vh;
         }
 
         .left-content::-webkit-scrollbar {
@@ -100,7 +109,6 @@
 
         /* ============================
            VIEW 1 — CATEGORIES
-           Projects sits as sibling above Academic/Employment
            ============================ */
         .categories-view {
             display: flex;
@@ -108,27 +116,30 @@
             gap: 6px;
         }
 
+        /* Projects label: same size as landing words, not bold, dimmed */
         .page-label {
             font-family: 'Courier New', Courier, monospace;
-            font-size: clamp(1rem, 2.2vw, 1.6rem);
+            font-size: clamp(0.75rem, 1.8vmin, 1.1rem);
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             line-height: 1.4;
             opacity: 0.35;
             margin-bottom: 4px;
             cursor: default;
             user-select: none;
+            font-weight: normal;
         }
 
         .category-item {
             font-family: 'Courier New', Courier, monospace;
-            font-size: clamp(1rem, 2.2vw, 1.6rem);
+            font-size: clamp(0.75rem, 1.8vmin, 1.1rem);
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             cursor: pointer;
             transition: color 0.25s ease, font-weight 0.2s ease;
             line-height: 1.4;
             user-select: none;
+            font-weight: normal;
         }
 
         .category-item:hover {
@@ -155,14 +166,15 @@
 
         .view2-page-label {
             font-family: 'Courier New', Courier, monospace;
-            font-size: clamp(1rem, 2.2vw, 1.6rem);
+            font-size: clamp(0.75rem, 1.8vmin, 1.1rem);
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             line-height: 1.4;
             opacity: 0.35;
             margin-bottom: 4px;
             cursor: pointer;
             user-select: none;
+            font-weight: normal;
             transition: opacity 0.2s ease;
         }
 
@@ -172,11 +184,11 @@
 
         .category-header {
             font-family: 'Courier New', Courier, monospace;
-            font-size: clamp(1rem, 2.2vw, 1.6rem);
+            font-size: clamp(0.75rem, 1.8vmin, 1.1rem);
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             cursor: pointer;
             transition: opacity 0.2s ease;
         }
@@ -186,7 +198,7 @@
         }
 
         .year-group {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .year-label {
@@ -199,7 +211,7 @@
 
         .project-list-item {
             font-family: 'Courier New', Courier, monospace;
-            font-size: clamp(0.75rem, 1.5vw, 1rem);
+            font-size: clamp(0.65rem, 1.4vmin, 0.9rem);
             text-transform: uppercase;
             letter-spacing: 0.03em;
             cursor: pointer;
@@ -304,7 +316,7 @@
             border: 1px solid rgba(0,0,0,0.2);
         }
 
-        /* === DIVIDER / RESIZE HANDLE === */
+        /* === DIVIDER === */
         .divider {
             width: 1px;
             height: 100vh;
@@ -328,7 +340,7 @@
 
         .divider-handle {
             position: absolute;
-            top: 50%;
+            top: 25%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-family: 'Courier New', Courier, monospace;
@@ -505,7 +517,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* === NO-SELECT DURING DRAG === */
         body.resizing {
             cursor: col-resize;
             user-select: none;
@@ -520,9 +531,7 @@
 <body>
     <div class="page">
         <div class="left-panel" id="leftPanel">
-            <!-- Top row: About, Contact, CV (horizontal, small) -->
             <div class="top-row-nav" id="topRowNav"></div>
-            <!-- Main content: Projects label + categories -->
             <div class="left-content" id="leftContent"></div>
         </div>
 
@@ -535,10 +544,10 @@
 
     <script>
     // ============================================
-    // NAV CONFIG
+    // TOP ROW NAV — Home first, then other linked words
     // ============================================
-    // Top row: the OTHER linked words (not Projects)
     const topRowWords = [
+        { text: "Home", link: "../index.html", color: "#000" },
         { text: "About", link: "about.html", color: "#CE9178" },
         { text: "Contact", link: "contact.html", color: "#4EC9B0" },
         { text: "CV", link: "../assets/docs/cv.pdf", color: "#C586C0" },
@@ -704,45 +713,31 @@
         return all;
     }
 
-    // ============================================
-    // SCATTER LAYOUT
-    // ============================================
     function generateScatter(count) {
         const positions = [];
         const sizePresets = [
-            { wPct: 40, h: 280 },
-            { wPct: 28, h: 210 },
-            { wPct: 34, h: 250 },
-            { wPct: 22, h: 190 },
-            { wPct: 45, h: 300 },
-            { wPct: 26, h: 230 },
-            { wPct: 38, h: 260 },
-            { wPct: 30, h: 200 },
+            { wPct: 40, h: 280 }, { wPct: 28, h: 210 }, { wPct: 34, h: 250 },
+            { wPct: 22, h: 190 }, { wPct: 45, h: 300 }, { wPct: 26, h: 230 },
+            { wPct: 38, h: 260 }, { wPct: 30, h: 200 },
         ];
-
         let currentTop = 20;
-
         for (let i = 0; i < count; i++) {
             const preset = sizePresets[i % sizePresets.length];
             const leftBias = (i % 2 === 0) ? 3 + Math.random() * 15 : 50 + Math.random() * 15;
             const left = Math.max(2, Math.min(96 - preset.wPct, leftBias + (Math.random() - 0.5) * 10));
             const gap = 30 + Math.random() * 50;
-
             positions.push({
-                left: left,
-                top: currentTop,
+                left, top: currentTop,
                 width: preset.wPct,
                 height: preset.h + (Math.random() - 0.5) * 40,
             });
-
             currentTop += preset.h * 0.7 + gap;
         }
-
         return positions;
     }
 
     // ============================================
-    // RENDER TOP ROW NAV (About, Contact, CV)
+    // RENDER TOP ROW NAV
     // ============================================
     function renderTopRowNav() {
         const nav = document.getElementById('topRowNav');
@@ -750,13 +745,13 @@
 
         const hasTransition = sessionStorage.getItem('nav-transition');
         if (hasTransition) sessionStorage.removeItem('nav-transition');
-
         const baseDelay = hasTransition ? 0 : 150;
 
         topRowWords.forEach((word, i) => {
             const item = document.createElement('a');
             item.classList.add('top-row-item');
             item.textContent = word.text;
+            item.setAttribute('data-fulltext', word.text);
             item.href = word.link;
 
             item.addEventListener('mouseenter', () => {
@@ -770,12 +765,13 @@
 
             setTimeout(() => {
                 item.classList.add('visible');
+                if (window._truncateAll) window._truncateAll();
             }, baseDelay + (i * 70));
         });
     }
 
     // ============================================
-    // VIEW 1 — Projects label + Categories
+    // VIEW 1
     // ============================================
     function renderView1() {
         currentView = 1;
@@ -791,37 +787,33 @@
         const hasTransition = !document.querySelector('.top-row-item.visible');
         const baseDelay = hasTransition ? 400 : 0;
 
-        // "Projects" label — same size as categories, but dimmed (it's the current page)
+        // "Projects" — same size as categories, dimmed, not bold
         const projectsLabel = document.createElement('div');
         projectsLabel.classList.add('page-label', 'view-enter');
         projectsLabel.style.animationDelay = baseDelay + 'ms';
         projectsLabel.textContent = 'Projects';
+        projectsLabel.setAttribute('data-fulltext', 'Projects');
         wrap.appendChild(projectsLabel);
 
-        // Categories
         data.categories.forEach((cat, i) => {
             const item = document.createElement('div');
             item.classList.add('category-item', 'view-enter');
             item.style.animationDelay = (baseDelay + 80 + (i * 70)) + 'ms';
             item.textContent = cat.name;
-            item.addEventListener('mouseenter', () => {
-                item.style.color = cat.color;
-            });
-            item.addEventListener('mouseleave', () => {
-                item.style.color = '';
-            });
-            item.addEventListener('click', () => {
-                renderView2(cat.name);
-            });
+            item.setAttribute('data-fulltext', cat.name);
+            item.addEventListener('mouseenter', () => { item.style.color = cat.color; });
+            item.addEventListener('mouseleave', () => { item.style.color = ''; });
+            item.addEventListener('click', () => { renderView2(cat.name); });
             wrap.appendChild(item);
         });
 
         left.appendChild(wrap);
         renderScatterGallery(getAllProjects(), baseDelay + 200);
+        requestAnimationFrame(() => { if (window._truncateAll) window._truncateAll(); });
     }
 
     // ============================================
-    // VIEW 2 — Year / Project list
+    // VIEW 2
     // ============================================
     function renderView2(categoryName) {
         currentView = 2;
@@ -833,14 +825,13 @@
 
         const wrap = document.createElement('div');
         wrap.classList.add('projects-list-view');
-
         let delay = 0;
 
-        // "Projects" label — clickable to go back to View 1
         const projectsLabel = document.createElement('div');
         projectsLabel.classList.add('view2-page-label', 'view-enter');
         projectsLabel.style.animationDelay = delay + 'ms';
         projectsLabel.textContent = 'Projects';
+        projectsLabel.setAttribute('data-fulltext', 'Projects');
         projectsLabel.addEventListener('click', () => renderView1());
         wrap.appendChild(projectsLabel);
         delay += 60;
@@ -851,6 +842,7 @@
                 header.classList.add('category-header', 'view-enter');
                 header.style.animationDelay = delay + 'ms';
                 header.textContent = c.name;
+                header.setAttribute('data-fulltext', c.name);
                 header.addEventListener('click', () => renderView1());
                 wrap.appendChild(header);
                 delay += 60;
@@ -864,24 +856,19 @@
                     const yearLabel = document.createElement('div');
                     yearLabel.classList.add('year-label');
                     yearLabel.textContent = yg.year;
+                    yearLabel.setAttribute('data-fulltext', yg.year);
                     yearGroup.appendChild(yearLabel);
 
                     yg.projects.forEach(p => {
                         const pItem = document.createElement('div');
                         pItem.classList.add('project-list-item');
                         pItem.textContent = p.title;
-                        pItem.addEventListener('mouseenter', () => {
-                            pItem.style.color = c.color;
-                        });
-                        pItem.addEventListener('mouseleave', () => {
-                            pItem.style.color = '';
-                        });
-                        pItem.addEventListener('click', () => {
-                            renderView3(p, c);
-                        });
+                        pItem.setAttribute('data-fulltext', p.title);
+                        pItem.addEventListener('mouseenter', () => { pItem.style.color = c.color; });
+                        pItem.addEventListener('mouseleave', () => { pItem.style.color = ''; });
+                        pItem.addEventListener('click', () => { renderView3(p, c); });
                         yearGroup.appendChild(pItem);
                     });
-
                     wrap.appendChild(yearGroup);
                 });
             } else {
@@ -889,6 +876,7 @@
                 header.classList.add('category-item', 'dimmed', 'view-enter');
                 header.style.animationDelay = delay + 'ms';
                 header.textContent = c.name;
+                header.setAttribute('data-fulltext', c.name);
                 header.addEventListener('click', () => renderView2(c.name));
                 wrap.appendChild(header);
                 delay += 60;
@@ -897,10 +885,11 @@
 
         left.appendChild(wrap);
         renderScatterGallery(getCategoryProjects(categoryName), 100);
+        requestAnimationFrame(() => { if (window._truncateAll) window._truncateAll(); });
     }
 
     // ============================================
-    // VIEW 3 — Project Detail + Presentation
+    // VIEW 3
     // ============================================
     function renderView3(project, category) {
         currentView = 3;
@@ -913,7 +902,6 @@
         const wrap = document.createElement('div');
         wrap.classList.add('project-detail-view');
 
-        // Breadcrumb
         const breadcrumb = document.createElement('div');
         breadcrumb.classList.add('breadcrumb', 'view-enter');
         breadcrumb.style.animationDelay = '0ms';
@@ -921,6 +909,7 @@
         const bcAll = document.createElement('span');
         bcAll.classList.add('breadcrumb-link');
         bcAll.textContent = 'Projects';
+        bcAll.setAttribute('data-fulltext', 'Projects');
         bcAll.addEventListener('click', () => renderView1());
         breadcrumb.appendChild(bcAll);
         breadcrumb.appendChild(document.createTextNode(' / '));
@@ -928,27 +917,27 @@
         const bcCat = document.createElement('span');
         bcCat.classList.add('breadcrumb-link');
         bcCat.textContent = category.name;
+        bcCat.setAttribute('data-fulltext', category.name);
         bcCat.addEventListener('click', () => renderView2(category.name));
         breadcrumb.appendChild(bcCat);
         breadcrumb.appendChild(document.createTextNode(' / '));
 
         const bcProject = document.createElement('span');
         bcProject.textContent = project.title;
+        bcProject.setAttribute('data-fulltext', project.title);
         breadcrumb.appendChild(bcProject);
         wrap.appendChild(breadcrumb);
 
-        // Title
         const title = document.createElement('div');
         title.classList.add('detail-title', 'view-enter');
         title.style.animationDelay = '60ms';
         title.textContent = project.title;
+        title.setAttribute('data-fulltext', project.title);
         wrap.appendChild(title);
 
-        // Meta
         const meta = document.createElement('div');
         meta.classList.add('detail-meta', 'view-enter');
         meta.style.animationDelay = '120ms';
-
         [
             { label: 'Year', value: project.year },
             { label: 'Location', value: project.location },
@@ -957,19 +946,27 @@
         ].forEach(f => {
             const row = document.createElement('div');
             row.classList.add('meta-row');
-            row.innerHTML = `<span class="meta-label">${f.label}</span><span class="meta-value">${f.value}</span>`;
+            const labelSpan = document.createElement('span');
+            labelSpan.classList.add('meta-label');
+            labelSpan.textContent = f.label;
+            labelSpan.setAttribute('data-fulltext', f.label);
+            const valueSpan = document.createElement('span');
+            valueSpan.classList.add('meta-value');
+            valueSpan.textContent = f.value;
+            valueSpan.setAttribute('data-fulltext', f.value);
+            row.appendChild(labelSpan);
+            row.appendChild(valueSpan);
             meta.appendChild(row);
         });
         wrap.appendChild(meta);
 
-        // Description
         const text = document.createElement('div');
         text.classList.add('detail-text', 'view-enter');
         text.style.animationDelay = '180ms';
         text.textContent = project.description;
+        text.setAttribute('data-fulltext', project.description);
         wrap.appendChild(text);
 
-        // Tags
         const tags = document.createElement('div');
         tags.classList.add('detail-tags', 'view-enter');
         tags.style.animationDelay = '240ms';
@@ -977,12 +974,14 @@
             const tag = document.createElement('span');
             tag.classList.add('tag');
             tag.textContent = t;
+            tag.setAttribute('data-fulltext', t);
             tags.appendChild(tag);
         });
         wrap.appendChild(tags);
 
         left.appendChild(wrap);
         renderPresentationGallery(project);
+        requestAnimationFrame(() => { if (window._truncateAll) window._truncateAll(); });
     }
 
     // ============================================
@@ -998,15 +997,13 @@
         canvas.classList.add('gallery-scatter');
 
         const items = projects.map(p => ({
-            src: p.keyImage,
-            label: p.title,
-            project: p,
+            src: p.keyImage, label: p.title, project: p,
             category: data.categories.find(c => c.name === p.categoryName),
         }));
 
         const positions = generateScatter(items.length);
-
         let maxBottom = 0;
+
         items.forEach((item, index) => {
             const pos = positions[index];
             const bottom = pos.top + pos.height + 40;
@@ -1031,15 +1028,10 @@
             tooltip.innerHTML = `${item.label} <span class="scatter-tooltip-arrow">&rarr;</span>`;
             el.appendChild(tooltip);
 
-            el.addEventListener('click', () => {
-                renderView3(item.project, item.category);
-            });
-
+            el.addEventListener('click', () => { renderView3(item.project, item.category); });
             canvas.appendChild(el);
 
-            setTimeout(() => {
-                el.classList.add('visible');
-            }, delay + 150 + (index * 100));
+            setTimeout(() => { el.classList.add('visible'); }, delay + 150 + (index * 100));
         });
 
         canvas.style.minHeight = maxBottom + 60 + 'px';
@@ -1100,21 +1092,14 @@
             e.preventDefault();
             if (scrollCooldown) return;
             scrollCooldown = true;
-
-            if (e.deltaY > 0) {
-                presentationIndex = Math.min(presentationIndex + 1, project.images.length - 1);
-            } else {
-                presentationIndex = Math.max(presentationIndex - 1, 0);
-            }
+            if (e.deltaY > 0) presentationIndex = Math.min(presentationIndex + 1, project.images.length - 1);
+            else presentationIndex = Math.max(presentationIndex - 1, 0);
             updateImage();
             setTimeout(() => { scrollCooldown = false; }, 500);
         }, { passive: false });
 
         const keyHandler = (e) => {
-            if (currentView !== 3) {
-                document.removeEventListener('keydown', keyHandler);
-                return;
-            }
+            if (currentView !== 3) { document.removeEventListener('keydown', keyHandler); return; }
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
                 e.preventDefault();
                 presentationIndex = Math.min(presentationIndex + 1, project.images.length - 1);
@@ -1130,57 +1115,122 @@
     }
 
     // ============================================
-    // RESIZABLE DIVIDER
+    // RESIZABLE DIVIDER + UNIFIED TRUNCATION
     // ============================================
     (function initResizer() {
         const divider = document.getElementById('divider');
         const leftPanel = document.getElementById('leftPanel');
+        const topRowNav = document.getElementById('topRowNav');
         const page = document.querySelector('.page');
         let isDragging = false;
 
-        divider.addEventListener('mousedown', (e) => {
+        // Character width cache
+        const charMeasureCache = {};
+        function getCharWidth(fontSize) {
+            if (charMeasureCache[fontSize]) return charMeasureCache[fontSize];
+            const span = document.createElement('span');
+            span.style.fontFamily = "'Courier New', Courier, monospace";
+            span.style.fontSize = fontSize;
+            span.style.letterSpacing = '0.05em';
+            span.style.textTransform = 'uppercase';
+            span.style.position = 'absolute';
+            span.style.visibility = 'hidden';
+            span.textContent = 'M';
+            document.body.appendChild(span);
+            const w = span.getBoundingClientRect().width;
+            document.body.removeChild(span);
+            charMeasureCache[fontSize] = w;
+            return w;
+        }
+
+        // Threshold where top nav switches to column
+        const NAV_COLUMN_THRESHOLD = 160;
+
+        function truncateAll() {
+            const panelWidth = leftPanel.getBoundingClientRect().width;
+            const padding = 28;
+            const available = panelWidth - padding - 4;
+
+            // === Top nav: switch to column when narrow enough ===
+            if (panelWidth <= NAV_COLUMN_THRESHOLD) {
+                topRowNav.classList.add('collapsed-column');
+            } else {
+                topRowNav.classList.remove('collapsed-column');
+            }
+
+            // === Truncate ALL elements with data-fulltext uniformly ===
+            const allEls = leftPanel.querySelectorAll('[data-fulltext]');
+            allEls.forEach(el => {
+                const fullText = el.getAttribute('data-fulltext');
+                const fontSize = window.getComputedStyle(el).fontSize;
+                const charW = getCharWidth(fontSize);
+
+                if (available <= charW) {
+                    // Show only first letter
+                    el.textContent = fullText.charAt(0);
+                    return;
+                }
+
+                const maxChars = Math.max(1, Math.floor(available / charW));
+
+                if (maxChars >= fullText.length) {
+                    el.textContent = fullText;
+                } else {
+                    el.textContent = fullText.substring(0, Math.max(1, maxChars));
+                }
+            });
+        }
+
+        // Min width = padding + widest single character (from the largest font size)
+        function getMinWidth() {
+            // Measure at the main content font size (the largest)
+            const testEl = document.querySelector('.page-label, .category-item');
+            if (testEl) {
+                const fontSize = window.getComputedStyle(testEl).fontSize;
+                const charW = getCharWidth(fontSize);
+                return padding + charW + 6;
+            }
+            return 42;
+        }
+
+        const padding = 28;
+
+        function onStart(e) {
             isDragging = true;
             document.body.classList.add('resizing');
             divider.classList.add('dragging');
             e.preventDefault();
-        });
+        }
 
-        document.addEventListener('mousemove', (e) => {
+        function onMove(clientX) {
             if (!isDragging) return;
             const pageWidth = page.getBoundingClientRect().width;
-            const newWidth = (e.clientX / pageWidth) * 100;
-            leftPanel.style.width = Math.max(15, Math.min(70, newWidth)) + '%';
-        });
+            const pct = (clientX / pageWidth) * 100;
+            const minPx = getMinWidth();
+            const minPct = (minPx / pageWidth) * 100;
+            const clamped = Math.max(minPct, Math.min(70, pct));
+            leftPanel.style.width = clamped + '%';
+            truncateAll();
+        }
 
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                document.body.classList.remove('resizing');
-                divider.classList.remove('dragging');
-            }
-        });
-
-        divider.addEventListener('touchstart', (e) => {
-            isDragging = true;
-            document.body.classList.add('resizing');
-            divider.classList.add('dragging');
-            e.preventDefault();
-        }, { passive: false });
-
-        document.addEventListener('touchmove', (e) => {
+        function onEnd() {
             if (!isDragging) return;
-            const touch = e.touches[0];
-            const pageWidth = page.getBoundingClientRect().width;
-            const newWidth = (touch.clientX / pageWidth) * 100;
-            leftPanel.style.width = Math.max(15, Math.min(70, newWidth)) + '%';
-        }, { passive: false });
+            isDragging = false;
+            document.body.classList.remove('resizing');
+            divider.classList.remove('dragging');
+        }
 
-        document.addEventListener('touchend', () => {
-            if (isDragging) {
-                isDragging = false;
-                document.body.classList.remove('resizing');
-                divider.classList.remove('dragging');
-            }
+        divider.addEventListener('mousedown', onStart);
+        document.addEventListener('mousemove', (e) => onMove(e.clientX));
+        document.addEventListener('mouseup', onEnd);
+        divider.addEventListener('touchstart', onStart, { passive: false });
+        document.addEventListener('touchmove', (e) => { if (isDragging) onMove(e.touches[0].clientX); }, { passive: false });
+        document.addEventListener('touchend', onEnd);
+
+        window._truncateAll = truncateAll;
+
+        window.addEventListener('resize', () => {
+            requestAnimationFrame(truncateAll);
         });
     })();
 
