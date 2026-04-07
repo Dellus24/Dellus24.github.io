@@ -526,6 +526,40 @@
         body.resizing .right-panel {
             pointer-events: none;
         }
+
+        /* === PAGE TRANSITION GHOSTS === */
+        .transition-ghost {
+            position: fixed;
+            font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            z-index: 9999;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+
+        /* Hide real elements during transition */
+        body.transitioning .top-row-nav,
+        body.transitioning .left-content {
+            visibility: hidden;
+        }
+
+        body.transitioning .divider,
+        body.transitioning .right-panel {
+            opacity: 0;
+        }
+
+        /* Fade in divider + right panel after transition */
+        .divider.transition-reveal,
+        .right-panel.transition-reveal {
+            transition: opacity 0.4s ease;
+            opacity: 1 !important;
+        }
+
+        .categories-view.transition-reveal {
+            visibility: visible !important;
+        }
     </style>
 </head>
 <body>
@@ -1235,10 +1269,155 @@
     })();
 
     // ============================================
-    // INIT
+    // INIT — SEAMLESS TRANSITION FROM LANDING
     // ============================================
-    renderTopRowNav();
-    renderView1();
+    const hasTransition = sessionStorage.getItem('nav-transition');
+    const storedPositions = sessionStorage.getItem('nav-transition-positions');
+
+    if (hasTransition && storedPositions) {
+        sessionStorage.removeItem('nav-transition');
+        sessionStorage.removeItem('nav-transition-positions');
+
+        const positions = JSON.parse(storedPositions);
+
+        // Mark body as transitioning (hides real elements)
+        document.body.classList.add('transitioning');
+
+        // Narrow left panel on arrival — text-only, gallery fills the right
+        document.getElementById('leftPanel').style.width = '8%';
+
+        // Render normally (but hidden via CSS)
+        renderTopRowNav();
+        renderView1();
+
+        // Force layout so elements have their final positions
+        document.body.offsetHeight;
+
+        // Make top-row-items visible immediately (they start with opacity:0)
+        document.querySelectorAll('.top-row-item').forEach(el => {
+            el.classList.add('visible');
+            el.style.transition = 'none';
+        });
+
+        // Remove view-enter animations from left content
+        document.querySelectorAll('.view-enter').forEach(el => {
+            el.style.animation = 'none';
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+        });
+
+        // Force another layout pass
+        document.body.offsetHeight;
+
+        // Create ghost elements at the stored (landing page exit) positions
+        const ghosts = [];
+
+        // Ghost for each nav word that has a stored position
+        const navItems = document.querySelectorAll('.top-row-item');
+        navItems.forEach(navEl => {
+            const text = navEl.getAttribute('data-fulltext') || navEl.textContent;
+            const stored = positions[text];
+            if (!stored) return;
+
+            const ghost = document.createElement('div');
+            ghost.classList.add('transition-ghost');
+            ghost.textContent = text;
+            ghost.style.fontSize = '0.55rem';
+            ghost.style.letterSpacing = '0.1em';
+            ghost.style.left = stored.left + 'px';
+            ghost.style.top = stored.top + 'px';
+            document.body.appendChild(ghost);
+
+            ghosts.push({ ghost, targetEl: navEl, text, role: 'nav' });
+        });
+
+        // Ghost for the clicked word — "Projects" label in the content
+        const projectsLabel = document.querySelector('.page-label');
+        const clickedText = Object.keys(positions).find(k => positions[k].role === 'clicked');
+        if (clickedText && positions[clickedText] && projectsLabel) {
+            const stored = positions[clickedText];
+            const ghost = document.createElement('div');
+            ghost.classList.add('transition-ghost');
+            ghost.textContent = clickedText;
+            // Use the landing page word size (same as projects page content size)
+            ghost.style.fontSize = 'clamp(0.75rem, 1.8vmin, 1.1rem)';
+            ghost.style.letterSpacing = '0.05em';
+            ghost.style.left = stored.left + 'px';
+            ghost.style.top = stored.top + 'px';
+            document.body.appendChild(ghost);
+
+            ghosts.push({ ghost, targetEl: projectsLabel, text: clickedText, role: 'clicked' });
+        }
+
+        // Also create ghosts for category items (Academic, Employment) — fade in
+        const catItems = document.querySelectorAll('.category-item');
+        catItems.forEach(catEl => {
+            // These don't have stored positions — they'll just fade in
+        });
+
+        // Next frame: animate ghosts to real element positions
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                ghosts.forEach(({ ghost, targetEl }) => {
+                    const targetRect = targetEl.getBoundingClientRect();
+                    const ghostRect = ghost.getBoundingClientRect();
+
+                    const deltaX = targetRect.left - ghostRect.left;
+                    const deltaY = targetRect.top - ghostRect.top;
+
+                    ghost.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.45s ease';
+                    ghost.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                });
+
+                // After ghosts arrive, reveal real elements and remove ghosts
+                setTimeout(() => {
+                    document.body.classList.remove('transitioning');
+
+                    // Make top row nav visible
+                    document.querySelectorAll('.top-row-item').forEach(el => {
+                        el.style.transition = '';
+                    });
+
+                    // Fade in divider + right panel
+                    document.getElementById('divider').classList.add('transition-reveal');
+                    document.getElementById('rightPanel').classList.add('transition-reveal');
+
+                    // Fade in category items that weren't part of the transition
+                    const catItems = document.querySelectorAll('.category-item');
+                    catItems.forEach((item, i) => {
+                        item.style.animation = 'none';
+                        item.style.opacity = '0';
+                        item.style.transform = 'translateY(6px)';
+                        item.offsetHeight; // force reflow
+                        item.style.transition = `opacity 0.35s ease ${i * 0.06}s, transform 0.35s ease ${i * 0.06}s`;
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateY(0)';
+                    });
+
+                    // Fade out and remove ghosts
+                    ghosts.forEach(({ ghost }) => {
+                        ghost.style.transition = 'opacity 0.15s ease';
+                        ghost.style.opacity = '0';
+                        setTimeout(() => ghost.remove(), 150);
+                    });
+
+                    // Clean up transition-reveal classes after transition
+                    setTimeout(() => {
+                        document.getElementById('divider').classList.remove('transition-reveal');
+                        document.getElementById('rightPanel').classList.remove('transition-reveal');
+                    }, 500);
+
+                    if (window._truncateAll) window._truncateAll();
+                }, 470);
+            });
+        });
+
+    } else {
+        // Normal load (no transition from landing)
+        if (hasTransition) sessionStorage.removeItem('nav-transition');
+        renderTopRowNav();
+        renderView1();
+    }
 
     </script>
 </body>

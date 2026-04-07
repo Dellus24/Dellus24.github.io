@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV — Dellus</title>
+    <style>
+        /* === RESET & BASE === */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: #f5fccc;
+            color: #000000;
+            font-family: 'Courier New', Courier, monospace;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            cursor: default;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* === PAGE LAYOUT === */
+        .page {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            position: relative;
+        }
+
+        /* === TOP ROW NAV === */
+        .top-row-nav {
+            padding: 18px 28px 0 28px;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 4px 16px;
+            flex-shrink: 0;
+        }
+
+        .top-row-item {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.55rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: color 0.25s ease, font-weight 0.2s ease, opacity 0.4s ease, transform 0.4s ease;
+            user-select: none;
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+
+        .top-row-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .top-row-item:hover {
+            font-weight: bold;
+        }
+
+        /* === CV CONTENT AREA === */
+        .cv-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: none;
+            padding: 0 28px 40px 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .cv-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* === CV HEADER === */
+        .cv-title {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.75rem, 1.8vmin, 1.1rem);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.35;
+            font-weight: normal;
+            margin-bottom: 32px;
+        }
+
+        /* === TWO COLUMN SPREAD === */
+        .cv-spread {
+            display: flex;
+            gap: 50px;
+        }
+
+        .cv-col-left {
+            flex: none;
+        }
+
+        .cv-col-right {
+            flex: none;
+        }
+
+        /* === SECTION STYLES === */
+        .cv-section {
+            margin-bottom: 28px;
+        }
+
+        .cv-section-title {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.5rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            opacity: 0.4;
+            margin-bottom: 12px;
+            font-weight: normal;
+        }
+
+        /* === ENTRY STYLES === */
+        .cv-entry {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            padding: 5px 0;
+        }
+
+        .cv-entry-date {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.55rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.35;
+            flex-shrink: 0;
+            width: 110px;
+            white-space: nowrap;
+        }
+
+        .cv-entry-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cv-entry-title {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.6rem, 1.2vmin, 0.8rem);
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            line-height: 1.5;
+        }
+
+        .cv-entry-role {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.5rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.45;
+            margin-top: 1px;
+        }
+
+        /* === LANGUAGE ENTRY === */
+        .cv-lang-entry {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 4px 0;
+        }
+
+        .cv-lang-name {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.6rem, 1.2vmin, 0.8rem);
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .cv-lang-level {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.5rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.4;
+        }
+
+        /* === NAME + DOWNLOAD ROW AT BOTTOM === */
+        .cv-footer {
+            display: flex;
+            align-items: baseline;
+            gap: 24px;
+            margin-top: 36px;
+        }
+
+        .cv-name {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.75rem, 1.8vmin, 1.1rem);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: normal;
+            opacity: 0.2;
+        }
+
+        .cv-download {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.5rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+            opacity: 0.4;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cv-download:hover {
+            opacity: 0.8;
+        }
+
+        .cv-download-arrow {
+            font-size: 0.6rem;
+            transition: transform 0.2s ease;
+        }
+
+        .cv-download:hover .cv-download-arrow {
+            transform: translateY(2px);
+        }
+
+        /* === TRANSITIONS === */
+        .view-enter {
+            animation: viewFadeIn 0.4s ease forwards;
+        }
+
+        @keyframes viewFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === PAGE TRANSITION GHOSTS === */
+        .transition-ghost {
+            position: fixed;
+            font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            z-index: 9999;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+
+        body.transitioning .top-row-nav,
+        body.transitioning .cv-content {
+            visibility: hidden;
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 680px) {
+            .cv-spread {
+                flex-direction: column;
+                gap: 28px;
+            }
+
+            .cv-entry {
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .cv-entry-date {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="top-row-nav" id="topRowNav"></div>
+        <div class="cv-content" id="cvContent"></div>
+    </div>
+
+    <script>
+    // ============================================
+    // TOP ROW NAV
+    // ============================================
+    const topRowWords = [
+        { text: "Home", link: "../index.html", color: "#000" },
+        { text: "About", link: "about.html", color: "#CE9178" },
+        { text: "Projects", link: "projects.html", color: "#569CD6" },
+        { text: "Contact", link: "contact.html", color: "#4EC9B0" },
+    ];
+
+    // ============================================
+    // CV DATA — edit this object to update your CV
+    // ============================================
+    const cvData = {
+        name: "Nir Dellus",
+        pdfPath: "../assets/docs/cv.pdf",
+
+        experience: [
+            {
+                date: "2024–Present",
+                title: "Derman Verbakel Architects",
+                role: "Research & Design"
+            },
+            {
+                date: "2023–2025",
+                title: "Bezalel Architecture Department",
+                role: "Teaching Assistant"
+            },
+            {
+                date: "2022–2023",
+                title: "Israeli Pavilion at the Venice Architecture Biennale",
+                role: "Research & Prototype"
+            },
+            {
+                date: "2021",
+                title: "Sabio Levy Architects",
+                role: "Concept Development"
+            },
+            {
+                date: "2019",
+                title: "Carpentry",
+                role: "Furniture and Set Design Constructions"
+            },
+            {
+                date: "2015–2018",
+                title: "Obligatory Service",
+                role: null
+            },
+            {
+                date: "2014–2015",
+                title: "Volunteer Year, Tarbut (Culture) Movement",
+                role: null
+            },
+        ],
+
+        education: [
+            {
+                date: "2019–2024",
+                title: "Bezalel Academy of Arts and Design",
+                role: "B.Arch."
+            },
+            {
+                date: "2023 (Fall)",
+                title: "Exchange Studies, Aarhus School of Architecture",
+                role: null
+            },
+            {
+                date: "2011–2013",
+                title: "Ankori High School, Rishon LeZion",
+                role: "High School Diploma"
+            },
+        ],
+
+        languages: [
+            { name: "Hebrew", level: "Native" },
+            { name: "English", level: "Fluent" },
+        ],
+    };
+
+    // ============================================
+    // RENDER TOP ROW NAV
+    // ============================================
+    function renderTopRowNav() {
+        const nav = document.getElementById('topRowNav');
+        nav.innerHTML = '';
+
+        const hasTransition = sessionStorage.getItem('nav-transition');
+        if (hasTransition) sessionStorage.removeItem('nav-transition');
+        const baseDelay = hasTransition ? 0 : 150;
+
+        topRowWords.forEach((word, i) => {
+            const item = document.createElement('a');
+            item.classList.add('top-row-item');
+            item.textContent = word.text;
+            item.href = word.link;
+
+            item.addEventListener('mouseenter', () => {
+                item.style.color = word.color;
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.color = '';
+            });
+
+            nav.appendChild(item);
+
+            setTimeout(() => {
+                item.classList.add('visible');
+            }, baseDelay + (i * 70));
+        });
+    }
+
+    // ============================================
+    // RENDER CV
+    // ============================================
+    function renderCV() {
+        const container = document.getElementById('cvContent');
+        container.innerHTML = '';
+
+        let delay = 200;
+
+        // Header: just "Curriculum Vitae"
+        const title = document.createElement('div');
+        title.classList.add('cv-title', 'view-enter');
+        title.style.animationDelay = delay + 'ms';
+        title.textContent = 'Curriculum Vitae';
+        container.appendChild(title);
+        delay += 80;
+
+        // Two-column spread
+        const spread = document.createElement('div');
+        spread.classList.add('cv-spread', 'view-enter');
+        spread.style.animationDelay = delay + 'ms';
+        delay += 60;
+
+        // LEFT COLUMN: Professional Experience
+        const colLeft = document.createElement('div');
+        colLeft.classList.add('cv-col-left');
+
+        const expSection = buildSection('Professional Experience', cvData.experience);
+        colLeft.appendChild(expSection);
+
+        spread.appendChild(colLeft);
+
+        // RIGHT COLUMN: Education + Languages
+        const colRight = document.createElement('div');
+        colRight.classList.add('cv-col-right');
+
+        const eduSection = buildSection('Education', cvData.education);
+        colRight.appendChild(eduSection);
+
+        const langSection = buildLanguagesSection();
+        colRight.appendChild(langSection);
+
+        spread.appendChild(colRight);
+        container.appendChild(spread);
+
+        // Footer: Name + Download PDF
+        const footer = document.createElement('div');
+        footer.classList.add('cv-footer', 'view-enter');
+        footer.style.animationDelay = (delay + 100) + 'ms';
+
+        const name = document.createElement('div');
+        name.classList.add('cv-name');
+        name.textContent = cvData.name;
+        footer.appendChild(name);
+
+        const download = document.createElement('a');
+        download.classList.add('cv-download');
+        download.href = cvData.pdfPath;
+        download.setAttribute('download', '');
+        download.innerHTML = 'Download PDF <span class="cv-download-arrow">↓</span>';
+        footer.appendChild(download);
+
+        container.appendChild(footer);
+    }
+
+    function buildSection(titleText, entries) {
+        const section = document.createElement('div');
+        section.classList.add('cv-section');
+
+        const sectionTitle = document.createElement('div');
+        sectionTitle.classList.add('cv-section-title');
+        sectionTitle.textContent = titleText;
+        section.appendChild(sectionTitle);
+
+        entries.forEach(entry => {
+            const row = document.createElement('div');
+            row.classList.add('cv-entry');
+
+            const date = document.createElement('div');
+            date.classList.add('cv-entry-date');
+            date.textContent = entry.date;
+            row.appendChild(date);
+
+            const content = document.createElement('div');
+            content.classList.add('cv-entry-content');
+
+            const entryTitle = document.createElement('div');
+            entryTitle.classList.add('cv-entry-title');
+            entryTitle.textContent = entry.title;
+            content.appendChild(entryTitle);
+
+            if (entry.role) {
+                const role = document.createElement('div');
+                role.classList.add('cv-entry-role');
+                role.textContent = entry.role;
+                content.appendChild(role);
+            }
+
+            row.appendChild(content);
+            section.appendChild(row);
+        });
+
+        return section;
+    }
+
+    function buildLanguagesSection() {
+        const section = document.createElement('div');
+        section.classList.add('cv-section');
+
+        const sectionTitle = document.createElement('div');
+        sectionTitle.classList.add('cv-section-title');
+        sectionTitle.textContent = 'Languages';
+        section.appendChild(sectionTitle);
+
+        cvData.languages.forEach(lang => {
+            const row = document.createElement('div');
+            row.classList.add('cv-lang-entry');
+
+            const name = document.createElement('div');
+            name.classList.add('cv-lang-name');
+            name.textContent = lang.name;
+            row.appendChild(name);
+
+            const level = document.createElement('div');
+            level.classList.add('cv-lang-level');
+            level.textContent = lang.level;
+            row.appendChild(level);
+
+            section.appendChild(row);
+        });
+
+        return section;
+    }
+
+    // ============================================
+    // INIT — SEAMLESS TRANSITION FROM LANDING
+    // ============================================
+    const hasTransition = sessionStorage.getItem('nav-transition');
+    const storedPositions = sessionStorage.getItem('nav-transition-positions');
+
+    if (hasTransition && storedPositions) {
+        sessionStorage.removeItem('nav-transition');
+        sessionStorage.removeItem('nav-transition-positions');
+
+        const positions = JSON.parse(storedPositions);
+
+        document.body.classList.add('transitioning');
+
+        renderTopRowNav();
+        renderCV();
+
+        document.body.offsetHeight;
+
+        document.querySelectorAll('.top-row-item').forEach(el => {
+            el.classList.add('visible');
+            el.style.transition = 'none';
+        });
+
+        document.querySelectorAll('.view-enter').forEach(el => {
+            el.style.animation = 'none';
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+        });
+
+        document.body.offsetHeight;
+
+        const ghosts = [];
+
+        const navItems = document.querySelectorAll('.top-row-item');
+        navItems.forEach(navEl => {
+            const text = navEl.textContent;
+            const stored = positions[text];
+            if (!stored) return;
+
+            const ghost = document.createElement('div');
+            ghost.classList.add('transition-ghost');
+            ghost.textContent = text;
+            ghost.style.fontSize = '0.55rem';
+            ghost.style.letterSpacing = '0.1em';
+            ghost.style.left = stored.left + 'px';
+            ghost.style.top = stored.top + 'px';
+            document.body.appendChild(ghost);
+
+            ghosts.push({ ghost, targetEl: navEl });
+        });
+
+        // Ghost for the clicked word — "CV" title
+        const cvTitle = document.querySelector('.cv-title');
+        const clickedText = Object.keys(positions).find(k => positions[k].role === 'clicked');
+        if (clickedText && positions[clickedText] && cvTitle) {
+            const stored = positions[clickedText];
+            const ghost = document.createElement('div');
+            ghost.classList.add('transition-ghost');
+            ghost.textContent = clickedText;
+            ghost.style.fontSize = 'clamp(0.75rem, 1.8vmin, 1.1rem)';
+            ghost.style.letterSpacing = '0.05em';
+            ghost.style.left = stored.left + 'px';
+            ghost.style.top = stored.top + 'px';
+            document.body.appendChild(ghost);
+
+            ghosts.push({ ghost, targetEl: cvTitle });
+        }
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                ghosts.forEach(({ ghost, targetEl }) => {
+                    const targetRect = targetEl.getBoundingClientRect();
+                    const ghostRect = ghost.getBoundingClientRect();
+
+                    const deltaX = targetRect.left - ghostRect.left;
+                    const deltaY = targetRect.top - ghostRect.top;
+
+                    ghost.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.45s ease';
+                    ghost.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                });
+
+                setTimeout(() => {
+                    document.body.classList.remove('transitioning');
+
+                    document.querySelectorAll('.top-row-item').forEach(el => {
+                        el.style.transition = '';
+                    });
+
+                    ghosts.forEach(({ ghost }) => {
+                        ghost.style.transition = 'opacity 0.15s ease';
+                        ghost.style.opacity = '0';
+                        setTimeout(() => ghost.remove(), 150);
+                    });
+                }, 470);
+            });
+        });
+
+    } else {
+        if (hasTransition) sessionStorage.removeItem('nav-transition');
+        renderTopRowNav();
+        renderCV();
+    }
+
+    </script>
+</body>
+</html>
+
+
+

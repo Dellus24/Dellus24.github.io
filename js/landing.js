@@ -158,8 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // 2. Move OTHER linked words to top-left as a horizontal row
-        // Target: top-left corner, small row
-        let accumulatedLeft = 28; // px from left edge
+        let accumulatedLeft = 28;
 
         otherLinked.forEach((w, i) => {
             const el = w.el;
@@ -183,17 +182,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 link.style.fontWeight = '';
             }
 
-            // Estimate width for next word position
             accumulatedLeft += (w.wordData.text.length * 6.5) + 18;
         });
 
-        // 3. Move CLICKED word to content area position (below the top row)
+        // 3. Move CLICKED word to content area position
         if (clickedEl) {
             const el = clickedEl.el;
             const currentRect = el.getBoundingClientRect();
 
             const targetX = 28;
-            const targetY = 70; // below the top nav row
+            const targetY = 70;
 
             const deltaX = targetX - currentRect.left;
             const deltaY = targetY - currentRect.top;
@@ -209,12 +207,39 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Store transition data
-        sessionStorage.setItem('nav-transition', 'true');
-
-        // Navigate after animation
+        // 4. After animation settles, capture final positions and navigate
         setTimeout(() => {
+            // Capture where each word ended up on screen
+            const positions = {};
+
+            // Nav words (other linked words)
+            otherLinked.forEach(w => {
+                const rect = w.el.getBoundingClientRect();
+                positions[w.wordData.text] = {
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    role: 'nav'
+                };
+            });
+
+            // Clicked word
+            if (clickedEl) {
+                const rect = clickedEl.el.getBoundingClientRect();
+                positions[clickedEl.wordData.text] = {
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    role: 'clicked'
+                };
+            }
+
+            sessionStorage.setItem('nav-transition', 'true');
+            sessionStorage.setItem('nav-transition-positions', JSON.stringify(positions));
+
             window.location.href = clickedWord.link;
-        }, 620);
+        }, 580);
     }
 });
