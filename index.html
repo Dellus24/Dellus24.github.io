@@ -1429,11 +1429,11 @@
         // ORDER LAYOUT
         // ================================================================
         function orderWindows() {
-            const ws = document.getElementById('workspace');
-            const sw = window.innerWidth, sh = window.innerHeight;
-            const gap = 8, leftX = 28, topY = 28;
+            const ws  = document.getElementById('workspace');
+            const sw  = window.innerWidth, sh = window.innerHeight;
+            const gap = 8,  leftX = 28, topY = 28;
 
-            // Pin menu to top-left
+            // Pin menu top-left
             const menuEl = document.getElementById('menu-body-inner')?.closest('.win-frame');
             if (menuEl) { menuEl.style.left = leftX + 'px'; menuEl.style.top = topY + 'px'; menuEl.style.zIndex = ++topZ; }
 
@@ -1447,91 +1447,62 @@
                 themeFrame.style.zIndex = ++topZ;
             }
 
-            const areaX = leftX + leftColW;
-            const areaW = sw - areaX - gap;
-            const areaH = sh - topY - gap;
+            // Collect all movable windows + floating images
+            const frames = [...ws.querySelectorAll('.win-frame')].filter(f => f !== menuEl && f !== themeFrame);
+            const floats = [...ws.querySelectorAll('.img-float')];
+            const all    = [...frames, ...floats];
+            if (!all.length) return;
 
-            // Content-aware target size per window
-            function targetSize(f) {
-                const maxW = Math.floor(areaW * 0.55);
-                const maxH = Math.floor(areaH * 0.6);
-
-                if (f.querySelector('.viewer-wrap')) {
-                    // 3D viewer: always needs decent space
-                    return { w: Math.min(520, maxW), h: Math.min(400, maxH) };
-                }
-
+            // Weight determines relative area: heavier = more space
+            function weight(f) {
+                if (f.classList.contains('img-float')) return 1.5;
+                if (f.querySelector('.viewer-wrap')) return 4;
                 if (f.querySelector('.gallery-body')) {
-                    const thumbs = f.querySelectorAll('.gallery-thumb').length || 1;
-                    const cols = thumbs <= 2 ? 2 : thumbs <= 6 ? 3 : 4;
-                    const rows = Math.ceil(thumbs / cols);
-                    const tw = 140, th = 108; // thumb cell size (4:3)
-                    const w = Math.max(260, Math.min(cols * tw + 4, maxW));
-                    const h = Math.max(180, Math.min(rows * th + 36, maxH));
-                    return { w, h };
+                    const n = f.querySelectorAll('.gallery-thumb').length || 1;
+                    return n <= 2 ? 1.5 : n <= 6 ? 2.5 : 4;
+                }
+                return 1;
+            }
+            const totalW = arr => arr.reduce((s, f) => s + weight(f), 0);
+
+            // Sort heaviest first so large windows anchor the layout
+            all.sort((a, b) => weight(b) - weight(a));
+
+            // BSP: recursively fill rect with windows
+            function bsp(rect, wins) {
+                if (!wins.length) return;
+
+                if (wins.length === 1) {
+                    const f = wins[0];
+                    const w = Math.max(f.classList.contains('img-float') ? 120 : 260, rect.w);
+                    const h = Math.max(f.classList.contains('img-float') ? 80  : 180, rect.h);
+                    Object.assign(f.style, {
+                        left: rect.x + 'px', top: rect.y + 'px',
+                        width: w + 'px', height: h + 'px', zIndex: ++topZ
+                    });
+                    f.dispatchEvent(new CustomEvent('win-resize'));
+                    return;
                 }
 
-                // Info / text / static page — size to content height
-                const body = f.querySelector('.win-body');
-                const naturalH = body
-                    ? Math.min(body.scrollHeight + 26, Math.floor(areaH * 0.5))
-                    : 300;
-                return {
-                    w: Math.min(380, Math.floor(areaW * 0.32)),
-                    h: Math.max(180, naturalH)
-                };
+                // Split: along the longer axis
+                const splitH = rect.w >= rect.h;
+                const half   = Math.ceil(wins.length / 2);
+                const left   = wins.slice(0, half);
+                const right  = wins.slice(half);
+                const ratio  = totalW(left) / totalW(wins);
+
+                if (splitH) {
+                    const cut = Math.round(rect.x + (rect.w - gap) * ratio);
+                    bsp({ x: rect.x,     y: rect.y, w: cut - rect.x,                    h: rect.h }, left);
+                    bsp({ x: cut + gap,  y: rect.y, w: rect.x + rect.w - cut - gap,     h: rect.h }, right);
+                } else {
+                    const cut = Math.round(rect.y + (rect.h - gap) * ratio);
+                    bsp({ x: rect.x, y: rect.y,     w: rect.w, h: cut - rect.y               }, left);
+                    bsp({ x: rect.x, y: cut + gap,  w: rect.w, h: rect.y + rect.h - cut - gap }, right);
+                }
             }
 
-            // Sort: 3D → gallery → info/text
-            function winPriority(f) {
-                if (f.querySelector('.viewer-wrap')) return 0;
-                if (f.querySelector('.gallery-body')) return 1;
-                return 2;
-            }
-            const other = [...ws.querySelectorAll('.win-frame')]
-                .filter(f => f !== menuEl && f !== themeFrame)
-                .sort((a, b) => winPriority(a) - winPriority(b));
-
-            // Shelf layout — variable-size bin packing (row-by-row)
-            let cx = areaX, cy = topY, rowH = 0;
-            let lastRowH = 0;
-
-            other.forEach(f => {
-                const { w, h } = targetSize(f);
-
-                // Start new row if this window does not fit
-                if (cx + w > areaX + areaW && cx > areaX) {
-                    cy += rowH + gap;
-                    cx = areaX;
-                    lastRowH = rowH;
-                    rowH = 0;
-                }
-                // If vertically off-screen, wrap back to top
-                if (cy + h > sh - gap) {
-                    cy = topY; cx = areaX; rowH = 0;
-                }
-
-                f.style.left   = cx + 'px';
-                f.style.top    = cy + 'px';
-                f.style.width  = w + 'px';
-                f.style.height = h + 'px';
-                f.style.zIndex = ++topZ;
-                f.dispatchEvent(new CustomEvent('win-resize'));
-
-                cx   += w + gap;
-                rowH  = Math.max(rowH, h);
-            });
-
-            // Floating image elements — place below main content
-            const imgFloats = [...ws.querySelectorAll('.img-float')];
-            let fx = areaX, fy = cy + rowH + gap;
-            imgFloats.forEach(el => {
-                if (fy + 180 > sh - gap) fy = topY;
-                el.style.left = fx + 'px'; el.style.top = fy + 'px';
-                el.style.zIndex = ++topZ;
-                fx += (parseInt(el.style.width) || 220) + gap;
-                if (fx + 220 > sw - gap) { fx = areaX; fy += 180 + gap; }
-            });
+            bsp({ x: areaX, y: topY, w: sw - areaX - gap, h: sh - topY - gap }, all);
         }
 
         function buildMenuWindow() {
