@@ -1425,6 +1425,88 @@
         // ================================================================
         // MENU WINDOW  (permanent — no close button)
         // ================================================================
+        // ================================================================
+        // ORDER LAYOUT
+        // ================================================================
+        function orderWindows() {
+            const ws = document.getElementById('workspace');
+            const sw = window.innerWidth, sh = window.innerHeight;
+            const gap = 8, leftX = 28, topY = 28;
+
+            // Pin menu to top-left
+            const menuEl = document.getElementById('menu-body-inner')?.closest('.win-frame');
+            if (menuEl) { menuEl.style.left = leftX + 'px'; menuEl.style.top = topY + 'px'; menuEl.style.zIndex = ++topZ; }
+
+            // Pin theme below menu
+            const themeFrame = openWins['theme'];
+            const menuBottom = menuEl ? menuEl.offsetTop + menuEl.offsetHeight : topY;
+            const leftColW = menuEl ? menuEl.offsetWidth + gap : 228 + gap;
+            if (themeFrame) {
+                themeFrame.style.left = leftX + 'px';
+                themeFrame.style.top  = (menuBottom + gap) + 'px';
+                themeFrame.style.zIndex = ++topZ;
+            }
+
+            // Tile all other windows in remaining area
+            const areaX = leftX + leftColW;
+            const areaW = sw - areaX - gap;
+            const areaH = sh - topY - gap;
+
+            const other = [...ws.querySelectorAll('.win-frame')].filter(f => f !== menuEl && f !== themeFrame);
+
+            function winKind(f) {
+                if (f.querySelector('.viewer-wrap')) return 'heavy';
+                if (f.querySelector('.gallery-body')) return 'heavy';
+                return 'light';
+            }
+
+            // Sort heavy (image/3D) before light (info/text)
+            other.sort((a, b) => (winKind(a) === 'heavy' ? 0 : 1) - (winKind(b) === 'heavy' ? 0 : 1));
+
+            // Decide target sizes
+            const count = other.length || 1;
+            const cols  = Math.ceil(Math.sqrt(count * (areaW / areaH)));
+            const cellW = Math.floor((areaW - (cols - 1) * gap) / cols);
+            const heavyH = Math.min(Math.floor(areaH * 0.6), 420);
+            const lightH = Math.min(Math.floor(areaH * 0.35), 300);
+
+            let cx = areaX, cy = topY, rowH = 0, col = 0;
+
+            other.forEach(f => {
+                const heavy = winKind(f) === 'heavy';
+                const w = cellW;
+                const h = heavy ? heavyH : lightH;
+
+                // Wrap to next row if needed
+                if (col >= cols) {
+                    cy += rowH + gap; cx = areaX; col = 0; rowH = 0;
+                }
+                // Clamp vertically
+                if (cy + h > sh - gap) cy = topY;
+
+                f.style.left   = cx + 'px';
+                f.style.top    = cy + 'px';
+                f.style.width  = w + 'px';
+                f.style.height = h + 'px';
+                f.style.zIndex = ++topZ;
+                f.dispatchEvent(new CustomEvent('win-resize'));
+
+                cx  += w + gap;
+                col += 1;
+                rowH = Math.max(rowH, h);
+            });
+
+            // img-float elements: stack neatly below heavy windows
+            const imgFloats = [...ws.querySelectorAll('.img-float')];
+            let fx = areaX, fy = topY + heavyH + gap;
+            imgFloats.forEach(el => {
+                el.style.left = fx + 'px'; el.style.top = fy + 'px';
+                el.style.zIndex = ++topZ;
+                fx += parseInt(el.style.width || 220) + gap;
+                if (fx + 220 > sw - gap) { fx = areaX; fy += 180 + gap; }
+            });
+        }
+
         function buildMenuWindow() {
             const categories = [
                 { id: 'academic',   label: 'Academic' },
@@ -1469,7 +1551,11 @@
                     <div class="proj-row" data-static="cv"><span class="proj-name">CV</span></div>
                     <div class="proj-row" data-static="contact"><span class="proj-name">Contact</span></div>
                     <hr class="menu-rule">
-                    <div class="proj-row" data-action="theme"><span class="proj-name">Theme</span></div>
+                    <div class="proj-row" style="gap:8px;">
+                        <span class="proj-name" data-action="theme" style="cursor:pointer;">Theme</span>
+                        <span style="font-size:0.5rem;opacity:0.25;user-select:none;">&#xb7;</span>
+                        <span class="proj-name" data-action="order" style="cursor:pointer;">Order</span>
+                    </div>
                 </div>
             `;
 
@@ -1527,9 +1613,10 @@
             frame.querySelectorAll('.proj-row[data-static]').forEach(el => {
                 el.addEventListener('click', () => openText(el.dataset.static));
             });
-            frame.querySelectorAll('.proj-row[data-action]').forEach(el => {
+            frame.querySelectorAll('[data-action]').forEach(el => {
                 const action = el.dataset.action;
                 if (action === 'theme') el.addEventListener('click', () => openTheme());
+                if (action === 'order') el.addEventListener('click', () => orderWindows());
             });
         }
         buildMenuWindow();
