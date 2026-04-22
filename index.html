@@ -122,7 +122,7 @@
         body.dragging  { cursor: move !important; user-select: none; }
         body.resizing  { cursor: nwse-resize !important; user-select: none; }
 
-        /* ג"€ג"€ WINDOW FRAME ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ WINDOW FRAME ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .win-frame {
             position: absolute;
             border: 1px solid var(--border-strong);
@@ -187,7 +187,7 @@
             border-bottom: 1px solid rgba(0,0,0,0.2);
         }
 
-        /* ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ INFO WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .info-body {
             padding: 16px 18px;
             display: flex; flex-direction: column; gap: 10px;
@@ -238,7 +238,7 @@
         }
         .action-btn:hover { opacity: 1; background: var(--fg); color: var(--bg); }
 
-        /* ג"€ג"€ GALLERY WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ GALLERY WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .gallery-body { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 
         .gallery-grid {
@@ -366,7 +366,7 @@
             display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
-        /* ג"€ג"€ TEXT WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ TEXT WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .text-body { padding: 20px 22px; overflow-y: auto; }
 
         .text-content {
@@ -376,7 +376,7 @@
             white-space: pre-wrap; word-break: break-word;
         }
 
-        /* ג"€ג"€ 3D VIEWER INTERNALS ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ 3D VIEWER INTERNALS ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .viewer-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
 
         .cv-canvas, .cv-ascii {
@@ -676,7 +676,7 @@
             return frame;
         }
 
-        // ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ג”€ג”€ INFO WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
         function openInfo(project) {
             focusOrCreate(`info-${project.id}`, () => {
                 const frame = makeFrame({ title: project.title, tag: 'Info', w: 360, h: 340, key: `info-${project.id}` });
@@ -714,10 +714,10 @@
             });
         }
 
-        // ג"€ג"€ GALLERY WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ג”€ג”€ GALLERY WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
         function openGallery(project) {
             focusOrCreate(`gallery-${project.id}`, () => {
-                const frame = makeFrame({ title: project.title + ' ג€" Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}` });
+                const frame = makeFrame({ title: project.title + ' ג€” Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}` });
                 const body = frame.querySelector('.win-body');
                 body.className += ' gallery-body';
 
@@ -758,7 +758,7 @@
             });
         }
 
-        // ג"€ג"€ TEXT WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ג”€ג”€ TEXT WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
         // ── IMAGE VIEWER ──────────────────────────────────────────────────────
         function swapImageContent(el, src, label) {
             const img = el.querySelector('img');
@@ -989,7 +989,7 @@
             });
         }
 
-        // ג"€ג"€ 3D VIEWER ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ג”€ג”€ 3D VIEWER ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
         class SimpleOrbit {
             constructor(camera, el) {
                 this.camera = camera; this.el = el;
@@ -1100,7 +1100,7 @@
         const gltfLoader = new GLTFLoader();
         const CHAR_SETS = [
             { name: 'Standard', chars: ' .·:;=+x#%@' },
-            { name: 'Detailed', chars: " .':;~=+*x#X%@$&" },
+            { name: 'Detailed', chars: “ .':;~=+*x#X%@$&” },
             { name: 'Blocky',   chars: ' ░▒▓█' },
             { name: 'Binary',   chars: ' 01' },
             { name: 'Minimal',  chars: ' .:#' },
@@ -1108,7 +1108,7 @@
 
         async function open3D(project) {
             focusOrCreate(`3d-${project.id}`, async () => {
-                const frame = makeFrame({ title: project.title + ' ג€" 3D', tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key: `3d-${project.id}` });
+                const frame = makeFrame({ title: project.title + ' ג€” 3D', tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key: `3d-${project.id}` });
                 const body = frame.querySelector('.win-body');
                 Object.assign(body.style, { padding: '0', overflow: 'hidden', position: 'relative' });
 
