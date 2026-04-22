@@ -117,6 +117,7 @@
         .workspace {
             position: fixed; top: 0;
             left: 0; right: 0; bottom: 0;
+            overflow: auto;
         }
 
         body.dragging  { cursor: move !important; user-select: none; }
@@ -673,20 +674,26 @@
 
             // Drag
             const tb = frame.querySelector('.win-titlebar');
+            if (bodyDrag) frame.classList.add('win-draggable');
             let dragging = false, ox = 0, oy = 0;
-            tb.addEventListener('mousedown', e => {
-                if (e.target === frame.querySelector('.win-close')) return;
+            const dragTarget = bodyDrag ? frame : tb;
+            dragTarget.addEventListener('mousedown', e => {
+                if (e.target.closest('.win-resize-edge, .win-close, button, a, input, select')) return;
                 dragging = true;
-                ox = e.clientX - frame.offsetLeft;
-                oy = e.clientY - frame.offsetTop;
+                ox = e.clientX + ws.scrollLeft - frame.offsetLeft;
+                oy = e.clientY + ws.scrollTop - frame.offsetTop;
+                if (bodyDrag) frame.style.cursor = 'grabbing';
                 document.body.classList.add('dragging'); e.preventDefault();
             });
             document.addEventListener('mousemove', e => {
                 if (!dragging) return;
-                frame.style.left = Math.max(0, Math.min(window.innerWidth - 100, e.clientX - ox)) + 'px';
-                frame.style.top  = Math.max(0, Math.min(window.innerHeight - 40, e.clientY - oy)) + 'px';
+                frame.style.left = Math.max(0, e.clientX + ws.scrollLeft - ox) + 'px';
+                frame.style.top  = Math.max(0, e.clientY + ws.scrollTop - oy) + 'px';
             });
-            document.addEventListener('mouseup', () => { dragging = false; document.body.classList.remove('dragging'); });
+            document.addEventListener('mouseup', () => {
+                if (dragging && bodyDrag) frame.style.cursor = '';
+                dragging = false; document.body.classList.remove('dragging');
+            });
 
             // Resize (8 directions)
             let resizing = false, resizeDir = '', rsx = 0, rsy = 0, rsw = 0, rsh = 0, rsl = 0, rst = 0;
@@ -862,8 +869,8 @@
             el.addEventListener('mousedown', e => {
                 if (e.target.classList.contains('img-float-close') || e.target.classList.contains('img-float-resize')) return;
                 dragging = true;
-                ox = e.clientX - el.offsetLeft;
-                oy = e.clientY - el.offsetTop;
+                ox = e.clientX + ws.scrollLeft - el.offsetLeft;
+                oy = e.clientY + ws.scrollTop - el.offsetTop;
                 document.body.classList.add('dragging'); e.preventDefault();
             });
 
@@ -878,8 +885,8 @@
 
             document.addEventListener('mousemove', e => {
                 if (dragging) {
-                    el.style.left = Math.max(0, e.clientX - ox) + 'px';
-                    el.style.top  = Math.max(0, e.clientY - oy) + 'px';
+                    el.style.left = Math.max(0, e.clientX + ws.scrollLeft - ox) + 'px';
+                    el.style.top  = Math.max(0, e.clientY + ws.scrollTop - oy) + 'px';
                 } else if (resizing) {
                     el.style.width  = Math.max(120, rw + e.clientX - ox) + 'px';
                     el.style.height = Math.max(80,  rh + e.clientY - oy) + 'px';
@@ -1449,14 +1456,6 @@
                 themeFrame.style.zIndex = ++topZ;
             }
 
-            // Collapse menu to titlebar-only for tighter layout
-            if (menuEl && menuEl._toggleCollapse && !menuEl._collapsed()) menuEl._toggleCollapse();
-            // Sync theme width to menu width
-            if (themeFrame && menuEl) themeFrame.style.width = menuEl.offsetWidth + 'px';
-
-            // Collect all movable windows + floating images
-            const frames = [...ws.querySelectorAll('.win-frame')].filter(f => f !== menuEl && f !== themeFrame);
-            const floats = [...ws.querySelectorAll('.img-float')];
             const all    = [...frames, ...floats];
             if (!all.length) return;
 
