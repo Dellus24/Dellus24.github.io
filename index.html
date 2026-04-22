@@ -1440,49 +1440,76 @@
             // Pin theme below menu
             const themeFrame = openWins['theme'];
             const menuBottom = menuEl ? menuEl.offsetTop + menuEl.offsetHeight : topY;
-            const leftColW = menuEl ? menuEl.offsetWidth + gap : 228 + gap;
+            const leftColW   = menuEl ? menuEl.offsetWidth + gap : 228 + gap;
             if (themeFrame) {
                 themeFrame.style.left = leftX + 'px';
                 themeFrame.style.top  = (menuBottom + gap) + 'px';
                 themeFrame.style.zIndex = ++topZ;
             }
 
-            // Tile all other windows in remaining area
             const areaX = leftX + leftColW;
             const areaW = sw - areaX - gap;
             const areaH = sh - topY - gap;
 
-            const other = [...ws.querySelectorAll('.win-frame')].filter(f => f !== menuEl && f !== themeFrame);
+            // Content-aware target size per window
+            function targetSize(f) {
+                const maxW = Math.floor(areaW * 0.55);
+                const maxH = Math.floor(areaH * 0.6);
 
-            function winKind(f) {
-                if (f.querySelector('.viewer-wrap')) return 'heavy';
-                if (f.querySelector('.gallery-body')) return 'heavy';
-                return 'light';
+                if (f.querySelector('.viewer-wrap')) {
+                    // 3D viewer: always needs decent space
+                    return { w: Math.min(520, maxW), h: Math.min(400, maxH) };
+                }
+
+                if (f.querySelector('.gallery-body')) {
+                    const thumbs = f.querySelectorAll('.gallery-thumb').length || 1;
+                    const cols = thumbs <= 2 ? 2 : thumbs <= 6 ? 3 : 4;
+                    const rows = Math.ceil(thumbs / cols);
+                    const tw = 140, th = 108; // thumb cell size (4:3)
+                    const w = Math.max(260, Math.min(cols * tw + 4, maxW));
+                    const h = Math.max(180, Math.min(rows * th + 36, maxH));
+                    return { w, h };
+                }
+
+                // Info / text / static page — size to content height
+                const body = f.querySelector('.win-body');
+                const naturalH = body
+                    ? Math.min(body.scrollHeight + 26, Math.floor(areaH * 0.5))
+                    : 300;
+                return {
+                    w: Math.min(380, Math.floor(areaW * 0.32)),
+                    h: Math.max(180, naturalH)
+                };
             }
 
-            // Sort heavy (image/3D) before light (info/text)
-            other.sort((a, b) => (winKind(a) === 'heavy' ? 0 : 1) - (winKind(b) === 'heavy' ? 0 : 1));
+            // Sort: 3D → gallery → info/text
+            function winPriority(f) {
+                if (f.querySelector('.viewer-wrap')) return 0;
+                if (f.querySelector('.gallery-body')) return 1;
+                return 2;
+            }
+            const other = [...ws.querySelectorAll('.win-frame')]
+                .filter(f => f !== menuEl && f !== themeFrame)
+                .sort((a, b) => winPriority(a) - winPriority(b));
 
-            // Decide target sizes
-            const count = other.length || 1;
-            const cols  = Math.ceil(Math.sqrt(count * (areaW / areaH)));
-            const cellW = Math.floor((areaW - (cols - 1) * gap) / cols);
-            const heavyH = Math.min(Math.floor(areaH * 0.6), 420);
-            const lightH = Math.min(Math.floor(areaH * 0.35), 300);
-
-            let cx = areaX, cy = topY, rowH = 0, col = 0;
+            // Shelf layout — variable-size bin packing (row-by-row)
+            let cx = areaX, cy = topY, rowH = 0;
+            let lastRowH = 0;
 
             other.forEach(f => {
-                const heavy = winKind(f) === 'heavy';
-                const w = cellW;
-                const h = heavy ? heavyH : lightH;
+                const { w, h } = targetSize(f);
 
-                // Wrap to next row if needed
-                if (col >= cols) {
-                    cy += rowH + gap; cx = areaX; col = 0; rowH = 0;
+                // Start new row if this window does not fit
+                if (cx + w > areaX + areaW && cx > areaX) {
+                    cy += rowH + gap;
+                    cx = areaX;
+                    lastRowH = rowH;
+                    rowH = 0;
                 }
-                // Clamp vertically
-                if (cy + h > sh - gap) cy = topY;
+                // If vertically off-screen, wrap back to top
+                if (cy + h > sh - gap) {
+                    cy = topY; cx = areaX; rowH = 0;
+                }
 
                 f.style.left   = cx + 'px';
                 f.style.top    = cy + 'px';
@@ -1491,18 +1518,18 @@
                 f.style.zIndex = ++topZ;
                 f.dispatchEvent(new CustomEvent('win-resize'));
 
-                cx  += w + gap;
-                col += 1;
-                rowH = Math.max(rowH, h);
+                cx   += w + gap;
+                rowH  = Math.max(rowH, h);
             });
 
-            // img-float elements: stack neatly below heavy windows
+            // Floating image elements — place below main content
             const imgFloats = [...ws.querySelectorAll('.img-float')];
-            let fx = areaX, fy = topY + heavyH + gap;
+            let fx = areaX, fy = cy + rowH + gap;
             imgFloats.forEach(el => {
+                if (fy + 180 > sh - gap) fy = topY;
                 el.style.left = fx + 'px'; el.style.top = fy + 'px';
                 el.style.zIndex = ++topZ;
-                fx += parseInt(el.style.width || 220) + gap;
+                fx += (parseInt(el.style.width) || 220) + gap;
                 if (fx + 220 > sw - gap) { fx = areaX; fy += 180 + gap; }
             });
         }
