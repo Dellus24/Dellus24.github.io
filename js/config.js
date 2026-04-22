@@ -34,14 +34,14 @@
 
 const PROJECTS = [
     {
-        id: 'building-test',
-        title: 'Building Test',
+        id: '101 Gates',
+        title: '101 Gates',
         year: '2024',
         category: 'academic',
         location: 'Jerusalem, Israel',
         participants: 'Nir Dellus',
-        type: '3D Modeling Study',
-        description: 'An exploratory 3D modeling study investigating structural and spatial relationships in contemporary architectural design. The project examines how digital tools can extend and challenge traditional architectural thinking.',
+        type: 'Studio 10',
+        description: '101 GATES Design & Research The conservative religious space of the community in Geulim, Jerusalem, is becoming increasingly crowded. An extreme high birth rate, conservative lifestyle, and restrictions are prominent features of the Haredi ultra orthodox community. These characteristics impact the urban environment, transforming it accordingly. Basic daily activities of the family unit inevitably spill out into the street. Playing is among the most prominent activities, with children claiming the sidewalks and asphalt for their games, whether it's with a ball or by climbing. The space changes according to the children's rules at that moment. The project analyzes the religious space today, the 'halacha' definition of space, and in response proposes creating a new religious urban space that meets the needs of a population where children are the majority. 08/24 Guided By Ilit Ainkelman Deborah Pinto Fdeda',
         model: 'assets/models/Building test.glb',
         images: [
             { src: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1200', label: 'Exterior View' },
