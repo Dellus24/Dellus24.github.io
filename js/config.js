@@ -17,7 +17,7 @@
 //     location:     'City, Country',            // required
 //     participants: 'Name, Other Name',         // required
 //     type:         'free-text short label',    // required; e.g. 'Research Thesis'
-//     description:  'long multi-line text',     // required
+//     description:  `long multi-line text`,     // required — use backticks so apostrophes & quotes inside are fine
 //     model:        'assets/models/Foo.glb',    // optional; presence enables 3D View
 //     images: [                                 // optional; presence enables Gallery
 //         { src: 'assets/images/foo.jpg', label: 'Caption' },
@@ -30,18 +30,20 @@
 // • `category` drives which section of the sidebar the project appears in.
 // • External image URLs (e.g. unsplash.com/...) work too.
 // • To TEMPORARILY hide a project, wrap it in /* ... */ — don't delete.
+// • id must be kebab-case with no spaces: '101-gates' not '101 Gates'.
+// • description: use backticks (`...`) not quotes so apostrophes don't break it.
 //
 
 const PROJECTS = [
     {
-        id: '101 Gates',
+        id: '101-gates',
         title: '101 Gates',
         year: '2024',
         category: 'academic',
         location: 'Jerusalem, Israel',
         participants: 'Nir Dellus',
         type: 'Studio 10',
-        description: '101 GATES Design & Research The conservative religious space of the community in Geulim, Jerusalem, is becoming increasingly crowded. An extreme high birth rate, conservative lifestyle, and restrictions are prominent features of the Haredi ultra orthodox community. These characteristics impact the urban environment, transforming it accordingly. Basic daily activities of the family unit inevitably spill out into the street. Playing is among the most prominent activities, with children claiming the sidewalks and asphalt for their games, whether it's with a ball or by climbing. The space changes according to the children's rules at that moment. The project analyzes the religious space today, the 'halacha' definition of space, and in response proposes creating a new religious urban space that meets the needs of a population where children are the majority. 08/24 Guided By Ilit Ainkelman Deborah Pinto Fdeda',
+        description: `101 GATES Design & Research The conservative religious space of the community in Geulim, Jerusalem, is becoming increasingly crowded. An extreme high birth rate, conservative lifestyle, and restrictions are prominent features of the Haredi ultra orthodox community. These characteristics impact the urban environment, transforming it accordingly. Basic daily activities of the family unit inevitably spill out into the street. Playing is among the most prominent activities, with children claiming the sidewalks and asphalt for their games, whether it's with a ball or by climbing. The space changes according to the children's rules at that moment. The project analyzes the religious space today, the 'halacha' definition of space, and in response proposes creating a new religious urban space that meets the needs of a population where children are the majority. 08/24 Guided By Ilit Ainkelman Deborah Pinto Fdeda`,
         model: 'assets/models/Building test.glb',
         images: [
             { src: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1200', label: 'Exterior View' },
