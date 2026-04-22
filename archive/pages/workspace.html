@@ -4,44 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dellus</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Trispace:wdth,wght@75..125,300..800&family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg:            #f5fccc;
-            --fg:            #000;
-            --border-strong: #000;
-            --border-soft:   rgba(0, 0, 0, 0.15);
-            --font-family:   'Courier New', Courier, monospace;
-            --font-var:      normal;
-            --font-scale:    1;
-        }
-
-        @font-face {
-            font-family: 'JunicodeVF';
-            src: url('assets/fonts/Junicode/JunicodeVF-Roman.woff2') format('woff2');
-            font-weight: 100 900;
-            font-style: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'JunicodeVF';
-            src: url('assets/fonts/Junicode/JunicodeVF-Italic.woff2') format('woff2');
-            font-weight: 100 900;
-            font-style: italic;
-            font-display: swap;
-        }
-
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        html { font-size: calc(var(--font-scale) * 16px); }
 
         html, body {
             height: 100%; width: 100%; overflow: hidden;
-            background: var(--bg); color: var(--fg);
-            font-family: var(--font-family);
-            font-variation-settings: var(--font-var);
+            background: #f5fccc; color: #000;
+            font-family: 'Courier New', Courier, monospace;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -122,11 +91,11 @@
         body.dragging  { cursor: move !important; user-select: none; }
         body.resizing  { cursor: nwse-resize !important; user-select: none; }
 
-        /* ג"€ג"€ WINDOW FRAME ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ WINDOW FRAME ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .win-frame {
             position: absolute;
-            border: 1px solid var(--border-strong);
-            background: var(--bg);
+            border: 1px solid #000;
+            background: #f5fccc;
             display: flex; flex-direction: column;
             min-width: 260px; min-height: 180px;
         }
@@ -145,7 +114,7 @@
 
         .win-titlebar {
             height: 24px; min-height: 24px;
-            border-bottom: 1px solid var(--border-strong);
+            border-bottom: 1px solid #000;
             display: flex; align-items: center;
             padding: 0 8px; cursor: move;
             user-select: none; gap: 8px; flex-shrink: 0;
@@ -187,7 +156,7 @@
             border-bottom: 1px solid rgba(0,0,0,0.2);
         }
 
-        /* ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ INFO WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .info-body {
             padding: 16px 18px;
             display: flex; flex-direction: column; gap: 10px;
@@ -229,16 +198,16 @@
         }
 
         .action-btn {
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.5rem; letter-spacing: 0.1em;
             text-transform: uppercase; background: none;
             border: 1px solid rgba(0,0,0,0.25); cursor: pointer;
-            padding: 4px 10px; color: var(--fg); opacity: 0.5;
+            padding: 4px 10px; color: #000; opacity: 0.5;
             transition: opacity 0.15s, background 0.15s, color 0.15s;
         }
-        .action-btn:hover { opacity: 1; background: var(--fg); color: var(--bg); }
+        .action-btn:hover { opacity: 1; background: #000; color: #f5fccc; }
 
-        /* ג"€ג"€ GALLERY WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ GALLERY WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .gallery-body { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 
         .gallery-grid {
@@ -271,18 +240,18 @@
         }
         .gallery-present img {
             flex: 1; width: 100%; object-fit: contain;
-            display: block; background: var(--bg); min-height: 0;
+            display: block; background: #f5fccc; min-height: 0;
         }
         .present-bar {
             display: flex; align-items: center; gap: 8px;
-            padding: 6px 10px; border-top: 1px solid var(--border-strong);
+            padding: 6px 10px; border-top: 1px solid #000;
             flex-shrink: 0;
         }
         .present-nav, .present-back {
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.5rem; letter-spacing: 0.1em;
             background: none; border: none; cursor: pointer;
-            opacity: 0.4; transition: opacity 0.15s; color: var(--fg);
+            opacity: 0.4; transition: opacity 0.15s; color: #000;
             padding: 2px 4px;
         }
         .present-nav:hover, .present-back:hover { opacity: 1; }
@@ -291,92 +260,17 @@
             text-transform: uppercase; opacity: 0.4; text-align: center;
         }
 
-        /* -- THEME WINDOW -- */
-        .theme-body {
-            padding: 18px 20px; display: flex; flex-direction: column; gap: 18px;
-        }
-        .theme-row { display: flex; flex-direction: column; gap: 8px; }
-        .theme-row-label {
-            font-size: 0.45rem; letter-spacing: 0.14em;
-            text-transform: uppercase; opacity: 0.4; user-select: none;
-        }
-        .theme-font-line { display: flex; align-items: center; gap: 10px; }
-        .theme-font-label {
-            font-size: 0.55rem; opacity: 0.5;
-            user-select: none; line-height: 1;
-        }
-        .theme-font-label.lg { font-size: 0.85rem; }
-        .theme-slider {
-            -webkit-appearance: none; appearance: none;
-            flex: 1; height: 1px; background: var(--fg);
-            opacity: 0.3; outline: none; cursor: pointer;
-        }
-        .theme-slider::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none;
-            width: 9px; height: 9px; border-radius: 50%;
-            background: var(--fg); cursor: pointer;
-            transition: transform 0.15s;
-        }
-        .theme-slider::-webkit-slider-thumb:hover { transform: scale(1.35); }
-        .theme-slider::-moz-range-thumb {
-            width: 9px; height: 9px; border-radius: 50%;
-            background: var(--fg); cursor: pointer; border: none;
-        }
-        .theme-swatches {
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        }
-        .theme-swatch {
-            width: 16px; height: 16px; border-radius: 50%;
-            border: 1px solid var(--border-strong);
-            cursor: pointer; padding: 0; flex-shrink: 0;
-            transition: transform 0.15s, box-shadow 0.15s;
-            position: relative; font-family: var(--font-family);
-            font-size: 0.55rem; color: var(--fg);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .theme-swatch:hover { transform: scale(1.2); }
-        .theme-swatch.active {
-            box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--fg);
-            transform: scale(1.1);
-        }
-        .theme-swatch-custom {
-            background: transparent; border-style: dashed; opacity: 0.5;
-        }
-        .theme-swatch-custom:hover { opacity: 1; }
-        .theme-color-input {
-            position: absolute; width: 0; height: 0;
-            opacity: 0; pointer-events: none;
-        }
-        .theme-font-btns {
-            display: flex; gap: 6px; flex-wrap: wrap;
-        }
-        .theme-font-btn {
-            font-size: 0.42rem; letter-spacing: 0.08em;
-            text-transform: uppercase; background: none;
-            border: 1px solid rgba(0,0,0,0.2); cursor: pointer;
-            padding: 3px 8px; color: var(--fg); opacity: 0.4;
-            transition: opacity 0.15s, border-color 0.15s, font-weight 0.15s;
-        }
-        .theme-font-btn:hover { opacity: 0.7; }
-        .theme-font-btn.active { opacity: 1; border-color: var(--fg); font-weight: bold; }
-        .theme-fg-line {
-            display: flex; align-items: center; gap: 10px;
-        }
-        .theme-fg-swatches {
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        }
-
-        /* ג"€ג"€ TEXT WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ TEXT WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .text-body { padding: 20px 22px; overflow-y: auto; }
 
         .text-content {
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.65rem; letter-spacing: 0.04em;
             line-height: 1.8; opacity: 0.75;
             white-space: pre-wrap; word-break: break-word;
         }
 
-        /* ג"€ג"€ 3D VIEWER INTERNALS ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* ג”€ג”€ 3D VIEWER INTERNALS ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ */
         .viewer-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
 
         .cv-canvas, .cv-ascii {
@@ -388,9 +282,9 @@
         .focus-btn {
             position: absolute; top: 10px; left: 50%;
             transform: translateX(-50%);
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.55rem; letter-spacing: 0.1em;
-            background: none; border: none; cursor: pointer; color: var(--fg);
+            background: none; border: none; cursor: pointer; color: #000;
             opacity: 0; pointer-events: none;
             transition: opacity 0.3s; z-index: 15;
             display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -402,7 +296,7 @@
 
         .win-settings {
             position: absolute; bottom: 28px; left: 0; right: 0;
-            background: var(--bg); border-top: 1px solid var(--border-strong); z-index: 20;
+            background: #f5fccc; border-top: 1px solid #000; z-index: 20;
             overflow: hidden; max-height: 0; opacity: 0;
             pointer-events: none;
             transition: max-height 0.3s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.25s;
@@ -421,39 +315,39 @@
 
         .ctrl-slider {
             -webkit-appearance: none; appearance: none;
-            width: 90px; height: 1px; background: var(--fg);
+            width: 90px; height: 1px; background: #000;
             opacity: 0.3; outline: none; cursor: pointer;
         }
         .ctrl-slider::-webkit-slider-thumb {
             -webkit-appearance: none; width: 8px; height: 8px;
-            background: var(--fg); border-radius: 50%; cursor: pointer;
+            background: #000; border-radius: 50%; cursor: pointer;
         }
         .ctrl-slider::-moz-range-thumb {
-            width: 8px; height: 8px; background: var(--fg);
+            width: 8px; height: 8px; background: #000;
             border-radius: 50%; cursor: pointer; border: none;
         }
 
         .ctrl-toggle {
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.42rem; letter-spacing: 0.1em; text-transform: uppercase;
             background: none; border: 1px solid rgba(0,0,0,0.2); cursor: pointer;
-            padding: 2px 7px; color: var(--fg); opacity: 0.4;
+            padding: 2px 7px; color: #000; opacity: 0.4;
             transition: opacity 0.2s, background 0.2s, color 0.2s;
         }
         .ctrl-toggle:hover { opacity: 0.65; }
-        .ctrl-toggle.on { opacity: 1; background: var(--fg); color: var(--bg); }
+        .ctrl-toggle.on { opacity: 1; background: #000; color: #f5fccc; }
 
         .charset-group { display: flex; gap: 5px; flex-wrap: wrap; }
 
         .charset-option {
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.42rem; letter-spacing: 0.08em; text-transform: uppercase;
             background: none; border: 1px solid rgba(0,0,0,0.12); cursor: pointer;
-            padding: 2px 6px; color: var(--fg); opacity: 0.3;
+            padding: 2px 6px; color: #000; opacity: 0.3;
             transition: opacity 0.2s, border-color 0.2s;
         }
         .charset-option:hover { opacity: 0.55; }
-        .charset-option.active { opacity: 1; border-color: var(--fg); font-weight: bold; }
+        .charset-option.active { opacity: 1; border-color: #000; font-weight: bold; }
 
         .win-bottom-hover {
             position: absolute; bottom: 0; left: 0; right: 0;
@@ -462,9 +356,9 @@
 
         .win-bottom-bar {
             position: absolute; bottom: 0; left: 0; right: 0;
-            height: 28px; border-top: 1px solid var(--border-strong);
+            height: 28px; border-top: 1px solid #000;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 10px; background: var(--bg); z-index: 21;
+            padding: 0 10px; background: #f5fccc; z-index: 21;
             opacity: 0; transform: translateY(4px); pointer-events: none;
             transition: opacity 0.25s, transform 0.25s;
         }
@@ -473,20 +367,20 @@
         .wbb-left { display: flex; align-items: center; gap: 2px; }
 
         .mode-btn {
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
             background: none; border: none; cursor: pointer;
-            padding: 3px 4px; color: var(--fg); opacity: 0.3;
+            padding: 3px 4px; color: #000; opacity: 0.3;
             transition: opacity 0.2s, font-weight 0.15s; white-space: nowrap;
         }
         .mode-btn:hover { opacity: 0.55; }
         .mode-btn.active { opacity: 1; font-weight: bold; }
 
         .settings-toggle-btn {
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
             background: none; border: none; cursor: pointer;
-            padding: 3px 4px; color: var(--fg); opacity: 0.3;
+            padding: 3px 4px; color: #000; opacity: 0.3;
             transition: opacity 0.2s; white-space: nowrap;
             display: flex; align-items: center; gap: 4px;
         }
@@ -503,7 +397,7 @@
         .speed-inline:hover { opacity: 0.8; }
         .speed-inline .ctrl-slider { width: 55px; }
         .speed-inline-label {
-            font-family: var(--font-family);
+            font-family: 'Courier New', Courier, monospace;
             font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
         }
 
@@ -515,30 +409,18 @@
         }
         .img-float-chrome {
             position: absolute; inset: 0;
-            border: 1px solid var(--border-strong);
+            border: 1px solid #000;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.18s ease;
         }
         .img-float:hover .img-float-chrome { opacity: 1; }
-        .img-float-resize {
-            position: absolute; bottom: 0; right: 0;
-            width: 16px; height: 16px;
-            cursor: nwse-resize; z-index: 10;
-        }
-        .img-float-resize::before {
-            content: ''; position: absolute;
-            bottom: 3px; right: 3px;
-            width: 7px; height: 7px;
-            border-right: 1px solid rgba(0,0,0,0.2);
-            border-bottom: 1px solid rgba(0,0,0,0.2);
-        }
 
         .img-float-bar {
             position: absolute; top: 0; left: 0; right: 0;
             height: 24px;
-            border-bottom: 1px solid var(--border-strong);
-            background: var(--bg);
+            border-bottom: 1px solid #000;
+            background: #f5fccc;
             display: flex; align-items: center;
             padding: 0 8px; gap: 8px;
             pointer-events: none;
@@ -572,7 +454,7 @@
 
     <div class="workspace" id="workspace"></div>
 
-    <script src="js/config.js"></script>
+    <script src="../js/config.js"></script>
     <script type="importmap">
     {
         "imports": {
@@ -676,7 +558,7 @@
             return frame;
         }
 
-        // ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ג”€ג”€ INFO WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
         function openInfo(project) {
             focusOrCreate(`info-${project.id}`, () => {
                 const frame = makeFrame({ title: project.title, tag: 'Info', w: 360, h: 340, key: `info-${project.id}` });
@@ -714,15 +596,12 @@
             });
         }
 
-        // ג"€ג"€ GALLERY WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ג”€ג”€ GALLERY WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
         function openGallery(project) {
             focusOrCreate(`gallery-${project.id}`, () => {
-                const frame = makeFrame({ title: project.title + ' ג€" Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}` });
+                const frame = makeFrame({ title: project.title + ' ג€” Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}` });
                 const body = frame.querySelector('.win-body');
                 body.className += ' gallery-body';
-
-                const primaryKey = `img-primary-${project.id}`;
-                let secondaryCount = 0;
 
                 function showGrid() {
                     body.innerHTML = `
@@ -739,17 +618,7 @@
                         const i = parseInt(el.dataset.i);
                         el.addEventListener('click', () => {
                             const img = project.images[i];
-                            const existing = openWins[primaryKey];
-                            if (existing && existing.isConnected) {
-                                swapImageContent(existing, img.src, img.label);
-                            } else {
-                                openImage({ src: img.src, label: img.label, key: primaryKey });
-                            }
-                        });
-                        el.addEventListener('contextmenu', e => {
-                            e.preventDefault();
-                            const img = project.images[i];
-                            openImage({ src: img.src, label: img.label, key: `img-sec-${project.id}-${++secondaryCount}` });
+                            openImage({ src: img.src, label: img.label, key: `img-${project.id}-${i}` });
                         });
                     });
                 }
@@ -758,16 +627,8 @@
             });
         }
 
-        // ג"€ג"€ TEXT WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ג”€ג”€ TEXT WINDOW ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
         // ── IMAGE VIEWER ──────────────────────────────────────────────────────
-        function swapImageContent(el, src, label) {
-            const img = el.querySelector('img');
-            const title = el.querySelector('.img-float-title');
-            img.src = src; img.alt = label;
-            title.textContent = label;
-            el.style.zIndex = ++topZ;
-        }
-
         function openImage({ src, label = '', key }) {
             const ws = document.getElementById('workspace');
             const { x, y } = nextSpawn();
@@ -784,7 +645,6 @@
                     <span class="img-float-close">×</span>
                 </div>
                 <div class="img-float-chrome"></div>
-                <div class="img-float-resize"></div>
             `;
 
             ws.appendChild(el);
@@ -808,36 +668,21 @@
             });
 
             // Drag
-            let dragging = false, resizing = false, ox = 0, oy = 0, rw = 0, rh = 0;
+            let dragging = false, ox = 0, oy = 0;
             el.addEventListener('mousedown', e => {
-                if (e.target.classList.contains('img-float-close') || e.target.classList.contains('img-float-resize')) return;
+                if (e.target.classList.contains('img-float-close')) return;
                 dragging = true;
                 ox = e.clientX - el.offsetLeft;
                 oy = e.clientY - el.offsetTop;
                 document.body.classList.add('dragging'); e.preventDefault();
             });
-
-            // Resize
-            el.querySelector('.img-float-resize').addEventListener('mousedown', e => {
-                e.stopPropagation();
-                resizing = true;
-                ox = e.clientX; oy = e.clientY;
-                rw = el.offsetWidth; rh = el.offsetHeight;
-                document.body.classList.add('resizing'); e.preventDefault();
-            });
-
             document.addEventListener('mousemove', e => {
-                if (dragging) {
-                    el.style.left = Math.max(0, e.clientX - ox) + 'px';
-                    el.style.top  = Math.max(0, e.clientY - oy) + 'px';
-                } else if (resizing) {
-                    el.style.width  = Math.max(120, rw + e.clientX - ox) + 'px';
-                    el.style.height = Math.max(80,  rh + e.clientY - oy) + 'px';
-                }
+                if (!dragging) return;
+                el.style.left = Math.max(0, e.clientX - ox) + 'px';
+                el.style.top  = Math.max(0, e.clientY - oy) + 'px';
             });
             document.addEventListener('mouseup', () => {
-                if (dragging)  { dragging  = false; document.body.classList.remove('dragging'); }
-                if (resizing)  { resizing  = false; document.body.classList.remove('resizing'); }
+                if (dragging) { dragging = false; document.body.classList.remove('dragging'); }
             });
         }
 
@@ -853,143 +698,7 @@
             });
         }
 
-        // ── THEME WINDOW ───────────────────────────────────────────────────────
-        const THEMES = [
-            { id: 'paper',    bg: '#f5fccc', fg: '#000' },
-            { id: 'cream',    bg: '#f0ede5', fg: '#000' },
-            { id: 'slate',    bg: '#e8ecf0', fg: '#000' },
-            { id: 'rose',     bg: '#f0e4e4', fg: '#000' },
-            { id: 'mint',     bg: '#e4f0e6', fg: '#000' },
-            { id: 'warm',     bg: '#f5f0e8', fg: '#000' },
-            { id: 'night',    bg: '#141414', fg: '#fff' },
-            { id: 'carbon',   bg: '#1a1f2e', fg: '#fff' },
-            { id: 'forest',   bg: '#0e1a14', fg: '#fff' },
-            { id: 'bordeaux', bg: '#1a0e10', fg: '#fff' },
-            { id: 'ocean',    bg: '#0d1520', fg: '#fff' },
-            { id: 'dusk',     bg: '#1c1826', fg: '#fff' },
-        ];
-
-        const FONTS = [
-            { id: 'courier',   label: 'Courier',   family: "'Courier New', Courier, monospace", varSet: 'normal' },
-            { id: 'trispace',  label: 'Trispace',  family: "'Trispace', monospace",             varSet: 'normal' },
-            { id: 'recursive', label: 'Recursive', family: "'Recursive', monospace",            varSet: "'MONO' 1, 'CASL' 0" },
-            { id: 'junicode',  label: 'Junicode',  family: "'JunicodeVF', serif",               varSet: 'normal' },
-        ];
-
-        function applyFontScale(v) {
-            document.documentElement.style.setProperty('--font-scale', v);
-            localStorage.setItem('dellus-font-scale', v);
-        }
-        function applyFg(hex) {
-            document.documentElement.style.setProperty('--fg', hex);
-            document.documentElement.style.setProperty('--border-strong', hex);
-            localStorage.setItem('dellus-fg', hex);
-        }
-        function applyFont(fontId) {
-            const f = FONTS.find(x => x.id === fontId);
-            if (!f) return;
-            document.documentElement.style.setProperty('--font-family', f.family);
-            document.documentElement.style.setProperty('--font-var', f.varSet);
-            localStorage.setItem('dellus-font-id', fontId);
-            document.querySelectorAll('.theme-font-btn[data-font-id]').forEach(b => {
-                b.classList.toggle('active', b.dataset.fontId === fontId);
-            });
-        }
-        function applyBg(hex, id) {
-            document.documentElement.style.setProperty('--bg', hex);
-            localStorage.setItem('dellus-bg', hex);
-            localStorage.setItem('dellus-bg-id', id || '__custom__');
-            document.querySelectorAll('.theme-swatch[data-id]').forEach(s => {
-                s.classList.toggle('active', s.dataset.id === (id || '__custom__'));
-            });
-            const theme = THEMES.find(t => t.id === id);
-            if (theme) applyFg(theme.fg);
-        }
-
-        function openTheme() {
-            focusOrCreate('theme', () => {
-                const frame = makeFrame({ title: 'Theme', tag: 'Settings', w: 300, h: 380, minW: 260, minH: 300, key: 'theme' });
-                const body = frame.querySelector('.win-body');
-                body.className += ' theme-body';
-
-                const savedScale  = parseFloat(localStorage.getItem('dellus-font-scale')) || 1;
-                const savedBgId   = localStorage.getItem('dellus-bg-id') || 'paper';
-                const savedFontId = localStorage.getItem('dellus-font-id') || 'courier';
-                const savedFg     = localStorage.getItem('dellus-fg') || '#000';
-                const savedBg     = localStorage.getItem('dellus-bg') || '#f5fccc';
-
-                const lightThemes = THEMES.filter(t => t.fg === '#000');
-                const darkThemes  = THEMES.filter(t => t.fg === '#fff');
-
-                body.innerHTML = `
-                    <div class="theme-row">
-                        <div class="theme-row-label">Font size</div>
-                        <div class="theme-font-line">
-                            <span class="theme-font-label">Aa</span>
-                            <input type="range" class="theme-slider" min="0.75" max="1.5" step="0.05" value="${savedScale}" aria-label="Font size">
-                            <span class="theme-font-label lg">Aa</span>
-                        </div>
-                    </div>
-                    <div class="theme-row">
-                        <div class="theme-row-label">Font style</div>
-                        <div class="theme-font-btns">
-                            ${FONTS.map(f => `<button class="theme-font-btn${f.id === savedFontId ? ' active' : ''}" data-font-id="${f.id}" style="font-family:${f.family}">${f.label}</button>`).join('')}
-                        </div>
-                    </div>
-                    <div class="theme-row">
-                        <div class="theme-row-label">Canvas — light</div>
-                        <div class="theme-swatches">
-                            ${lightThemes.map(t => `<button class="theme-swatch${t.id === savedBgId ? ' active' : ''}" data-id="${t.id}" data-bg="${t.bg}" data-fg="${t.fg}" style="background:${t.bg};border-color:#999" title="${t.id}" aria-label="${t.id} theme"></button>`).join('')}
-                        </div>
-                    </div>
-                    <div class="theme-row">
-                        <div class="theme-row-label">Canvas — dark</div>
-                        <div class="theme-swatches">
-                            ${darkThemes.map(t => `<button class="theme-swatch${t.id === savedBgId ? ' active' : ''}" data-id="${t.id}" data-bg="${t.bg}" data-fg="${t.fg}" style="background:${t.bg}" title="${t.id}" aria-label="${t.id} theme"></button>`).join('')}
-                            <label class="theme-swatch theme-swatch-custom${savedBgId === '__custom__' ? ' active' : ''}" data-id="__custom__" title="Custom canvas color" aria-label="Custom color">+<input type="color" class="theme-color-input theme-bg-input" value="${savedBg}"></label>
-                        </div>
-                    </div>
-                    <div class="theme-row">
-                        <div class="theme-row-label">Ink color</div>
-                        <div class="theme-fg-line">
-                            <div class="theme-fg-swatches">
-                                <button class="theme-swatch${savedFg === '#000' ? ' active' : ''}" data-fg-pick="#000" style="background:#000" title="Black" aria-label="Black ink"></button>
-                                <button class="theme-swatch${savedFg === '#fff' ? ' active' : ''}" data-fg-pick="#fff" style="background:#fff;border-color:#999" title="White" aria-label="White ink"></button>
-                                <button class="theme-swatch${savedFg === '#333' ? ' active' : ''}" data-fg-pick="#333" style="background:#333" title="Dark grey" aria-label="Dark grey ink"></button>
-                                <button class="theme-swatch${savedFg === '#ccc' ? ' active' : ''}" data-fg-pick="#ccc" style="background:#ccc;border-color:#999" title="Light grey" aria-label="Light grey ink"></button>
-                                <label class="theme-swatch theme-swatch-custom" title="Custom ink color" aria-label="Custom ink color">+<input type="color" class="theme-color-input theme-fg-input" value="${savedFg}"></label>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                body.querySelector('.theme-slider').addEventListener('input', e => applyFontScale(parseFloat(e.target.value)));
-
-                body.querySelectorAll('.theme-font-btn[data-font-id]').forEach(btn => {
-                    btn.addEventListener('click', () => applyFont(btn.dataset.fontId));
-                });
-
-                body.querySelectorAll('.theme-swatch[data-bg]').forEach(btn => {
-                    btn.addEventListener('click', () => applyBg(btn.dataset.bg, btn.dataset.id));
-                });
-                body.querySelector('.theme-bg-input').addEventListener('input', e => {
-                    applyBg(e.target.value, '__custom__');
-                });
-
-                body.querySelectorAll('.theme-swatch[data-fg-pick]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        applyFg(btn.dataset.fgPick);
-                        body.querySelectorAll('.theme-swatch[data-fg-pick]').forEach(b => b.classList.toggle('active', b.dataset.fgPick === btn.dataset.fgPick));
-                    });
-                });
-                body.querySelector('.theme-fg-input').addEventListener('input', e => {
-                    applyFg(e.target.value);
-                    body.querySelectorAll('.theme-swatch[data-fg-pick]').forEach(b => b.classList.remove('active'));
-                });
-            });
-        }
-
-        // ג"€ג"€ 3D VIEWER ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ג”€ג”€ 3D VIEWER ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€ג”€
         class SimpleOrbit {
             constructor(camera, el) {
                 this.camera = camera; this.el = el;
@@ -1099,22 +808,20 @@
 
         const gltfLoader = new GLTFLoader();
         const CHAR_SETS = [
-            { name: 'Standard', chars: ' .·:;=+x#%@' },
+            { name: 'Standard', chars: ' .ֲ·:;=+x#%@' },
             { name: 'Detailed', chars: " .':;~=+*x#X%@$&" },
-            { name: 'Blocky',   chars: ' ░▒▓█' },
+            { name: 'Blocky',   chars: ' ג–‘ג–’ג–“ג–ˆ' },
             { name: 'Binary',   chars: ' 01' },
             { name: 'Minimal',  chars: ' .:#' },
         ];
 
         async function open3D(project) {
             focusOrCreate(`3d-${project.id}`, async () => {
-                const frame = makeFrame({ title: project.title + ' ג€" 3D', tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key: `3d-${project.id}` });
+                const frame = makeFrame({ title: project.title + ' ג€” 3D', tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key: `3d-${project.id}` });
                 const body = frame.querySelector('.win-body');
                 Object.assign(body.style, { padding: '0', overflow: 'hidden', position: 'relative' });
 
-                const bgHex = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f5fccc';
-                const fgHex = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim() || '#000';
-                const BG = parseInt(bgHex.replace('#', ''), 16);
+                const BG = 0xf5fccc;
                 body.innerHTML = `
                     <div class="cv-canvas"></div>
                     <div class="cv-ascii"></div>
@@ -1146,7 +853,7 @@
                             <button class="mode-btn" data-mode="solid">Solid</button>
                             <div class="speed-inline"><span class="speed-inline-label">Speed</span><input type="range" class="ctrl-slider speed-slider" min="0" max="0.015" step="0.001" value="0.003"></div>
                         </div>
-                        <button class="settings-toggle-btn">Settings <span class="settings-arrow">&#9652;</span></button>
+                        <button class="settings-toggle-btn">Settings <span class="settings-arrow">ג–´</span></button>
                     </div>
                 `;
 
@@ -1173,7 +880,7 @@
                 const fl = new THREE.DirectionalLight(0xffffff, 0.3); fl.position.set(-3, 2, -3); scene.add(fl);
 
                 renderer.setSize(vw, vh);
-                const ascii = new AsciiEffect(renderer, ' .·:;=+x#%@', { invert: true, resolution: 0.4, color: fgHex, bg: bgHex });
+                const ascii = new AsciiEffect(renderer, ' .ֲ·:;=+x#%@', { invert: true, resolution: 0.4, color: '#000', bg: '#f5fccc' });
                 ascii.setSize(vw, vh);
                 asciiCont.appendChild(ascii.domElement);
 
@@ -1215,7 +922,7 @@
                             em.visible = false; group.add(em); edgeMeshes.push(em);
 
                             const fm = new THREE.Mesh(child.geometry, new THREE.MeshBasicMaterial({
-                                color: BG, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.FrontSide
+                                color: 0xf5fccc, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.FrontSide
                             }));
                             fm.position.copy(child.position); fm.rotation.copy(child.rotation); fm.scale.copy(child.scale);
                             fm.visible = false; group.add(fm); wireFillMeshes.push(fm);
@@ -1402,8 +1109,6 @@
                     <div class="proj-row" data-static="about"><span class="proj-name">About</span></div>
                     <div class="proj-row" data-static="cv"><span class="proj-name">CV</span></div>
                     <div class="proj-row" data-static="contact"><span class="proj-name">Contact</span></div>
-                    <hr class="menu-rule">
-                    <div class="proj-row" data-action="theme"><span class="proj-name">Theme</span></div>
                 </div>
             `;
 
@@ -1461,31 +1166,8 @@
             frame.querySelectorAll('.proj-row[data-static]').forEach(el => {
                 el.addEventListener('click', () => openText(el.dataset.static));
             });
-            frame.querySelectorAll('.proj-row[data-action]').forEach(el => {
-                const action = el.dataset.action;
-                if (action === 'theme') el.addEventListener('click', () => openTheme());
-            });
         }
         buildMenuWindow();
-
-        // Restore saved theme preferences on load
-        const savedScale = parseFloat(localStorage.getItem('dellus-font-scale'));
-        if (!isNaN(savedScale)) document.documentElement.style.setProperty('--font-scale', savedScale);
-        const savedBg = localStorage.getItem('dellus-bg');
-        if (savedBg) document.documentElement.style.setProperty('--bg', savedBg);
-        const savedFg = localStorage.getItem('dellus-fg');
-        if (savedFg) {
-            document.documentElement.style.setProperty('--fg', savedFg);
-            document.documentElement.style.setProperty('--border-strong', savedFg);
-        }
-        const savedFontId = localStorage.getItem('dellus-font-id');
-        if (savedFontId) {
-            const savedFont = FONTS.find(f => f.id === savedFontId);
-            if (savedFont) {
-                document.documentElement.style.setProperty('--font-family', savedFont.family);
-                document.documentElement.style.setProperty('--font-var', savedFont.varSet);
-            }
-        }
 
     </script>
 </body>

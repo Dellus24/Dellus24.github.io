@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CV — Dellus</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/menu.css">
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -19,8 +21,8 @@
         }
 
         body {
-            background: #f5fccc;
-            color: #000000;
+            background: var(--bg, #f5fccc);
+            color: var(--fg, #000000);
             font-family: 'Courier New', Courier, monospace;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -36,7 +38,7 @@
         .page {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: calc(100vh - var(--menu-h, 36px));
             width: 100%;
             position: relative;
         }
@@ -637,6 +639,7 @@
     }
 
     </script>
+    <script src="../js/menu.js"></script>
 </body>
 </html>
 

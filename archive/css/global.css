@@ -1,8 +1,20 @@
+/* === CSS CUSTOM PROPERTIES === */
+:root {
+    --bg: #f5fccc;
+    --fg: #000000;
+    --font-scale: 1;
+    --menu-h: 36px;
+}
+
 /* === RESET & BASE === */
 *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+html {
+    font-size: calc(var(--font-scale) * 16px);
 }
 
 html, body {
@@ -12,8 +24,8 @@ html, body {
 }
 
 body {
-    background: #f5fccc;
-    color: #000000;
+    background: var(--bg, #f5fccc);
+    color: var(--fg, #000000);
     font-family: 'Courier New', Courier, monospace;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

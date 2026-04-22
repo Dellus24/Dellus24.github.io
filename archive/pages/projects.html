@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Projects — Dellus</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/menu.css">
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -19,8 +21,8 @@
         }
 
         body {
-            background: #f5fccc;
-            color: #000000;
+            background: var(--bg, #f5fccc);
+            color: var(--fg, #000000);
             font-family: 'Courier New', Courier, monospace;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -35,7 +37,7 @@
         /* === PAGE LAYOUT === */
         .page {
             display: flex;
-            height: 100vh;
+            height: calc(100vh - var(--menu-h, 36px));
             width: 100%;
             position: relative;
         }
@@ -45,7 +47,7 @@
             width: 38%;
             min-width: 14px;
             max-width: 70%;
-            height: 100vh;
+            height: calc(100vh - var(--menu-h, 36px));
             display: flex;
             flex-direction: column;
             position: relative;
@@ -319,7 +321,7 @@
         /* === DIVIDER === */
         .divider {
             width: 1px;
-            height: 100vh;
+            height: calc(100vh - var(--menu-h, 36px));
             background: #000;
             position: relative;
             cursor: col-resize;
@@ -366,7 +368,7 @@
         /* === RIGHT PANEL === */
         .right-panel {
             flex: 1;
-            height: 100vh;
+            height: calc(100vh - var(--menu-h, 36px));
             overflow-y: auto;
             overflow-x: hidden;
             position: relative;
@@ -382,7 +384,7 @@
         .gallery-scatter {
             position: relative;
             width: 100%;
-            min-height: 100vh;
+            min-height: calc(100vh - var(--menu-h, 36px));
             padding: 30px;
         }
 
@@ -454,7 +456,7 @@
         /* === PRESENTATION MODE === */
         .gallery-presentation {
             width: 100%;
-            height: 100vh;
+            height: calc(100vh - var(--menu-h, 36px));
             position: relative;
             overflow: hidden;
         }
@@ -1416,9 +1418,11 @@
         // Normal load (no transition from landing)
         if (hasTransition) sessionStorage.removeItem('nav-transition');
         renderTopRowNav();
+
         renderView1();
     }
 
     </script>
+    <script src="../js/menu.js"></script>
 </body>
 </html>

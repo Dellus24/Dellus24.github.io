@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Viewer — Test</title>
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: #f5fccc;
+            color: #000000;
+            font-family: 'Courier New', Courier, monospace;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            cursor: default;
+        }
+
+        /* === FRAME === */
+        .viewer-frame {
+            position: absolute;
+            top: 60px;
+            left: 80px;
+            width: 680px;
+            height: 520px;
+            border: 1px solid #000;
+            background: #f5fccc;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        /* Drag bar — thin top edge, invisible but draggable */
+        .frame-drag-edge {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            cursor: move;
+            z-index: 25;
+        }
+
+        /* Viewport */
+        .frame-viewport {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #canvas-container, #ascii-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #canvas-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        #ascii-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Resize handle */
+        .frame-resize {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 14px;
+            height: 14px;
+            cursor: nwse-resize;
+            z-index: 30;
+        }
+
+        .frame-resize::before {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            width: 7px;
+            height: 7px;
+            border-right: 1px solid rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(0,0,0,0.2);
+        }
+
+        /* === BOTTOM HOVER ZONE === */
+        .bottom-hover-zone {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 12px;
+            z-index: 20;
+            cursor: default;
+        }
+
+        /* === BOTTOM BAR === */
+        .bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 28px;
+            border-top: 1px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            background: #f5fccc;
+            z-index: 21;
+            user-select: none;
+            opacity: 0;
+            transform: translateY(4px);
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .bottom-bar.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .bottom-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.45rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px 4px;
+            color: #000;
+            opacity: 0.3;
+            transition: opacity 0.2s ease, font-weight 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .mode-btn:hover { opacity: 0.55; }
+        .mode-btn.active { opacity: 1; font-weight: bold; }
+
+        .settings-toggle {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.45rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px 4px;
+            color: #000;
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .settings-toggle:hover { opacity: 0.55; }
+        .settings-toggle.open { opacity: 0.8; }
+
+        .settings-arrow {
+            font-size: 0.5rem;
+            transition: transform 0.25s ease;
+            display: inline-block;
+        }
+
+        .settings-toggle.open .settings-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* === SETTINGS PANEL === */
+        .settings-panel {
+            position: absolute;
+            bottom: 28px;
+            left: 0;
+            right: 0;
+            background: #f5fccc;
+            border-top: 1px solid #000;
+            z-index: 20;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: max-height 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        opacity 0.25s ease;
+        }
+
+        .settings-panel.open {
+            max-height: 200px;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .settings-inner {
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .setting-label {
+            font-size: 0.42rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.35;
+            white-space: nowrap;
+            width: 50px;
+            flex-shrink: 0;
+        }
+
+        .ctrl-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100px;
+            height: 1px;
+            background: #000;
+            opacity: 0.3;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .ctrl-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .ctrl-slider::-moz-range-thumb {
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .ctrl-toggle {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.42rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: none;
+            border: 1px solid rgba(0,0,0,0.2);
+            cursor: pointer;
+            padding: 2px 8px;
+            color: #000;
+            opacity: 0.4;
+            transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .ctrl-toggle:hover { opacity: 0.6; }
+        .ctrl-toggle.on {
+            opacity: 1;
+            background: #000;
+            color: #f5fccc;
+        }
+
+        .charset-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .charset-option {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.42rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: none;
+            border: 1px solid rgba(0,0,0,0.12);
+            cursor: pointer;
+            padding: 2px 7px;
+            color: #000;
+            opacity: 0.3;
+            transition: opacity 0.2s ease, border-color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .charset-option:hover { opacity: 0.55; }
+        .charset-option.active {
+            opacity: 1;
+            border-color: #000;
+            font-weight: bold;
+        }
+
+        /* Drag hint */
+        .drag-hint {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            font-size: 0.4rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* === DRAG/RESIZE STATES === */
+        body.frame-dragging,
+        body.frame-resizing {
+            user-select: none;
+        }
+        body.frame-dragging { cursor: move; }
+        body.frame-resizing { cursor: nwse-resize; }
+        body.frame-dragging .frame-viewport,
+        body.frame-resizing .frame-viewport {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="viewer-frame" id="viewerFrame">
+        <!-- Invisible drag edge at top -->
+        <div class="frame-drag-edge" id="frameDragEdge"></div>
+
+        <!-- 3D Viewport -->
+        <div class="frame-viewport" id="frameViewport">
+            <div id="canvas-container"></div>
+            <div id="ascii-container"></div>
+            <div class="drag-hint">Drag to rotate</div>
+
+            <!-- Settings panel (above bottom bar) -->
+            <div class="settings-panel" id="settingsPanel">
+                <div class="settings-inner">
+                    <div class="setting-row">
+                        <span class="setting-label">Res</span>
+                        <input type="range" class="ctrl-slider" id="resSlider" min="0.06" max="0.3" step="0.01" value="0.14">
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">Speed</span>
+                        <input type="range" class="ctrl-slider" id="speedSlider" min="0" max="0.015" step="0.001" value="0.003">
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">Invert</span>
+                        <button class="ctrl-toggle on" id="invertToggle">On</button>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">Chars</span>
+                        <div class="charset-group" id="charsetGroup"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invisible hover zone at bottom to trigger bar -->
+            <div class="bottom-hover-zone" id="bottomHoverZone"></div>
+
+            <!-- Bottom bar (hidden until hover) -->
+            <div class="bottom-bar" id="bottomBar">
+                <div class="bottom-left">
+                    <button class="mode-btn active" data-mode="ascii">Ascii</button>
+                    <button class="mode-btn" data-mode="wireframe">Wire</button>
+                    <button class="mode-btn" data-mode="solid">Solid</button>
+                </div>
+                <button class="settings-toggle" id="settingsToggle">
+                    Settings <span class="settings-arrow">▴</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Resize handle -->
+        <div class="frame-resize" id="frameResize"></div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ============================================
+        // ORBIT
+        // ============================================
+        class SimpleOrbit {
+            constructor(camera, domElement) {
+                this.camera = camera;
+                this.domElement = domElement;
+                this.isDown = false;
+                this.prevX = 0; this.prevY = 0;
+                this.rotX = 0; this.rotY = 0;
+                this.targetRotX = 0; this.targetRotY = 0;
+                this.autoRotateSpeed = 0.003;
+                this.radius = camera.position.length();
+
+                const ignore = (e) => e.target.closest('.settings-panel') || e.target.closest('.bottom-bar');
+
+                this.domElement.addEventListener('mousedown', (e) => {
+                    if (ignore(e)) return;
+                    this.isDown = true;
+                    this.prevX = e.clientX; this.prevY = e.clientY;
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if (!this.isDown) return;
+                    this.targetRotY += (e.clientX - this.prevX) * 0.005;
+                    this.targetRotX += (e.clientY - this.prevY) * 0.005;
+                    this.targetRotX = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.targetRotX));
+                    this.prevX = e.clientX; this.prevY = e.clientY;
+                });
+                window.addEventListener('mouseup', () => { this.isDown = false; });
+
+                this.domElement.addEventListener('touchstart', (e) => {
+                    if (ignore(e)) return;
+                    this.isDown = true;
+                    this.prevX = e.touches[0].clientX; this.prevY = e.touches[0].clientY;
+                }, { passive: true });
+                window.addEventListener('touchmove', (e) => {
+                    if (!this.isDown) return;
+                    this.targetRotY += (e.touches[0].clientX - this.prevX) * 0.005;
+                    this.targetRotX += (e.touches[0].clientY - this.prevY) * 0.005;
+                    this.targetRotX = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.targetRotX));
+                    this.prevX = e.touches[0].clientX; this.prevY = e.touches[0].clientY;
+                }, { passive: true });
+                window.addEventListener('touchend', () => { this.isDown = false; });
+            }
+            update() {
+                if (!this.isDown) this.targetRotY += this.autoRotateSpeed;
+                this.rotX += (this.targetRotX - this.rotX) * 0.08;
+                this.rotY += (this.targetRotY - this.rotY) * 0.08;
+                this.camera.position.x = this.radius * Math.sin(this.rotY) * Math.cos(this.rotX);
+                this.camera.position.y = this.radius * Math.sin(this.rotX);
+                this.camera.position.z = this.radius * Math.cos(this.rotY) * Math.cos(this.rotX);
+                this.camera.lookAt(0, 0, 0);
+            }
+        }
+
+        // ============================================
+        // ASCII EFFECT
+        // ============================================
+        class AsciiEffect {
+            constructor(renderer, charSet, options = {}) {
+                this.renderer = renderer;
+                this._characters = charSet || ' .:-=+*#%@';
+                this._invert = options.invert !== undefined ? options.invert : false;
+                this._resolution = options.resolution || 0.15;
+                this.domElement = document.createElement('div');
+                Object.assign(this.domElement.style, {
+                    whiteSpace: 'pre',
+                    fontFamily: "'Courier New', Courier, monospace",
+                    letterSpacing: '0.05em',
+                    lineHeight: '1.0',
+                    color: options.color || '#000000',
+                    backgroundColor: options.backgroundColor || '#f5fccc',
+                    overflow: 'hidden',
+                    fontSize: '10px',
+                });
+                this._canvas = document.createElement('canvas');
+                this._ctx = this._canvas.getContext('2d');
+                this._w = 0; this._h = 0;
+            }
+            get characters() { return this._characters; }
+            set characters(v) { this._characters = v; }
+            get invert() { return this._invert; }
+            set invert(v) { this._invert = v; }
+            get resolution() { return this._resolution; }
+            set resolution(v) { this._resolution = v; if (this._w) this.setSize(this._w, this._h); }
+            setSize(w, h) {
+                this._w = w; this._h = h;
+                this._canvas.width = Math.max(1, Math.floor(w * this._resolution));
+                this._canvas.height = Math.max(1, Math.floor(h * this._resolution));
+                this.renderer.setSize(w, h);
+            }
+            render(scene, camera) {
+                this.renderer.render(scene, camera);
+                const cW = this._canvas.width, cH = this._canvas.height;
+                this._ctx.clearRect(0, 0, cW, cH);
+                this._ctx.drawImage(this.renderer.domElement, 0, 0, cW, cH);
+                const data = this._ctx.getImageData(0, 0, cW, cH).data;
+                const chars = this._characters, inv = this._invert;
+                let str = '';
+                for (let y = 0; y < cH; y += 2) {
+                    for (let x = 0; x < cW; x++) {
+                        const i = (y * cW + x) * 4;
+                        let b = (0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]) / 255;
+                        if (inv) b = 1 - b;
+                        str += chars[Math.min(Math.floor(b * (chars.length-1)), chars.length-1)];
+                    }
+                    str += '\n';
+                }
+                this.domElement.textContent = str;
+            }
+        }
+
+        // ============================================
+        // SCENE
+        // ============================================
+        const BG = 0xf5fccc;
+        const viewport = document.getElementById('frameViewport');
+        const canvasContainer = document.getElementById('canvas-container');
+        const asciiContainer = document.getElementById('ascii-container');
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(1);
+        renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+        renderer.setClearColor(BG, 1);
+        canvasContainer.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(50, viewport.clientWidth/viewport.clientHeight, 0.1, 1000);
+        camera.position.set(3, 2.5, 3);
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(BG);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const dl = new THREE.DirectionalLight(0xffffff, 0.8); dl.position.set(5,8,5); scene.add(dl);
+        const fl = new THREE.DirectionalLight(0xffffff, 0.3); fl.position.set(-3,2,-3); scene.add(fl);
+
+        const geo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
+        const mats = {
+            ascii: new THREE.MeshLambertMaterial({ color: 0xffffff }),
+            wireframe: new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true }),
+            solid: new THREE.MeshLambertMaterial({ color: 0xcccccc }),
+        };
+        const mesh = new THREE.Mesh(geo, mats.ascii);
+        scene.add(mesh);
+
+        const edgeMesh = new THREE.LineSegments(
+            new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.15, transparent: true })
+        );
+        edgeMesh.visible = false;
+        scene.add(edgeMesh);
+
+        const ascii = new AsciiEffect(renderer, ' .·:;=+x#%@', {
+            invert: true, resolution: 0.14, color: '#000000', backgroundColor: '#f5fccc',
+        });
+        asciiContainer.appendChild(ascii.domElement);
+
+        const orbit = new SimpleOrbit(camera, viewport);
+
+        // ============================================
+        // MODE
+        // ============================================
+        let currentMode = 'ascii';
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+            if (mode === 'ascii') {
+                canvasContainer.style.display = 'none';
+                asciiContainer.style.display = 'flex';
+                mesh.material = mats.ascii;
+                edgeMesh.visible = false;
+            } else {
+                canvasContainer.style.display = 'block';
+                asciiContainer.style.display = 'none';
+                mesh.material = mats[mode];
+                edgeMesh.visible = (mode === 'solid');
+            }
+        }
+        document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+        setMode('ascii');
+
+        // ============================================
+        // BOTTOM BAR HOVER
+        // ============================================
+        const bottomBar = document.getElementById('bottomBar');
+        const bottomZone = document.getElementById('bottomHoverZone');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const settingsToggle = document.getElementById('settingsToggle');
+        let barLocked = false; // locked open when settings panel is open
+        let hideTimeout = null;
+
+        function showBar() {
+            clearTimeout(hideTimeout);
+            bottomBar.classList.add('visible');
+        }
+
+        function hideBar() {
+            if (barLocked) return;
+            hideTimeout = setTimeout(() => {
+                bottomBar.classList.remove('visible');
+            }, 300);
+        }
+
+        bottomZone.addEventListener('mouseenter', showBar);
+        bottomBar.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+        bottomBar.addEventListener('mouseleave', hideBar);
+        settingsPanel.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+        settingsPanel.addEventListener('mouseleave', hideBar);
+
+        // Settings toggle
+        settingsToggle.addEventListener('click', () => {
+            const opening = !settingsPanel.classList.contains('open');
+            settingsPanel.classList.toggle('open');
+            settingsToggle.classList.toggle('open');
+            barLocked = opening;
+            if (!opening) {
+                // Closing settings — check if mouse is still over bar area
+                hideBar();
+            }
+        });
+
+        // ============================================
+        // CONTROLS
+        // ============================================
+        document.getElementById('resSlider').addEventListener('input', (e) => {
+            ascii.resolution = parseFloat(e.target.value);
+            ascii.setSize(viewport.clientWidth, viewport.clientHeight);
+        });
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            orbit.autoRotateSpeed = parseFloat(e.target.value);
+        });
+        const invertToggle = document.getElementById('invertToggle');
+        invertToggle.addEventListener('click', () => {
+            ascii.invert = !ascii.invert;
+            invertToggle.classList.toggle('on', ascii.invert);
+            invertToggle.textContent = ascii.invert ? 'On' : 'Off';
+        });
+
+        const charSets = [
+            { name: 'Standard', chars: ' .·:;=+x#%@' },
+            { name: 'Detailed', chars: " .':;~=+*x#X%@$&" },
+            { name: 'Blocky', chars: ' ░▒▓█' },
+            { name: 'Binary', chars: ' 01' },
+            { name: 'Minimal', chars: ' .:#' },
+            { name: 'Dots', chars: ' ·•●' },
+        ];
+        const cg = document.getElementById('charsetGroup');
+        charSets.forEach((cs, i) => {
+            const btn = document.createElement('button');
+            btn.classList.add('charset-option');
+            if (i === 0) btn.classList.add('active');
+            btn.textContent = cs.name;
+            btn.addEventListener('click', () => {
+                ascii.characters = cs.chars;
+                cg.querySelectorAll('.charset-option').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+            cg.appendChild(btn);
+        });
+
+        const modes = ['ascii', 'wireframe', 'solid'];
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'm' || e.key === 'M') setMode(modes[(modes.indexOf(currentMode)+1) % modes.length]);
+        });
+
+        // ============================================
+        // ANIMATE
+        // ============================================
+        (function animate() {
+            requestAnimationFrame(animate);
+            orbit.update();
+            if (currentMode === 'ascii') ascii.render(scene, camera);
+            else renderer.render(scene, camera);
+        })();
+
+        // ============================================
+        // RESIZE VIEWPORT
+        // ============================================
+        function resizeViewport() {
+            const w = viewport.clientWidth, h = viewport.clientHeight;
+            if (w < 1 || h < 1) return;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            ascii.setSize(w, h);
+        }
+
+        // ============================================
+        // FRAME DRAG (top edge)
+        // ============================================
+        const frame = document.getElementById('viewerFrame');
+        const dragEdge = document.getElementById('frameDragEdge');
+        let isDragging = false, dOx = 0, dOy = 0;
+
+        dragEdge.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dOx = e.clientX - frame.offsetLeft;
+            dOy = e.clientY - frame.offsetTop;
+            document.body.classList.add('frame-dragging');
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                frame.style.left = Math.max(0, Math.min(window.innerWidth-100, e.clientX-dOx)) + 'px';
+                frame.style.top = Math.max(0, Math.min(window.innerHeight-40, e.clientY-dOy)) + 'px';
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            if (isDragging) { isDragging = false; document.body.classList.remove('frame-dragging'); }
+        });
+
+        // ============================================
+        // FRAME RESIZE
+        // ============================================
+        const rh = document.getElementById('frameResize');
+        let isResizing = false, rsX=0, rsY=0, rsW=0, rsH=0;
+
+        rh.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            rsX = e.clientX; rsY = e.clientY;
+            rsW = frame.offsetWidth; rsH = frame.offsetHeight;
+            document.body.classList.add('frame-resizing');
+            e.preventDefault(); e.stopPropagation();
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (isResizing) {
+                frame.style.width = Math.max(350, rsW+(e.clientX-rsX)) + 'px';
+                frame.style.height = Math.max(250, rsH+(e.clientY-rsY)) + 'px';
+                resizeViewport();
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            if (isResizing) { isResizing = false; document.body.classList.remove('frame-resizing'); }
+        });
+
+        window.addEventListener('resize', resizeViewport);
+    </script>
+</body>
+</html>

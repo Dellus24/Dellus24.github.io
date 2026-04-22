@@ -1,0 +1,171 @@
+/* === SITE MENU BAR === */
+#site-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--menu-h, 36px);
+    background: var(--bg, #f5fccc);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    z-index: 900;
+    font-family: 'Courier New', Courier, monospace;
+    user-select: none;
+}
+
+.menu-group {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.menu-spacer {
+    flex: 1;
+}
+
+.menu-sep {
+    width: 1px;
+    height: 13px;
+    background: rgba(0, 0, 0, 0.13);
+    margin: 0 18px;
+    flex-shrink: 0;
+}
+
+/* === NAVIGATION === */
+.menu-nav-item {
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: inherit;
+    text-decoration: none;
+    opacity: 0.38;
+    transition: opacity 0.2s ease, font-weight 0.15s ease;
+    white-space: nowrap;
+}
+
+.menu-nav-item:hover {
+    opacity: 1;
+    font-weight: bold;
+}
+
+.menu-nav-active {
+    opacity: 1;
+    font-weight: bold;
+}
+
+/* === FONT SIZE SLIDER === */
+.menu-font-ctrl {
+    gap: 9px;
+}
+
+.menu-label {
+    font-size: 0.48rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.menu-label-lg {
+    font-size: 0.62rem;
+    opacity: 0.4;
+    letter-spacing: 0;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.menu-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 72px;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.18);
+    outline: none;
+    cursor: pointer;
+    border-radius: 1px;
+    flex-shrink: 0;
+}
+
+.menu-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #000000;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.menu-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+}
+
+.menu-slider::-moz-range-thumb {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #000000;
+    cursor: pointer;
+    border: none;
+}
+
+/* === COLOR PALETTE SWATCHES === */
+.menu-colors {
+    gap: 6px;
+}
+
+.menu-swatch {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.42rem;
+    letter-spacing: 0;
+    outline: none;
+}
+
+.menu-swatch:hover {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.menu-swatch.active {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6);
+    transform: scale(1.1);
+}
+
+/* custom "+" swatch */
+.menu-swatch-custom {
+    background: transparent !important;
+    border-style: dashed;
+    opacity: 0.45;
+    cursor: pointer;
+    position: relative;
+    font-size: 0.6rem;
+    letter-spacing: 0;
+}
+
+.menu-swatch-custom:hover {
+    opacity: 1;
+}
+
+.menu-color-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}

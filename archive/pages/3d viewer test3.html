@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Viewer — Multi</title>
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: #f5fccc;
+            color: #000000;
+            font-family: 'Courier New', Courier, monospace;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            cursor: default;
+        }
+
+        /* === PROJECT LIST (left side) === */
+        .project-list {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 6px;
+            z-index: 5;
+        }
+
+        .project-list-label {
+            font-size: clamp(0.75rem, 1.8vmin, 1.1rem);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            opacity: 0.35;
+            margin-bottom: 4px;
+            user-select: none;
+        }
+
+        .project-item {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.75rem, 1.8vmin, 1.1rem);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: opacity 0.2s ease, font-weight 0.2s ease;
+            user-select: none;
+            line-height: 1.4;
+        }
+
+        .project-item:hover {
+            font-weight: bold;
+        }
+
+        .project-item.open {
+            opacity: 0.3;
+        }
+
+        /* === VIEWER FRAME === */
+        .viewer-frame {
+            position: absolute;
+            border: 1px solid #000;
+            background: #f5fccc;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .viewer-frame.focused {
+            z-index: 50;
+        }
+
+        .frame-drag-edge {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            cursor: move;
+            z-index: 25;
+        }
+
+        /* Close button — top right corner */
+        .frame-close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 26;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            font-size: 0.55rem;
+            user-select: none;
+        }
+
+        .viewer-frame:hover .frame-close {
+            opacity: 0.25;
+        }
+
+        .frame-close:hover {
+            opacity: 0.8 !important;
+        }
+
+        .frame-viewport {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .frame-viewport .cv-canvas,
+        .frame-viewport .cv-ascii {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .frame-viewport .cv-canvas canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        .frame-viewport .cv-ascii {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .frame-resize {
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 14px; height: 14px;
+            cursor: nwse-resize;
+            z-index: 30;
+        }
+
+        .frame-resize::before {
+            content: '';
+            position: absolute;
+            bottom: 3px; right: 3px;
+            width: 7px; height: 7px;
+            border-right: 1px solid rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(0,0,0,0.2);
+        }
+
+        /* Bottom hover zone */
+        .bottom-hover-zone {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 12px;
+            z-index: 20;
+        }
+
+        /* Bottom bar */
+        .bottom-bar {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 28px;
+            border-top: 1px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            background: #f5fccc;
+            z-index: 21;
+            user-select: none;
+            opacity: 0;
+            transform: translateY(4px);
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .bottom-bar.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .bottom-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.45rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px 4px;
+            color: #000;
+            opacity: 0.3;
+            transition: opacity 0.2s ease, font-weight 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .mode-btn:hover { opacity: 0.55; }
+        .mode-btn.active { opacity: 1; font-weight: bold; }
+
+        .settings-toggle {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.45rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px 4px;
+            color: #000;
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .settings-toggle:hover { opacity: 0.55; }
+        .settings-toggle.open { opacity: 0.8; }
+
+        .settings-arrow {
+            font-size: 0.5rem;
+            transition: transform 0.25s ease;
+            display: inline-block;
+        }
+
+        .settings-toggle.open .settings-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Settings panel */
+        .settings-panel {
+            position: absolute;
+            bottom: 28px;
+            left: 0; right: 0;
+            background: #f5fccc;
+            border-top: 1px solid #000;
+            z-index: 20;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: max-height 0.3s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.25s ease;
+        }
+
+        .settings-panel.open {
+            max-height: 200px;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .settings-inner {
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .setting-label {
+            font-size: 0.42rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.35;
+            white-space: nowrap;
+            width: 50px;
+            flex-shrink: 0;
+        }
+
+        .ctrl-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100px;
+            height: 1px;
+            background: #000;
+            opacity: 0.3;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .ctrl-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 8px; height: 8px;
+            background: #000;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .ctrl-slider::-moz-range-thumb {
+            width: 8px; height: 8px;
+            background: #000;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .ctrl-toggle {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.42rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: none;
+            border: 1px solid rgba(0,0,0,0.2);
+            cursor: pointer;
+            padding: 2px 8px;
+            color: #000;
+            opacity: 0.4;
+            transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .ctrl-toggle:hover { opacity: 0.6; }
+        .ctrl-toggle.on { opacity: 1; background: #000; color: #f5fccc; }
+
+        .charset-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .charset-option {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.42rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: none;
+            border: 1px solid rgba(0,0,0,0.12);
+            cursor: pointer;
+            padding: 2px 7px;
+            color: #000;
+            opacity: 0.3;
+            transition: opacity 0.2s ease, border-color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .charset-option:hover { opacity: 0.55; }
+        .charset-option.active { opacity: 1; border-color: #000; font-weight: bold; }
+
+        .drag-hint {
+            position: absolute;
+            top: 8px; right: 10px;
+            font-size: 0.4rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Spawn animation */
+        @keyframes frameSpawn {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .viewer-frame.spawning {
+            animation: frameSpawn 0.35s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+        }
+
+        /* Close animation */
+        @keyframes frameClose {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.92); }
+        }
+
+        .viewer-frame.closing {
+            animation: frameClose 0.25s ease forwards;
+            pointer-events: none;
+        }
+
+        /* States */
+        body.frame-dragging { cursor: move; user-select: none; }
+        body.frame-resizing { cursor: nwse-resize; user-select: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Project list -->
+    <div class="project-list" id="projectList">
+        <div class="project-list-label">Models</div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ============================================
+        // PROJECT DEFINITIONS
+        // ============================================
+        const projects = [
+            {
+                id: 'cube',
+                name: 'Cube',
+                spawn: { x: 200, y: 60, w: 520, h: 440 },
+                createGeo: () => new THREE.BoxGeometry(1.6, 1.6, 1.6),
+            },
+            {
+                id: 'sphere',
+                name: 'Sphere',
+                spawn: { x: 340, y: 120, w: 480, h: 420 },
+                createGeo: () => new THREE.SphereGeometry(1.1, 28, 20),
+            },
+            {
+                id: 'rectangle',
+                name: 'Rectangle',
+                spawn: { x: 480, y: 80, w: 540, h: 400 },
+                createGeo: () => new THREE.BoxGeometry(2.4, 1.0, 1.4),
+            },
+        ];
+
+        const charSets = [
+            { name: 'Standard', chars: ' .·:;=+x#%@' },
+            { name: 'Detailed', chars: " .':;~=+*x#X%@$&" },
+            { name: 'Blocky', chars: ' ░▒▓█' },
+            { name: 'Binary', chars: ' 01' },
+            { name: 'Minimal', chars: ' .:#' },
+            { name: 'Dots', chars: ' ·•●' },
+        ];
+
+        // Track open viewers
+        const openViewers = {};
+        let topZ = 50;
+
+        // ============================================
+        // ORBIT
+        // ============================================
+        class SimpleOrbit {
+            constructor(camera, el) {
+                this.camera = camera;
+                this.el = el;
+                this.isDown = false;
+                this.pX = 0; this.pY = 0;
+                this.rotX = 0; this.rotY = 0;
+                this.tRotX = 0; this.tRotY = 0;
+                this.autoSpeed = 0.003;
+                this.radius = camera.position.length();
+
+                const skip = (e) => e.target.closest('.settings-panel') || e.target.closest('.bottom-bar');
+                this.el.addEventListener('mousedown', (e) => { if (skip(e)) return; this.isDown=true; this.pX=e.clientX; this.pY=e.clientY; });
+                window.addEventListener('mousemove', (e) => {
+                    if (!this.isDown) return;
+                    this.tRotY += (e.clientX-this.pX)*0.005;
+                    this.tRotX += (e.clientY-this.pY)*0.005;
+                    this.tRotX = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.tRotX));
+                    this.pX=e.clientX; this.pY=e.clientY;
+                });
+                window.addEventListener('mouseup', () => { this.isDown=false; });
+                this.el.addEventListener('touchstart', (e) => { if (skip(e)) return; this.isDown=true; this.pX=e.touches[0].clientX; this.pY=e.touches[0].clientY; }, {passive:true});
+                window.addEventListener('touchmove', (e) => {
+                    if (!this.isDown) return;
+                    this.tRotY += (e.touches[0].clientX-this.pX)*0.005;
+                    this.tRotX += (e.touches[0].clientY-this.pY)*0.005;
+                    this.tRotX = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, this.tRotX));
+                    this.pX=e.touches[0].clientX; this.pY=e.touches[0].clientY;
+                }, {passive:true});
+                window.addEventListener('touchend', () => { this.isDown=false; });
+            }
+            update() {
+                if (!this.isDown) this.tRotY += this.autoSpeed;
+                this.rotX += (this.tRotX-this.rotX)*0.08;
+                this.rotY += (this.tRotY-this.rotY)*0.08;
+                this.camera.position.x = this.radius*Math.sin(this.rotY)*Math.cos(this.rotX);
+                this.camera.position.y = this.radius*Math.sin(this.rotX);
+                this.camera.position.z = this.radius*Math.cos(this.rotY)*Math.cos(this.rotX);
+                this.camera.lookAt(0,0,0);
+            }
+        }
+
+        // ============================================
+        // ASCII EFFECT
+        // ============================================
+        class AsciiEffect {
+            constructor(renderer, chars, opts={}) {
+                this.renderer = renderer;
+                this._chars = chars; this._inv = opts.invert||false; this._res = opts.resolution||0.14;
+                this.domElement = document.createElement('div');
+                Object.assign(this.domElement.style, {
+                    whiteSpace:'pre', fontFamily:"'Courier New',Courier,monospace",
+                    letterSpacing:'0.05em', lineHeight:'1.0', fontSize:'10px',
+                    color: opts.color||'#000', backgroundColor: opts.bg||'#f5fccc', overflow:'hidden',
+                });
+                this._c = document.createElement('canvas');
+                this._x = this._c.getContext('2d');
+                this._w=0; this._h=0;
+            }
+            get characters(){return this._chars;} set characters(v){this._chars=v;}
+            get invert(){return this._inv;} set invert(v){this._inv=v;}
+            get resolution(){return this._res;} set resolution(v){this._res=v; if(this._w) this.setSize(this._w,this._h);}
+            setSize(w,h) {
+                this._w=w; this._h=h;
+                this._c.width=Math.max(1,Math.floor(w*this._res));
+                this._c.height=Math.max(1,Math.floor(h*this._res));
+                this.renderer.setSize(w,h);
+            }
+            render(scene,camera) {
+                this.renderer.render(scene,camera);
+                const cW=this._c.width, cH=this._c.height;
+                this._x.clearRect(0,0,cW,cH);
+                this._x.drawImage(this.renderer.domElement,0,0,cW,cH);
+                const d=this._x.getImageData(0,0,cW,cH).data, ch=this._chars, inv=this._inv;
+                let s='';
+                for(let y=0;y<cH;y+=2){for(let x=0;x<cW;x++){
+                    const i=(y*cW+x)*4;
+                    let b=(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2])/255;
+                    if(inv) b=1-b;
+                    s+=ch[Math.min(Math.floor(b*(ch.length-1)),ch.length-1)];
+                } s+='\n';}
+                this.domElement.textContent=s;
+            }
+        }
+
+        // ============================================
+        // CREATE VIEWER
+        // ============================================
+        function createViewer(project) {
+            if (openViewers[project.id]) {
+                // Focus existing
+                const v = openViewers[project.id];
+                v.frame.style.zIndex = ++topZ;
+                return;
+            }
+
+            const BG = 0xf5fccc;
+            const sp = project.spawn;
+
+            // --- Build DOM ---
+            const frame = document.createElement('div');
+            frame.classList.add('viewer-frame', 'spawning');
+            frame.style.left = sp.x+'px'; frame.style.top = sp.y+'px';
+            frame.style.width = sp.w+'px'; frame.style.height = sp.h+'px';
+            frame.style.zIndex = ++topZ;
+
+            frame.innerHTML = `
+                <div class="frame-drag-edge"></div>
+                <div class="frame-close">×</div>
+                <div class="frame-viewport">
+                    <div class="cv-canvas"></div>
+                    <div class="cv-ascii"></div>
+                    <div class="drag-hint">Drag to rotate</div>
+                    <div class="settings-panel">
+                        <div class="settings-inner">
+                            <div class="setting-row">
+                                <span class="setting-label">Res</span>
+                                <input type="range" class="ctrl-slider res-slider" min="0.06" max="0.3" step="0.01" value="0.14">
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Speed</span>
+                                <input type="range" class="ctrl-slider speed-slider" min="0" max="0.015" step="0.001" value="0.003">
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Invert</span>
+                                <button class="ctrl-toggle on invert-toggle">On</button>
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Chars</span>
+                                <div class="charset-group"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bottom-hover-zone"></div>
+                    <div class="bottom-bar">
+                        <div class="bottom-left">
+                            <button class="mode-btn active" data-mode="ascii">Ascii</button>
+                            <button class="mode-btn" data-mode="wireframe">Wire</button>
+                            <button class="mode-btn" data-mode="solid">Solid</button>
+                        </div>
+                        <button class="settings-toggle">Settings <span class="settings-arrow">▴</span></button>
+                    </div>
+                </div>
+                <div class="frame-resize"></div>
+            `;
+
+            document.body.appendChild(frame);
+
+            // Refs
+            const viewport = frame.querySelector('.frame-viewport');
+            const canvasCont = frame.querySelector('.cv-canvas');
+            const asciiCont = frame.querySelector('.cv-ascii');
+            const bottomBar = frame.querySelector('.bottom-bar');
+            const bottomZone = frame.querySelector('.bottom-hover-zone');
+            const settingsPanel = frame.querySelector('.settings-panel');
+            const settingsToggle = frame.querySelector('.settings-toggle');
+            const dragEdge = frame.querySelector('.frame-drag-edge');
+            const closeBtn = frame.querySelector('.frame-close');
+            const resizeHandle = frame.querySelector('.frame-resize');
+
+            // --- Three.js ---
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(1);
+            renderer.setClearColor(BG, 1);
+            canvasCont.appendChild(renderer.domElement);
+
+            const camera = new THREE.PerspectiveCamera(50, sp.w/sp.h, 0.1, 1000);
+            camera.position.set(3, 2.5, 3);
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(BG);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const dl = new THREE.DirectionalLight(0xffffff, 0.8); dl.position.set(5,8,5); scene.add(dl);
+            const fl = new THREE.DirectionalLight(0xffffff, 0.3); fl.position.set(-3,2,-3); scene.add(fl);
+
+            const geo = project.createGeo();
+            const mats = {
+                ascii: new THREE.MeshLambertMaterial({ color: 0xffffff }),
+                wireframe: new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true }),
+                solid: new THREE.MeshLambertMaterial({ color: 0xcccccc }),
+            };
+            const mesh = new THREE.Mesh(geo, mats.ascii);
+            scene.add(mesh);
+
+            const edgeMesh = new THREE.LineSegments(
+                new THREE.EdgesGeometry(geo),
+                new THREE.LineBasicMaterial({ color:0x000000, opacity:0.15, transparent:true })
+            );
+            edgeMesh.visible = false;
+            scene.add(edgeMesh);
+
+            const vw = viewport.clientWidth, vh = viewport.clientHeight;
+            renderer.setSize(vw, vh);
+
+            const ascii = new AsciiEffect(renderer, ' .·:;=+x#%@', {
+                invert:true, resolution:0.14, color:'#000', bg:'#f5fccc'
+            });
+            ascii.setSize(vw, vh);
+            asciiCont.appendChild(ascii.domElement);
+
+            const orbit = new SimpleOrbit(camera, viewport);
+
+            // --- Mode ---
+            let mode = 'ascii';
+            function setMode(m) {
+                mode = m;
+                frame.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode===m));
+                if (m==='ascii') {
+                    canvasCont.style.display='none'; asciiCont.style.display='flex';
+                    mesh.material=mats.ascii; edgeMesh.visible=false;
+                } else {
+                    canvasCont.style.display='block'; asciiCont.style.display='none';
+                    mesh.material=mats[m]; edgeMesh.visible=(m==='solid');
+                }
+            }
+            frame.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+            setMode('ascii');
+
+            // --- Bottom bar hover ---
+            let barLocked = false, hideT = null;
+            const showBar = () => { clearTimeout(hideT); bottomBar.classList.add('visible'); };
+            const hideBar = () => { if (barLocked) return; hideT = setTimeout(() => bottomBar.classList.remove('visible'), 300); };
+            bottomZone.addEventListener('mouseenter', showBar);
+            bottomBar.addEventListener('mouseenter', () => clearTimeout(hideT));
+            bottomBar.addEventListener('mouseleave', hideBar);
+            settingsPanel.addEventListener('mouseenter', () => clearTimeout(hideT));
+            settingsPanel.addEventListener('mouseleave', hideBar);
+
+            settingsToggle.addEventListener('click', () => {
+                const opening = !settingsPanel.classList.contains('open');
+                settingsPanel.classList.toggle('open');
+                settingsToggle.classList.toggle('open');
+                barLocked = opening;
+                if (!opening) hideBar();
+            });
+
+            // --- Controls ---
+            frame.querySelector('.res-slider').addEventListener('input', (e) => {
+                ascii.resolution = parseFloat(e.target.value);
+                ascii.setSize(viewport.clientWidth, viewport.clientHeight);
+            });
+            frame.querySelector('.speed-slider').addEventListener('input', (e) => {
+                orbit.autoSpeed = parseFloat(e.target.value);
+            });
+            const invBtn = frame.querySelector('.invert-toggle');
+            invBtn.addEventListener('click', () => {
+                ascii.invert = !ascii.invert;
+                invBtn.classList.toggle('on', ascii.invert);
+                invBtn.textContent = ascii.invert ? 'On' : 'Off';
+            });
+
+            const cg = frame.querySelector('.charset-group');
+            charSets.forEach((cs, i) => {
+                const btn = document.createElement('button');
+                btn.classList.add('charset-option');
+                if (i===0) btn.classList.add('active');
+                btn.textContent = cs.name;
+                btn.addEventListener('click', () => {
+                    ascii.characters = cs.chars;
+                    cg.querySelectorAll('.charset-option').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+                cg.appendChild(btn);
+            });
+
+            // --- Focus on click ---
+            frame.addEventListener('mousedown', () => { frame.style.zIndex = ++topZ; });
+
+            // --- Resize viewport ---
+            function resizeVP() {
+                const w=viewport.clientWidth, h=viewport.clientHeight;
+                if (w<1||h<1) return;
+                camera.aspect=w/h; camera.updateProjectionMatrix();
+                renderer.setSize(w,h); ascii.setSize(w,h);
+            }
+
+            // --- Drag ---
+            let isDragging=false, dOx=0, dOy=0;
+            dragEdge.addEventListener('mousedown', (e) => {
+                isDragging=true; dOx=e.clientX-frame.offsetLeft; dOy=e.clientY-frame.offsetTop;
+                document.body.classList.add('frame-dragging'); e.preventDefault();
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                frame.style.left = Math.max(0, Math.min(window.innerWidth-100, e.clientX-dOx))+'px';
+                frame.style.top = Math.max(0, Math.min(window.innerHeight-40, e.clientY-dOy))+'px';
+            });
+            document.addEventListener('mouseup', () => {
+                if (isDragging) { isDragging=false; document.body.classList.remove('frame-dragging'); }
+            });
+
+            // --- Resize ---
+            let isResizing=false, rsX=0, rsY=0, rsW=0, rsH=0;
+            resizeHandle.addEventListener('mousedown', (e) => {
+                isResizing=true; rsX=e.clientX; rsY=e.clientY;
+                rsW=frame.offsetWidth; rsH=frame.offsetHeight;
+                document.body.classList.add('frame-resizing');
+                e.preventDefault(); e.stopPropagation();
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                frame.style.width = Math.max(300, rsW+(e.clientX-rsX))+'px';
+                frame.style.height = Math.max(220, rsH+(e.clientY-rsY))+'px';
+                resizeVP();
+            });
+            document.addEventListener('mouseup', () => {
+                if (isResizing) { isResizing=false; document.body.classList.remove('frame-resizing'); }
+            });
+
+            // --- Animation loop ---
+            let alive = true;
+            function animate() {
+                if (!alive) return;
+                requestAnimationFrame(animate);
+                orbit.update();
+                if (mode==='ascii') ascii.render(scene, camera);
+                else renderer.render(scene, camera);
+            }
+            animate();
+
+            // --- Close ---
+            function destroy() {
+                alive = false;
+                frame.classList.add('closing');
+                setTimeout(() => {
+                    frame.remove();
+                    renderer.dispose();
+                    geo.dispose();
+                    Object.values(mats).forEach(m => m.dispose());
+                    delete openViewers[project.id];
+                    // Un-dim project item
+                    const item = document.querySelector(`[data-project="${project.id}"]`);
+                    if (item) item.classList.remove('open');
+                }, 250);
+            }
+
+            closeBtn.addEventListener('click', (e) => { e.stopPropagation(); destroy(); });
+
+            // Store ref
+            openViewers[project.id] = { frame, destroy };
+
+            // Dim project item
+            const item = document.querySelector(`[data-project="${project.id}"]`);
+            if (item) item.classList.add('open');
+
+            // Remove spawn animation class
+            setTimeout(() => frame.classList.remove('spawning'), 350);
+        }
+
+        // ============================================
+        // BUILD PROJECT LIST
+        // ============================================
+        const listEl = document.getElementById('projectList');
+        projects.forEach(p => {
+            const item = document.createElement('div');
+            item.classList.add('project-item');
+            item.textContent = p.name;
+            item.setAttribute('data-project', p.id);
+            item.addEventListener('click', () => createViewer(p));
+            listEl.appendChild(item);
+        });
+
+    </script>
+</body>
+</html>
