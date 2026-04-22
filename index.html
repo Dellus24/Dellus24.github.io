@@ -9,13 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Trispace:wdth,wght@75..125,300..800&family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg:            #f5fccc;
+            --bg:            #ffffff;
             --fg:            #000;
             --border-strong: #000;
             --border-soft:   rgba(0, 0, 0, 0.15);
-            --font-family:   'Courier New', Courier, monospace;
+            --font-family:   'JunicodeVF', serif;
             --font-var:      normal;
-            --font-scale:    1;
+            --font-scale:    1.5;
         }
 
         @font-face {
@@ -120,7 +120,7 @@
         }
 
         body.dragging  { cursor: move !important; user-select: none; }
-        body.resizing  { cursor: nwse-resize !important; user-select: none; }
+        body.resizing  { user-select: none; }
 
         /* ג"€ג"€ WINDOW FRAME ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
         .win-frame {
@@ -153,13 +153,17 @@
 
         .win-title {
             font-size: 0.5rem; letter-spacing: 0.12em;
-            text-transform: uppercase; opacity: 0.5; flex: 1;
+            text-transform: uppercase; opacity: 0; flex: 1;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: opacity 0.2s;
         }
+        .win-frame:hover .win-title { opacity: 0.5; }
+        .win-type-tag { transition: opacity 0.2s; }
+        .win-frame:hover .win-type-tag { opacity: 0.25; }
 
         .win-type-tag {
             font-size: 0.38rem; letter-spacing: 0.08em;
-            text-transform: uppercase; opacity: 0.25;
+            text-transform: uppercase; opacity: 0;
             white-space: nowrap;
         }
 
@@ -175,17 +179,15 @@
             flex: 1; overflow: auto; position: relative;
         }
 
-        .win-resize {
-            position: absolute; bottom: 0; right: 0;
-            width: 14px; height: 14px; cursor: nwse-resize; z-index: 10;
-        }
-        .win-resize::before {
-            content: ''; position: absolute;
-            bottom: 3px; right: 3px;
-            width: 7px; height: 7px;
-            border-right: 1px solid rgba(0,0,0,0.2);
-            border-bottom: 1px solid rgba(0,0,0,0.2);
-        }
+        .win-resize-edge { position: absolute; z-index: 10; }
+        .win-resize-edge[data-dir="n"]  { top: -3px; left: 10px; right: 10px; height: 7px; cursor: ns-resize; }
+        .win-resize-edge[data-dir="s"]  { bottom: -3px; left: 10px; right: 10px; height: 7px; cursor: ns-resize; }
+        .win-resize-edge[data-dir="e"]  { right: -3px; top: 10px; bottom: 10px; width: 7px; cursor: ew-resize; }
+        .win-resize-edge[data-dir="w"]  { left: -3px; top: 10px; bottom: 10px; width: 7px; cursor: ew-resize; }
+        .win-resize-edge[data-dir="nw"] { top: -3px; left: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
+        .win-resize-edge[data-dir="ne"] { top: -3px; right: -3px; width: 12px; height: 12px; cursor: nesw-resize; }
+        .win-resize-edge[data-dir="sw"] { bottom: -3px; left: -3px; width: 12px; height: 12px; cursor: nesw-resize; }
+        .win-resize-edge[data-dir="se"] { bottom: -3px; right: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
 
         /* ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
         .info-body {
@@ -296,9 +298,17 @@
             padding: 18px 20px; display: flex; flex-direction: column; gap: 18px;
         }
         .theme-row { display: flex; flex-direction: column; gap: 8px; }
+        .theme-row-header {
+            display: flex; align-items: center; justify-content: space-between;
+        }
         .theme-row-label {
             font-size: 0.45rem; letter-spacing: 0.14em;
             text-transform: uppercase; opacity: 0.4; user-select: none;
+        }
+        .theme-row-sublabel {
+            font-size: 0.38rem; letter-spacing: 0.12em;
+            text-transform: uppercase; opacity: 0.25;
+            margin-top: 2px; user-select: none;
         }
         .theme-font-line { display: flex; align-items: center; gap: 10px; }
         .theme-font-label {
@@ -594,24 +604,34 @@
         // WINDOW SYSTEM
         // ================================================================
         let topZ = 50;
-        let cascadeX = 250, cascadeY = 50;
         const openWins = {};
 
-        function nextSpawn() {
-            const pos = { x: cascadeX, y: cascadeY };
-            cascadeX += 28; cascadeY += 28;
-            if (cascadeX > window.innerWidth * 0.65) cascadeX = 250;
-            if (cascadeY > window.innerHeight * 0.65) cascadeY = 50;
-            return pos;
+        function nextSpawn(w = 300, h = 250) {
+            const sw = window.innerWidth, sh = window.innerHeight;
+            const pad = 28, step = 32, margin = 10;
+            const frames = [...document.querySelectorAll('.win-frame')].map(f => ({
+                x: f.offsetLeft, y: f.offsetTop, w: f.offsetWidth, h: f.offsetHeight
+            }));
+            function free(x, y) {
+                if (x + w > sw - pad || y + h > sh - pad) return false;
+                for (const f of frames) {
+                    if (x < f.x + f.w + margin && x + w + margin > f.x &&
+                        y < f.y + f.h + margin && y + h + margin > f.y) return false;
+                }
+                return true;
+            }
+            for (let row = pad; row < sh - h; row += step)
+                for (let col = pad; col < sw - w; col += step)
+                    if (free(col, row)) return { x: col, y: row };
+            return { x: Math.max(pad, (sw - w) / 2), y: Math.max(pad, (sh - h) / 2) };
         }
-
         function focusOrCreate(key, createFn) {
             if (openWins[key]) { openWins[key].style.zIndex = ++topZ; return; }
             createFn();
         }
 
         function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180 }) {
-            const { x, y } = nextSpawn();
+            const { x, y } = nextSpawn(w, h);
             const ws = document.getElementById('workspace');
 
             const frame = document.createElement('div');
@@ -622,10 +642,17 @@
                 <div class="win-titlebar">
                     <span class="win-title">${title}</span>
                     ${tag ? `<span class="win-type-tag">${tag}</span>` : ''}
-                    <span class="win-close">ֳ—</span>
+                    <span class="win-close">&#x2014;</span>
                 </div>
                 <div class="win-body"></div>
-                <div class="win-resize"></div>
+                <div class="win-resize-edge" data-dir="n"></div>
+                <div class="win-resize-edge" data-dir="s"></div>
+                <div class="win-resize-edge" data-dir="e"></div>
+                <div class="win-resize-edge" data-dir="w"></div>
+                <div class="win-resize-edge" data-dir="nw"></div>
+                <div class="win-resize-edge" data-dir="ne"></div>
+                <div class="win-resize-edge" data-dir="sw"></div>
+                <div class="win-resize-edge" data-dir="se"></div>
             `;
 
             ws.appendChild(frame);
@@ -657,21 +684,39 @@
             });
             document.addEventListener('mouseup', () => { dragging = false; document.body.classList.remove('dragging'); });
 
-            // Resize
-            const rh = frame.querySelector('.win-resize');
-            let resizing = false, rsx = 0, rsy = 0, rsw = 0, rsh = 0;
-            rh.addEventListener('mousedown', e => {
-                resizing = true; rsx = e.clientX; rsy = e.clientY;
-                rsw = frame.offsetWidth; rsh = frame.offsetHeight;
-                document.body.classList.add('resizing'); e.preventDefault(); e.stopPropagation();
+            // Resize (8 directions)
+            let resizing = false, resizeDir = '', rsx = 0, rsy = 0, rsw = 0, rsh = 0, rsl = 0, rst = 0;
+            frame.querySelectorAll('.win-resize-edge').forEach(handle => {
+                handle.addEventListener('mousedown', e => {
+                    resizeDir = handle.dataset.dir;
+                    resizing = true; rsx = e.clientX; rsy = e.clientY;
+                    rsw = frame.offsetWidth; rsh = frame.offsetHeight;
+                    rsl = frame.offsetLeft;  rst = frame.offsetTop;
+                    const cursors = { n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize', nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize' };
+                    document.body.style.cursor = cursors[resizeDir] || 'default';
+                    document.body.classList.add('resizing'); e.preventDefault(); e.stopPropagation();
+                });
             });
             document.addEventListener('mousemove', e => {
                 if (!resizing) return;
-                frame.style.width  = Math.max(minW, rsw + (e.clientX - rsx)) + 'px';
-                frame.style.height = Math.max(minH, rsh + (e.clientY - rsy)) + 'px';
+                const dx = e.clientX - rsx, dy = e.clientY - rsy;
+                if (resizeDir.includes('e')) frame.style.width  = Math.max(minW, rsw + dx) + 'px';
+                if (resizeDir.includes('s')) frame.style.height = Math.max(minH, rsh + dy) + 'px';
+                if (resizeDir.includes('w')) {
+                    const nw = Math.max(minW, rsw - dx);
+                    frame.style.width = nw + 'px';
+                    frame.style.left  = (rsl + rsw - nw) + 'px';
+                }
+                if (resizeDir.includes('n')) {
+                    const nh = Math.max(minH, rsh - dy);
+                    frame.style.height = nh + 'px';
+                    frame.style.top    = (rst + rsh - nh) + 'px';
+                }
                 frame.dispatchEvent(new CustomEvent('win-resize'));
             });
-            document.addEventListener('mouseup', () => { resizing = false; document.body.classList.remove('resizing'); });
+            document.addEventListener('mouseup', () => {
+                if (resizing) { resizing = false; document.body.style.cursor = ''; document.body.classList.remove('resizing'); }
+            });
 
             setTimeout(() => frame.classList.remove('spawning'), 320);
             return frame;
@@ -771,7 +816,7 @@
 
         function openImage({ src, label = '', key }) {
             const ws = document.getElementById('workspace');
-            const { x, y } = nextSpawn();
+            const { x, y } = nextSpawn(220, 220);
 
             const el = document.createElement('div');
             el.className = 'img-float';
@@ -856,7 +901,7 @@
 
         // ── THEME WINDOW ───────────────────────────────────────────────────────
         const THEMES = [
-            { id: 'paper',    bg: '#f5fccc', fg: '#000' },
+            { id: 'white',    bg: '#ffffff', fg: '#000' },
             { id: 'cream',    bg: '#f0ede5', fg: '#000' },
             { id: 'slate',    bg: '#e8ecf0', fg: '#000' },
             { id: 'rose',     bg: '#f0e4e4', fg: '#000' },
@@ -885,6 +930,7 @@
             document.documentElement.style.setProperty('--fg', hex);
             document.documentElement.style.setProperty('--border-strong', hex);
             localStorage.setItem('dellus-fg', hex);
+            window.dispatchEvent(new CustomEvent('theme-change', { detail: { fg: hex } }));
         }
         function applyFont(fontId) {
             const f = FONTS.find(x => x.id === fontId);
@@ -905,6 +951,7 @@
             });
             const theme = THEMES.find(t => t.id === id);
             if (theme) applyFg(theme.fg);
+            window.dispatchEvent(new CustomEvent('theme-change', { detail: { bg: hex } }));
         }
 
         function openTheme() {
@@ -913,11 +960,11 @@
                 const body = frame.querySelector('.win-body');
                 body.className += ' theme-body';
 
-                const savedScale  = parseFloat(localStorage.getItem('dellus-font-scale')) || 1;
-                const savedBgId   = localStorage.getItem('dellus-bg-id') || 'paper';
-                const savedFontId = localStorage.getItem('dellus-font-id') || 'courier';
+                const savedScale  = parseFloat(localStorage.getItem('dellus-font-scale')) || 1.5;
+                const savedBgId   = localStorage.getItem('dellus-bg-id') || 'white';
+                const savedFontId = localStorage.getItem('dellus-font-id') || 'junicode';
                 const savedFg     = localStorage.getItem('dellus-fg') || '#000';
-                const savedBg     = localStorage.getItem('dellus-bg') || '#f5fccc';
+                const savedBg     = localStorage.getItem('dellus-bg') || '#ffffff';
 
                 const lightThemes = THEMES.filter(t => t.fg === '#000');
                 const darkThemes  = THEMES.filter(t => t.fg === '#fff');
@@ -938,28 +985,31 @@
                         </div>
                     </div>
                     <div class="theme-row">
-                        <div class="theme-row-label">Canvas — light</div>
+                        <div class="theme-row-header">
+                            <div class="theme-row-label">Canvas</div>
+                            <label class="theme-swatch theme-swatch-custom${savedBgId === '__custom__' ? ' active' : ''}" data-id="__custom__" title="Custom canvas color" aria-label="Custom color" style="width:14px;height:14px;font-size:0.48rem;">+<input type="color" class="theme-color-input theme-bg-input" value="${savedBg}"></label>
+                        </div>
+                        <div class="theme-row-sublabel">Light</div>
                         <div class="theme-swatches">
                             ${lightThemes.map(t => `<button class="theme-swatch${t.id === savedBgId ? ' active' : ''}" data-id="${t.id}" data-bg="${t.bg}" data-fg="${t.fg}" style="background:${t.bg};border-color:#999" title="${t.id}" aria-label="${t.id} theme"></button>`).join('')}
                         </div>
-                    </div>
-                    <div class="theme-row">
-                        <div class="theme-row-label">Canvas — dark</div>
+                        <div class="theme-row-sublabel">Dark</div>
                         <div class="theme-swatches">
                             ${darkThemes.map(t => `<button class="theme-swatch${t.id === savedBgId ? ' active' : ''}" data-id="${t.id}" data-bg="${t.bg}" data-fg="${t.fg}" style="background:${t.bg}" title="${t.id}" aria-label="${t.id} theme"></button>`).join('')}
-                            <label class="theme-swatch theme-swatch-custom${savedBgId === '__custom__' ? ' active' : ''}" data-id="__custom__" title="Custom canvas color" aria-label="Custom color">+<input type="color" class="theme-color-input theme-bg-input" value="${savedBg}"></label>
                         </div>
                     </div>
                     <div class="theme-row">
-                        <div class="theme-row-label">Ink color</div>
-                        <div class="theme-fg-line">
-                            <div class="theme-fg-swatches">
-                                <button class="theme-swatch${savedFg === '#000' ? ' active' : ''}" data-fg-pick="#000" style="background:#000" title="Black" aria-label="Black ink"></button>
-                                <button class="theme-swatch${savedFg === '#fff' ? ' active' : ''}" data-fg-pick="#fff" style="background:#fff;border-color:#999" title="White" aria-label="White ink"></button>
-                                <button class="theme-swatch${savedFg === '#333' ? ' active' : ''}" data-fg-pick="#333" style="background:#333" title="Dark grey" aria-label="Dark grey ink"></button>
-                                <button class="theme-swatch${savedFg === '#ccc' ? ' active' : ''}" data-fg-pick="#ccc" style="background:#ccc;border-color:#999" title="Light grey" aria-label="Light grey ink"></button>
-                                <label class="theme-swatch theme-swatch-custom" title="Custom ink color" aria-label="Custom ink color">+<input type="color" class="theme-color-input theme-fg-input" value="${savedFg}"></label>
-                            </div>
+                        <div class="theme-row-header">
+                            <div class="theme-row-label">Ink color</div>
+                            <label class="theme-swatch theme-swatch-custom" title="Custom ink color" aria-label="Custom ink color" style="width:14px;height:14px;font-size:0.48rem;">+<input type="color" class="theme-color-input theme-fg-input" value="${savedFg}"></label>
+                        </div>
+                        <div class="theme-fg-swatches">
+                            <button class="theme-swatch${savedFg === '#000' ? ' active' : ''}" data-fg-pick="#000" style="background:#000" title="Black" aria-label="Black ink"></button>
+                            <button class="theme-swatch${savedFg === '#333' ? ' active' : ''}" data-fg-pick="#333" style="background:#333" title="Dark grey" aria-label="Dark grey ink"></button>
+                            <button class="theme-swatch${savedFg === '#555' ? ' active' : ''}" data-fg-pick="#555" style="background:#555" title="Mid grey" aria-label="Mid grey ink"></button>
+                            <button class="theme-swatch${savedFg === '#888' ? ' active' : ''}" data-fg-pick="#888" style="background:#888" title="Grey" aria-label="Grey ink"></button>
+                            <button class="theme-swatch${savedFg === '#bbb' ? ' active' : ''}" data-fg-pick="#bbb" style="background:#bbb;border-color:#999" title="Light grey" aria-label="Light grey ink"></button>
+                            <button class="theme-swatch${savedFg === '#fff' ? ' active' : ''}" data-fg-pick="#fff" style="background:#fff;border-color:#999" title="White" aria-label="White ink"></button>
                         </div>
                     </div>
                 `;
@@ -1341,7 +1391,20 @@
                 frame.addEventListener('win-resize', resizeVP);
 
                 let alive = true;
-                frame.querySelector('.win-close').addEventListener('click', () => { alive = false; renderer.dispose(); });
+                const onThemeChange = () => {
+                    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+                    const fg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
+                    const bgInt = parseInt(bg.replace('#',''), 16);
+                    const fgInt = parseInt(fg.replace('#',''), 16);
+                    ascii.domElement.style.color = fg;
+                    ascii.domElement.style.backgroundColor = bg;
+                    renderer.setClearColor(bgInt, 1);
+                    scene.background.set(bgInt);
+                    matWireAll.color.set(fgInt); wireEdgeMat.color.set(fgInt); solidEdgeMat.color.set(fgInt);
+                    wireFillMeshes.forEach(f => f.material.color.set(bgInt));
+                };
+                window.addEventListener('theme-change', onThemeChange);
+                frame.querySelector('.win-close').addEventListener('click', () => { alive = false; renderer.dispose(); window.removeEventListener('theme-change', onThemeChange); });
 
                 (function loop() {
                     if (!alive) return;
@@ -1468,6 +1531,15 @@
             });
         }
         buildMenuWindow();
+        openTheme();
+        requestAnimationFrame(() => {
+            const themeFrame = openWins['theme'];
+            const menuEl = document.querySelector('.win-frame');
+            if (themeFrame && menuEl) {
+                themeFrame.style.left = '28px';
+                themeFrame.style.top  = (menuEl.offsetTop + menuEl.offsetHeight + 8) + 'px';
+            }
+        });
 
         // Restore saved theme preferences on load
         const savedScale = parseFloat(localStorage.getItem('dellus-font-scale'));
