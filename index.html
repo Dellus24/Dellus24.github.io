@@ -145,11 +145,13 @@
 
         .win-titlebar {
             height: 24px; min-height: 24px;
-            border-bottom: 1px solid var(--border-strong);
+            border-bottom: 1px solid transparent;
             display: flex; align-items: center;
             padding: 0 8px; cursor: move;
             user-select: none; gap: 8px; flex-shrink: 0;
+            transition: border-color 0.2s;
         }
+        .win-frame:hover .win-titlebar { border-bottom-color: var(--border-strong); }
 
         .win-title {
             font-size: 0.5rem; letter-spacing: 0.12em;
@@ -620,10 +622,10 @@
                 }
                 return true;
             }
-            for (let row = pad; row < sh - h; row += step)
-                for (let col = pad; col < sw - w; col += step)
+            for (let row = pad; row + h < sh - pad; row += step)
+                for (let col = pad; col + w < sw - pad; col += step)
                     if (free(col, row)) return { x: col, y: row };
-            return { x: Math.max(pad, (sw - w) / 2), y: Math.max(pad, (sh - h) / 2) };
+            return { x: Math.max(pad, Math.min(sw - w - pad, (sw - w) / 2)), y: Math.max(pad, Math.min(sh - h - pad, (sh - h) / 2)) };
         }
         function focusOrCreate(key, createFn) {
             if (openWins[key]) { openWins[key].style.zIndex = ++topZ; return; }
