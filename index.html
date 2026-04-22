@@ -120,6 +120,8 @@
         }
 
         body.dragging  { cursor: move !important; user-select: none; }
+        .win-frame.win-draggable { cursor: grab; }
+        .win-frame.win-draggable:active { cursor: grabbing; }
         body.resizing  { user-select: none; }
 
         /* ג"€ג"€ WINDOW FRAME ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
@@ -632,7 +634,7 @@
             createFn();
         }
 
-        function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180 }) {
+        function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180, bodyDrag = false }) {
             const { x, y } = nextSpawn(w, h);
             const ws = document.getElementById('workspace');
 
@@ -727,7 +729,7 @@
         // ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
         function openInfo(project) {
             focusOrCreate(`info-${project.id}`, () => {
-                const frame = makeFrame({ title: project.title, tag: 'Info', w: 360, h: 340, key: `info-${project.id}` });
+                const frame = makeFrame({ title: project.title, tag: 'Info', w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true });
                 const body = frame.querySelector('.win-body');
                 body.className += ' info-body';
 
@@ -894,7 +896,7 @@
             const content = STATIC[key];
             if (!content) return;
             focusOrCreate(`text-${key}`, () => {
-                const frame = makeFrame({ title: content.title, tag: key.toUpperCase(), w: 420, h: 460, key: `text-${key}` });
+                const frame = makeFrame({ title: content.title, tag: key.toUpperCase(), w: 420, h: 460, key: `text-${key}`, bodyDrag: true });
                 const body = frame.querySelector('.win-body');
                 body.className += ' text-body';
                 body.innerHTML = `<pre class="text-content">${content.body}</pre>`;
@@ -1447,6 +1449,11 @@
                 themeFrame.style.zIndex = ++topZ;
             }
 
+            // Collapse menu to titlebar-only for tighter layout
+            if (menuEl && menuEl._toggleCollapse && !menuEl._collapsed()) menuEl._toggleCollapse();
+            // Sync theme width to menu width
+            if (themeFrame && menuEl) themeFrame.style.width = menuEl.offsetWidth + 'px';
+
             // Collect all movable windows + floating images
             const frames = [...ws.querySelectorAll('.win-frame')].filter(f => f !== menuEl && f !== themeFrame);
             const floats = [...ws.querySelectorAll('.img-float')];
@@ -1502,6 +1509,7 @@
                 }
             }
 
+            const areaX = leftX + leftColW;
             bsp({ x: areaX, y: topY, w: sw - areaX - gap, h: sh - topY - gap }, all);
         }
 
@@ -1552,7 +1560,7 @@
                     <div class="proj-row" style="gap:8px;">
                         <span class="proj-name" data-action="theme" style="cursor:pointer;">Theme</span>
                         <span style="font-size:0.5rem;opacity:0.25;user-select:none;">&#xb7;</span>
-                        <span class="proj-name" data-action="order" style="cursor:pointer;">Order</span>
+                        <span class="proj-name" data-action="arrange" style="cursor:pointer;">Arrange</span>
                     </div>
                 </div>
             `;
@@ -1582,6 +1590,8 @@
                 body.style.display = collapsed ? 'none' : '';
                 toggleBtn.textContent = collapsed ? '+' : String.fromCharCode(8722);
             }
+            frame._toggleCollapse = toggleCollapse;
+            frame._collapsed = () => collapsed;
             toggleBtn.addEventListener('click', e => { e.stopPropagation(); toggleCollapse(); });
             frame.querySelector('.win-titlebar').addEventListener('dblclick', toggleCollapse);
 
@@ -1614,7 +1624,7 @@
             frame.querySelectorAll('[data-action]').forEach(el => {
                 const action = el.dataset.action;
                 if (action === 'theme') el.addEventListener('click', () => openTheme());
-                if (action === 'order') el.addEventListener('click', () => orderWindows());
+                if (action === 'arrange') el.addEventListener('click', () => orderWindows());
             });
         }
         buildMenuWindow();
