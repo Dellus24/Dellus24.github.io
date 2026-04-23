@@ -1456,6 +1456,9 @@
                 themeFrame.style.zIndex = ++topZ;
             }
 
+            // Collect all movable windows + floating images
+            const frames = [...ws.querySelectorAll('.win-frame')].filter(f => f !== menuEl && f !== themeFrame);
+            const floats = [...ws.querySelectorAll('.img-float')];
             const all    = [...frames, ...floats];
             if (!all.length) return;
 
