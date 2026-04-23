@@ -230,6 +230,20 @@
 
         .win-body {
             flex: 1; overflow: auto; position: relative;
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .win-body::-webkit-scrollbar { display: none; }
+
+        .cscroll-track {
+            position: absolute; right: 5px; width: 1px;
+            background: var(--fg); opacity: 0; pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .win-frame:hover .cscroll-track { opacity: 0.12; }
+        .cscroll-thumb {
+            position: absolute; left: -3px; right: -3px;
+            height: 6px; border-radius: 50%;
+            background: var(--fg); opacity: 0.45;
         }
 
         .win-resize-edge { position: absolute; z-index: 10; }
@@ -699,6 +713,7 @@
                     <span class="win-close">&#x2014;</span>
                 </div>
                 <div class="win-body"></div>
+                <div class="cscroll-track"><div class="cscroll-thumb"></div></div>
                 <div class="win-resize-edge" data-dir="n"></div>
                 <div class="win-resize-edge" data-dir="s"></div>
                 <div class="win-resize-edge" data-dir="e"></div>
@@ -790,6 +805,24 @@
             document.addEventListener('mouseup', () => {
                 if (resizing) { resizing = false; document.body.style.cursor = ''; document.body.classList.remove('resizing'); }
             });
+
+            // Custom scrollbar
+            const cTrack = frame.querySelector('.cscroll-track');
+            const cThumb = frame.querySelector('.cscroll-thumb');
+            const cBody  = frame.querySelector('.win-body');
+            function syncScroll() {
+                const tbH = frame.querySelector('.win-titlebar').offsetHeight;
+                cTrack.style.top    = (tbH + 6) + 'px';
+                cTrack.style.bottom = '6px';
+                if (cBody.scrollHeight <= cBody.clientHeight + 1) { cTrack.style.opacity = '0'; return; }
+                cTrack.style.opacity = '';
+                const ratio   = cBody.scrollTop / (cBody.scrollHeight - cBody.clientHeight);
+                const availH  = cTrack.offsetHeight - 6;
+                cThumb.style.top = Math.round(ratio * availH) + 'px';
+            }
+            cBody.addEventListener('scroll', syncScroll);
+            frame.addEventListener('mouseenter', syncScroll);
+            new ResizeObserver(syncScroll).observe(cBody);
 
             setTimeout(() => frame.classList.remove('spawning'), 320);
             return frame;
