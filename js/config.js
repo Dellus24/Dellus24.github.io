@@ -22,6 +22,10 @@
 //     images: [                                 // optional; presence enables Gallery
 //         { src: 'assets/images/foo.jpg', label: 'Caption' },
 //     ],
+//     slides: [                                 // optional; presence enables Slides (presentation viewer)
+//         'assets/slides/kebab-id/01.jpg',      // plain paths, shown in order
+//         'assets/slides/kebab-id/02.jpg',
+//     ],
 // }
 //
 // NOTES

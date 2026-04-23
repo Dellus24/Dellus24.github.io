@@ -125,6 +125,47 @@
         .win-frame.win-draggable:active { cursor: grabbing; }
         body.resizing  { user-select: none; }
 
+        /* ── Slideshow ── */
+        .slide-float {
+            position: absolute; overflow: hidden;
+            background: var(--bg); border: 1px solid var(--border-strong);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            user-select: none; transition: box-shadow 0.15s;
+        }
+        .slide-float img {
+            position: absolute; inset: 0 0 28px 0;
+            width: 100%; height: calc(100% - 28px);
+            object-fit: contain; display: block; pointer-events: none;
+        }
+        .slide-nav {
+            position: absolute; top: 0; bottom: 28px; width: 50%;
+            display: flex; align-items: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.15s;
+        }
+        .slide-float:hover .slide-nav { opacity: 1; }
+        .slide-nav-prev { left: 0; justify-content: flex-start; padding-left: 10px; }
+        .slide-nav-next { right: 0; justify-content: flex-end;  padding-right: 10px; }
+        .slide-chevron {
+            font-size: 1.1rem; color: var(--fg); opacity: 0.4;
+            transition: opacity 0.1s; text-shadow: 0 0 6px var(--bg);
+        }
+        .slide-nav:hover .slide-chevron { opacity: 1; }
+        .slide-bar {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 28px;
+            display: flex; align-items: center; padding: 0 8px; gap: 8px;
+            border-top: 1px solid var(--border-strong);
+            font-size: 0.55rem; opacity: 0; transition: opacity 0.2s;
+        }
+        .slide-float:hover .slide-bar { opacity: 1; }
+        .slide-title  { flex: 1; opacity: 0.5; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .slide-counter { opacity: 0.35; flex-shrink: 0; }
+        .slide-close  { opacity: 0.3; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s; }
+        .slide-close:hover { opacity: 0.9; }
+        .slide-resize {
+            position: absolute; bottom: 0; right: 0;
+            width: 14px; height: 14px; cursor: nwse-resize;
+        }
+
         /* ג"€ג"€ WINDOW FRAME ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
         .win-frame {
             position: absolute;
@@ -755,6 +796,83 @@
         }
 
         // ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // ── SLIDESHOW WINDOW ──────────────────────────────────────────────────────
+        function openSlideshow(project) {
+            focusOrCreate(`slides-${project.id}`, () => {
+                const ws = document.getElementById('workspace');
+                const { x, y } = nextSpawn(640, 440);
+                const slides = project.slides;
+                let idx = 0;
+
+                const el = document.createElement('div');
+                el.className = 'slide-float spawning';
+                el.style.cssText = `left:${x}px;top:${y}px;z-index:${++topZ};width:640px;height:440px;`;
+                openWins[`slides-${project.id}`] = el;
+
+                el.innerHTML = `
+                    <img class="slide-img" draggable="false" src="${slides[0].src || slides[0]}" alt="">
+                    <div class="slide-nav slide-nav-prev"><span class="slide-chevron">&lt;</span></div>
+                    <div class="slide-nav slide-nav-next"><span class="slide-chevron">&gt;</span></div>
+                    <div class="slide-bar">
+                        <span class="slide-title">${project.title}</span>
+                        <span class="slide-counter">1 / ${slides.length}</span>
+                        <span class="slide-close">&#x2014;</span>
+                    </div>
+                    <div class="slide-resize"></div>
+                `;
+
+                ws.appendChild(el);
+                setTimeout(() => el.classList.remove('spawning'), 320);
+
+                const imgEl      = el.querySelector('.slide-img');
+                const counterEl  = el.querySelector('.slide-counter');
+
+                function go(n) {
+                    idx = (idx + n + slides.length) % slides.length;
+                    imgEl.src = slides[idx].src || slides[idx];
+                    counterEl.textContent = `${idx + 1} / ${slides.length}`;
+                }
+
+                el.querySelector('.slide-nav-prev').addEventListener('click', () => go(-1));
+                el.querySelector('.slide-nav-next').addEventListener('click', () => go(1));
+                el.querySelector('.slide-close').addEventListener('click', e => {
+                    e.stopPropagation();
+                    el.classList.add('closing');
+                    setTimeout(() => { el.remove(); delete openWins[`slides-${project.id}`]; }, 220);
+                });
+
+                // Drag
+                el.addEventListener('mousedown', () => el.style.zIndex = ++topZ);
+                let dragging = false, resizing = false, ox = 0, oy = 0, rw = 0, rh = 0;
+                el.addEventListener('mousedown', e => {
+                    if (e.target.closest('.slide-nav, .slide-close, .slide-resize')) return;
+                    dragging = true;
+                    ox = e.clientX + ws.scrollLeft - el.offsetLeft;
+                    oy = e.clientY + ws.scrollTop  - el.offsetTop;
+                    document.body.classList.add('dragging'); e.preventDefault();
+                });
+                el.querySelector('.slide-resize').addEventListener('mousedown', e => {
+                    e.stopPropagation(); resizing = true;
+                    ox = e.clientX; oy = e.clientY;
+                    rw = el.offsetWidth; rh = el.offsetHeight;
+                    document.body.classList.add('resizing'); e.preventDefault();
+                });
+                document.addEventListener('mousemove', e => {
+                    if (dragging) {
+                        el.style.left = Math.max(0, e.clientX + ws.scrollLeft - ox) + 'px';
+                        el.style.top  = Math.max(0, e.clientY + ws.scrollTop  - oy) + 'px';
+                    } else if (resizing) {
+                        el.style.width  = Math.max(280, rw + e.clientX - ox) + 'px';
+                        el.style.height = Math.max(200, rh + e.clientY - oy) + 'px';
+                    }
+                });
+                document.addEventListener('mouseup', () => {
+                    if (dragging) { dragging = false; document.body.classList.remove('dragging'); }
+                    if (resizing) { resizing = false; document.body.classList.remove('resizing'); }
+                });
+            });
+        }
+
         function openInfo(project) {
             focusOrCreate(`info-${project.id}`, () => {
                 const frame = makeFrame({ title: project.title, tag: 'Info', w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true });
@@ -763,6 +881,7 @@
 
                 const hasModel  = !!project.model;
                 const hasImages = project.images && project.images.length > 0;
+                const hasSlides = project.slides && project.slides.length > 0;
 
                 body.innerHTML = `
                     <div class="info-meta">
@@ -775,11 +894,13 @@
                     <div class="info-participants">${project.participants}</div>
                     <div class="info-desc">${project.description}</div>
                     <div class="info-actions">
+                        ${hasSlides ? `<button class="action-btn slides-btn">Slides</button>` : ''}
                         ${hasImages ? `<button class="action-btn gallery-btn">Gallery</button>` : ''}
                         ${hasModel  ? `<button class="action-btn viewer-btn">3D View</button>` : ''}
                     </div>
                 `;
 
+                if (hasSlides) body.querySelector('.slides-btn').addEventListener('click', () => openSlideshow(project));
                 if (hasImages) body.querySelector('.gallery-btn').addEventListener('click', () => openGallery(project));
                 if (hasModel)  body.querySelector('.viewer-btn').addEventListener('click', () => open3D(project));
 
