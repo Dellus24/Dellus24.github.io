@@ -179,6 +179,13 @@
         }
         .win-frame:hover .win-close { opacity: 0.3; }
         .win-close:hover { opacity: 0.9 !important; }
+        .win-collapse {
+            font-size: 0.55rem; opacity: 0; cursor: pointer;
+            transition: opacity 0.15s; padding: 0 2px;
+            user-select: none; flex-shrink: 0;
+        }
+        .win-frame:hover .win-collapse { opacity: 0.3; }
+        .win-collapse:hover { opacity: 0.9 !important; }
 
         .win-body {
             flex: 1; overflow: auto; position: relative;
@@ -635,7 +642,7 @@
             createFn();
         }
 
-        function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180, bodyDrag = false }) {
+        function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180, bodyDrag = false, collapsible = false }) {
             const { x, y } = nextSpawn(w, h);
             const ws = document.getElementById('workspace');
 
@@ -647,6 +654,7 @@
                 <div class="win-titlebar">
                     <span class="win-title">${title}</span>
                     ${tag ? `<span class="win-type-tag">${tag}</span>` : ''}
+                    ${collapsible ? '<span class="win-collapse">&#x2212;</span>' : ''}
                     <span class="win-close">&#x2014;</span>
                 </div>
                 <div class="win-body"></div>
@@ -671,6 +679,19 @@
                 frame.classList.add('closing');
                 setTimeout(() => { frame.remove(); if (key) delete openWins[key]; }, 220);
             });
+
+            // Collapse
+            let _collapsed = false;
+            if (collapsible) {
+                const colBtn = frame.querySelector('.win-collapse');
+                const winBody = frame.querySelector('.win-body');
+                const collapseFrame = () => { _collapsed = true;  winBody.style.display = 'none'; colBtn.textContent = '+'; frame.style.height = ''; frame.style.minHeight = '0'; };
+                const expandFrame  = () => { _collapsed = false; winBody.style.display = '';     colBtn.textContent = String.fromCharCode(8722); frame.style.minHeight = ''; };
+                colBtn.addEventListener('click', e => { e.stopPropagation(); _collapsed ? expandFrame() : collapseFrame(); });
+                frame.querySelector('.win-titlebar').addEventListener('dblclick', () => _collapsed ? expandFrame() : collapseFrame());
+                frame._collapse = collapseFrame;
+                frame._expand   = expandFrame;
+            }
 
             // Drag
             const tb = frame.querySelector('.win-titlebar');
@@ -967,7 +988,7 @@
 
         function openTheme() {
             focusOrCreate('theme', () => {
-                const frame = makeFrame({ title: 'Theme', tag: 'Settings', w: 300, h: 380, minW: 260, minH: 300, key: 'theme' });
+                const frame = makeFrame({ title: 'Theme', tag: 'Settings', w: 220, h: 380, minW: 180, minH: 200, key: 'theme', collapsible: true });
                 const body = frame.querySelector('.win-body');
                 body.className += ' theme-body';
 
@@ -976,6 +997,9 @@
                 const savedFontId = localStorage.getItem('dellus-font-id') || 'junicode';
                 const savedFg     = localStorage.getItem('dellus-fg') || '#000';
                 const savedBg     = localStorage.getItem('dellus-bg') || '#ffffff';
+
+                const isFirstVisit = !localStorage.getItem('dellus-font-scale');
+                if (isFirstVisit) requestAnimationFrame(() => frame._collapse && frame._collapse());
 
                 const lightThemes = THEMES.filter(t => t.fg === '#000');
                 const darkThemes  = THEMES.filter(t => t.fg === '#fff');
