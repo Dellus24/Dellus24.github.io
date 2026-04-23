@@ -131,14 +131,16 @@
             background: var(--bg); border: 1px solid var(--border-strong);
             box-shadow: 0 4px 24px rgba(0,0,0,0.18);
             user-select: none; transition: box-shadow 0.15s;
+            cursor: grab;
         }
+        .slide-float:active { cursor: grabbing; }
         .slide-float img {
             position: absolute; inset: 0 0 28px 0;
             width: 100%; height: calc(100% - 28px);
             object-fit: contain; display: block; pointer-events: none;
         }
         .slide-nav {
-            position: absolute; top: 0; bottom: 28px; width: 50%;
+            position: absolute; top: 0; bottom: 28px; width: 22%;
             display: flex; align-items: center;
             cursor: pointer; opacity: 0; transition: opacity 0.15s;
         }
@@ -882,6 +884,7 @@
                     dragging = true;
                     ox = e.clientX + ws.scrollLeft - el.offsetLeft;
                     oy = e.clientY + ws.scrollTop  - el.offsetTop;
+                    el.style.cursor = 'grabbing';
                     document.body.classList.add('dragging'); e.preventDefault();
                 });
                 el.querySelector('.slide-resize').addEventListener('mousedown', e => {
@@ -900,7 +903,7 @@
                     }
                 });
                 document.addEventListener('mouseup', () => {
-                    if (dragging) { dragging = false; document.body.classList.remove('dragging'); }
+                    if (dragging) { dragging = false; el.style.cursor = ''; document.body.classList.remove('dragging'); }
                     if (resizing) { resizing = false; document.body.classList.remove('resizing'); }
                 });
             });
