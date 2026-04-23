@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m 'Fix frames/floats undefined crash in Arrange *)",
+      "Bash(git push *)"
+    ]
+  }
+}
