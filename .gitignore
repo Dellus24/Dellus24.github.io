@@ -137,3 +137,7 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# 3D model folders — kept local, not pushed
+assets/projects/*/models/
+assets/projects/*/model/
