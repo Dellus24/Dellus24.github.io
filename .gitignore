@@ -141,3 +141,6 @@ vite.config.ts.timestamp-*
 # 3D model folders — kept local, not pushed
 assets/projects/*/models/
 assets/projects/*/model/
+# Exception: 101-gates model is small enough to push
+!assets/projects/101-gates/models/
+!assets/projects/101-gates/models/spring.glb
