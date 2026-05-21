@@ -212,9 +212,9 @@ the politics of built form.`,
         title: 'Contact',
         body: `NIR DELLUS
 
-Email     nir.d@deve-arc.com
+Email     ndellus3@gmail.com
 
-Location  Jerusalem & Tel Aviv, Israel
+Location  Vienna, Austria
 
 Open for research collaborations,
 teaching, and design work.`,
@@ -224,21 +224,24 @@ teaching, and design work.`,
         body: `NIR DELLUS — CURRICULUM VITAE
 
 
-EXPERIENCE
+CONTACT
+
+Location       Vienna
+Email          ndellus3@gmail.com
+Date of Birth  24/10/1996
+
+
+PROFESSIONAL EXPERIENCE
 
 2024–Present   Derman Verbakel Architects
-               R&D — Computational Design & Urban Planning
+               Research & Design
 
 2023–2025      Bezalel Architecture Department
-               Teaching Assistant
+               Teaching Assistant — Digital Tools, 2nd & 3rd Year
 
-2023           Israeli Pavilion
-               The 18th Venice Architecture Biennale
-               Research, Prototyping & Manufacturing
-
-2023           For Now House
-               Bezalel Research Authority
-               Academic Research
+2022–2023      Israeli Pavilion
+               Venice Architecture Biennale
+               Research & Prototype
 
 2021           Sabio Levy Architects
                Concept Development
@@ -246,15 +249,13 @@ EXPERIENCE
 2019           Carpentry
                Furniture and Set Design Constructions
 
-2015–2018      Obligatory Service
-
-2014–2015      Volunteer Year, Tarbut Movement
+2014–2015      Volunteer Year, Tarbut (Culture) Movement
 
 
 EDUCATION
 
 2019–2024      Bezalel Academy of Arts and Design
-               Jerusalem — B.Arch.
+               B.Arch.
 
 2023 (Fall)    Exchange Studies
                Aarhus School of Architecture
@@ -266,6 +267,14 @@ EDUCATION
 LANGUAGES
 
 Hebrew         Native
-English        Fluent`,
+English        Fluent
+German         A1 — actively learning
+
+
+SOFTWARE
+
+CAD/3D         AutoCAD, BricsCAD, Rhino, Grasshopper,
+               Blender, Revit, ArchiCAD
+Other          Adobe Suite, Microsoft Office`,
     },
 };
