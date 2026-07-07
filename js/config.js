@@ -57,8 +57,8 @@ const PROJECTS = [
 
 Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
         model: 'assets/projects/101-gates/models/spring.glb',
-        images: [{ src: 'assets/projects/101-gates/gallery/01.png', label: 'Details Model' }],
-        slides: seq('assets/projects/101-gates/slides/', 49, 'png'),
+        images: [{ src: 'assets/projects/101-gates/gallery/01.webp', label: 'Details Model' }],
+        slides: seq('assets/projects/101-gates/slides/', 49, 'webp'),
     },
     {
         id: 're-possessing-industrial',
@@ -71,7 +71,7 @@ Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
         description: `In this project, we investigated the history of the famous Allatini flour mills in Thessaloniki, a post-industrial structure that has been neglected and abandoned since the 1990s. The factory was one of the city's biggest economic assets, a complex typology that utilizes the shoreline efficiently. In our suggestion, we do not seek to renovate or fix this place; we only aim to preserve it as it is. We saw the beauty in the decay and proposed transforming the old factory into a park for the people of Thessaloniki.
 
 Guided by Zvi Efrat and Liran Messer.`,
-        slides: seq('assets/projects/re-possessing-industrial/slides/', 92),
+        slides: seq('assets/projects/re-possessing-industrial/slides/', 92, 'webp'),
     },
     {
         id: 'get-lost',
@@ -85,11 +85,11 @@ Guided by Zvi Efrat and Liran Messer.`,
 
 Guided by Helle Blom.`,
         images: [
-            ...seq('assets/projects/get-lost/gallery/', 15).map(src => ({ src })),
+            ...seq('assets/projects/get-lost/gallery/', 15, 'webp').map(src => ({ src })),
             ...imgs('assets/projects/get-lost/gallery/', [
-                'Arch_For_Change.png', 'beach_box.jpg', 'bridge.jpg',
-                'communal_library.jpg', 'disassemble_story.jpg',
-                'energy_usage.jpg', 'facade_a1.jpg',
+                'Arch_For_Change.webp', 'beach_box.webp', 'bridge.webp',
+                'communal_library.webp', 'disassemble_story.webp',
+                'energy_usage.webp', 'facade_a1.webp',
             ]),
         ],
     },
@@ -104,7 +104,7 @@ Guided by Helle Blom.`,
         description: `Every group had to pick a project from the Brazilian modernism movement. We picked the Ibirapuera park in the heart of São Paulo, planned by Oscar Niemeyer. The park is assembled by five public galleries connected by a marquise. Today, the buildings are rented and act as museums, and the surrounding park has more usage than Niemeyer's complex. Our proposal offers to imitate the marquise and apply it to the other buildings, making a horizontal architecture with no facade. The program proposes giving the buildings a new life within the park.
 
 Guided by Zvi Efrat and Liran Messer.`,
-        slides: seq('assets/projects/horizontal-modernism/slides/', 99, 'jpg', { 47: 'gif', 88: 'png' }),
+        slides: seq('assets/projects/horizontal-modernism/slides/', 99, 'webp', { 47: 'gif' }),
     },
     {
         id: 'pray-and-play',
@@ -119,7 +119,7 @@ Guided by Zvi Efrat and Liran Messer.`,
 The planning proposal stemmed from engaging with critical questions for the maximal utilization of a polluted area: what can be done with an abandoned weapons factory? How does one cope with massive soil pollution? Through proposing programs that are contrary to one another — a prayer hall and a dance club — the planning contains the moral duality of the weapons industry. The aspiration of the planning does not propose an unequivocal solution regarding the moral question, but it certainly contains the existing morality.
 
 Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
-        slides: seq('assets/projects/pray-and-play/slides/', 69),
+        slides: seq('assets/projects/pray-and-play/slides/', 69, 'webp'),
     },
     {
         id: 'stor-e-age',
@@ -130,14 +130,7 @@ Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
         participants: 'Nir Dellus',
         type: 'Studio 9',
         description: `Description to be added.`,
-        slides: seq('assets/projects/stor-e-age/slides/', 147, 'jpeg', {
-            5:'png', 6:'png', 7:'png', 8:'png', 9:'png', 10:'png',
-            12:'png', 19:'png', 21:'png', 22:'png', 23:'png', 24:'png', 25:'png', 26:'png', 27:'png',
-            52:'png', 53:'png', 54:'png', 55:'png', 57:'png', 59:'png', 61:'png', 63:'png', 65:'png', 67:'png', 70:'png',
-            84:'jpg', 85:'jpg', 86:'jpg', 87:'jpg', 94:'png',
-            109:'jpg', 110:'jpg', 111:'jpg', 113:'jpg', 114:'jpg',
-            68: null, 69: null,
-        }),
+        slides: seq('assets/projects/stor-e-age/slides/', 147, 'webp', { 68: null, 69: null }),
     },
 
     // ── EMPLOYMENT ───────────────────────────────────────────────
@@ -153,10 +146,10 @@ Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
 
 Supported and funded by the Bezalel Research Authority.`,
         images: imgs('assets/projects/for-now-house/gallery/', [
-            'CNC_machine.png', 'Cnc_Example.png', 'Code_Image.png',
-            'Code_modol_1x1.png', 'Code_modol_2x5.png', 'Conect_In_The_Air.png',
-            'Connectors-02.png', 'Cross_Detail.png', 'Full_Section.png',
-            'Hand_Mockup.png', 'Section_View.jpg',
+            'CNC_machine.webp', 'Cnc_Example.webp', 'Code_Image.webp',
+            'Code_modol_1x1.webp', 'Code_modol_2x5.webp', 'Conect_In_The_Air.webp',
+            'Connectors-02.webp', 'Cross_Detail.webp', 'Full_Section.webp',
+            'Hand_Mockup.webp', 'Section_View.webp',
         ]),
     },
     {
@@ -172,8 +165,8 @@ Supported and funded by the Bezalel Research Authority.`,
 Role: research assistant, prototyping and manufacturing.
 Curated by Edith Kofsky and Oren Eldar.`,
         images: imgs('assets/projects/cloud-to-ground/gallery/', [
-            'cast.jpg', 'mold_draft.jpg', 'mold_01.jpg', 'mold_02.jpg', 'mold_03.jpg',
-            'tile_sample.jpg', 'tile_sample_01.jpg', 'iso_gardem_F0.jpg', 'iso_gardem_F1.jpg',
+            'cast.webp', 'mold_draft.webp', 'mold_01.webp', 'mold_02.webp', 'mold_03.webp',
+            'tile_sample.webp', 'tile_sample_01.webp', 'iso_gardem_F0.webp', 'iso_gardem_F1.webp',
         ]),
     },
     {
