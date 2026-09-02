@@ -1018,6 +1018,140 @@
             });
         }
 
+        // Open a project = Info + every feature it has, then tile them.
+        function openProject(project) {
+            openInfo(project);
+            if (project.slides && project.slides.length) openSlideshow(project);
+            if (project.images && project.images.length) openGallery(project);
+            if (project.model) open3D(project);
+            requestAnimationFrame(() => tileProjectWindows(project));
+        }
+
+        // Content-proportional packer for a single project's windows.
+        // (Separate from orderWindows/BSP — this one sizes each window to its
+        // content and packs into rows, never stretching to fill the canvas.)
+        function tileProjectWindows(project) {
+            const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+            const ws = document.getElementById('workspace');
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const gap = 10, topY = 28, leftX = 28;
+
+            // Reserve the pinned left column (menu + theme)
+            const menuEl   = document.getElementById('menu-body-inner')?.closest('.win-frame');
+            const leftColW = (menuEl ? menuEl.offsetWidth : 228) + gap;
+            const areaX    = leftX + leftColW;
+            const availW   = vw - areaX - gap;
+            const availH   = vh - topY  - gap;
+
+            // Per-window caps so nothing dominates an unknown viewport
+            const capW = Math.min(availW, vw * 0.46);
+            const capH = Math.min(availH, vh * 0.62);
+
+            const items = [];
+
+            // 3D — the hero, a little bigger than the rest
+            const el3d = openWins[`3d-${project.id}`];
+            if (el3d) {
+                let w = clamp(vw * 0.40, 460, capW);
+                let h = clamp(w * 0.78, 340, capH);
+                items.push({ el: el3d, w, h, frame: true });
+            }
+
+            // Slideshow — match the image's aspect ratio (object-fit:contain,
+            // so no dead space). Real ratio known only once the image loads.
+            const elSl = openWins[`slides-${project.id}`];
+            if (elSl) {
+                const img = elSl.querySelector('.slide-img');
+                const ar  = (img && img.naturalWidth) ? img.naturalWidth / img.naturalHeight : 3 / 2;
+                let h = clamp(vh * 0.40, 240, capH);
+                let w = h * ar;
+                if (w > capW) { w = capW; h = w / ar; }
+                items.push({ el: elSl, w, h, frame: false });
+                if (img && !img.naturalWidth && !img.dataset.tileHook) {
+                    img.dataset.tileHook = '1';
+                    img.addEventListener('load', () => tileProjectWindows(project), { once: true });
+                }
+            }
+
+            // Gallery — tidy grid, aim for 2 rows; body scrolls if there are more.
+            // Match the CSS grid: minmax(140px,1fr) columns, 4:3 thumbs (see .gallery-grid).
+            const elG = openWins[`gallery-${project.id}`];
+            if (elG) {
+                const n = (project.images && project.images.length) || 1;
+                const colW = 190, bar = 34, gg = 1;            // colW ≥ 140 so auto-fill keeps our column count
+                const maxCols = Math.max(1, Math.floor(capW / 150));
+                let cols = clamp(Math.ceil(n / 2), 1, 4);
+                cols = Math.min(cols, n, maxCols);
+                const rows = Math.min(2, Math.ceil(n / cols));
+                let w = clamp(cols * colW + (cols + 1) * gg, 260, capW);   // 260 = .win-frame min-width
+                const thumbH = ((w - (cols + 1) * gg) / cols) * 3 / 4;   // actual stretched thumb height
+                let h = clamp(rows * thumbH + (rows + 1) * gg + bar, 200, capH);
+                items.push({ el: elG, w, h, frame: true });
+            }
+
+            // Info / text — modest and readable, never stretched
+            const elI = openWins[`info-${project.id}`];
+            if (elI) {
+                items.push({ el: elI, w: 340, h: clamp(vh * 0.40, 300, capH), frame: true });
+            }
+
+            if (!items.length) return;
+
+            const themeFrame = openWins['theme'];
+            const mine = new Set(items.map(it => it.el));
+
+            // Shelf-pack tallest-first into a block with a LOCAL origin (0,0),
+            // so we can drop the whole block anywhere afterwards.
+            items.sort((a, b) => b.h - a.h);
+            function pack(scale) {
+                let x = 0, y = 0, rowH = 0, maxR = 0, maxB = 0;
+                const rects = [];
+                for (const it of items) {
+                    // .win-frame has CSS min 260x180 — never size a frame below it,
+                    // or it renders larger than we think and overlaps its neighbour.
+                    const w = it.frame ? Math.max(260, it.w * scale) : it.w * scale;
+                    const h = it.frame ? Math.max(180, it.h * scale) : it.h * scale;
+                    if (x > 0 && x + w > availW) { x = 0; y += rowH + gap; rowH = 0; }
+                    rects.push({ el: it.el, frame: it.frame, x, y, w, h });
+                    x += w + gap; rowH = Math.max(rowH, h);
+                    maxR = Math.max(maxR, x - gap); maxB = Math.max(maxB, y + rowH);
+                }
+                return { rects, maxR, maxB };
+            }
+            let L = pack(1);
+            // Global fit-to-screen: shrink the block uniformly if it overflows
+            const s = Math.min(1, availW / L.maxR, availH / L.maxB);
+            if (s < 1) L = pack(s);
+            const bw = L.maxR, bh = L.maxB;
+
+            // Drop the block in the first free spot: to the RIGHT of an earlier
+            // project if it fits there, otherwise BELOW it. Not strict — just
+            // uses the screen instead of always stacking straight down.
+            const obstacles = [...ws.querySelectorAll('.win-frame, .slide-float, .img-float')]
+                .filter(f => f !== menuEl && f !== themeFrame && !mine.has(f))
+                .map(f => ({ x: f.offsetLeft, y: f.offsetTop, w: f.offsetWidth, h: f.offsetHeight }));
+            const maxBottom = obstacles.reduce((y, o) => Math.max(y, o.y + o.h), topY);
+            const hits = (x, y) => obstacles.some(o =>
+                x < o.x + o.w + gap && x + bw + gap > o.x &&
+                y < o.y + o.h + gap && y + bh + gap > o.y);
+            let spot = { x: areaX, y: maxBottom + gap };   // fallback: below everything
+            scan:
+            for (let y = topY; y <= maxBottom + bh + 20; y += 20)
+                for (let x = areaX; x + bw <= vw - gap; x += 20)
+                    if (!hits(x, y)) { spot = { x, y }; break scan; }
+
+            for (const r of L.rects) {
+                Object.assign(r.el.style, {
+                    left:   Math.round(spot.x + r.x) + 'px',
+                    top:    Math.round(spot.y + r.y) + 'px',
+                    width:  Math.round(r.w) + 'px',
+                    height: Math.round(r.h) + 'px',
+                    zIndex: ++topZ,
+                });
+                if (r.frame) r.el.dispatchEvent(new CustomEvent('win-resize'));
+            }
+        }
+
         // ג"€ג"€ GALLERY WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
         function openGallery(project) {
             focusOrCreate(`gallery-${project.id}`, () => {
@@ -1787,15 +1921,17 @@
                 themeFrame.style.zIndex = ++topZ;
             }
 
-            // Collect all movable windows + floating images
+            // Collect all movable windows + floating images + slideshows
             const frames = [...ws.querySelectorAll('.win-frame')].filter(f => f !== menuEl && f !== themeFrame);
             const floats = [...ws.querySelectorAll('.img-float')];
-            const all    = [...frames, ...floats];
+            const slides = [...ws.querySelectorAll('.slide-float')];
+            const all    = [...frames, ...floats, ...slides];
             if (!all.length) return;
 
             // Weight determines relative area: heavier = more space
             function weight(f) {
                 if (f.classList.contains('img-float')) return 1.5;
+                if (f.classList.contains('slide-float')) return 3;
                 if (f.querySelector('.cv-canvas')) return 4;
                 if (f.querySelector('.gallery-body')) {
                     const n = f.querySelectorAll('.gallery-thumb').length || 1;
@@ -1953,7 +2089,7 @@
 
             frame.querySelectorAll('.proj-row[data-id]').forEach(el => {
                 const project = PROJECTS.find(p => p.id === el.dataset.id);
-                if (project) el.addEventListener('click', () => openInfo(project));
+                if (project) el.addEventListener('click', () => openProject(project));
             });
             frame.querySelectorAll('.proj-row[data-static]').forEach(el => {
                 el.addEventListener('click', () => openText(el.dataset.static));
