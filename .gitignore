@@ -141,12 +141,30 @@ vite.config.ts.timestamp-*
 # Personal reference materials (CV PDF with PII, etc.) — kept local, never pushed
 Reference/
 
-# 3D model folders — kept local, not pushed
-assets/projects/*/models/
-assets/projects/*/model/
-# Exception: 101-gates model is small enough to push
-!assets/projects/101-gates/models/
-!assets/projects/101-gates/models/spring.glb
+# ── 3D MODELS (task 3D-03) ───────────────────────────────────────────────
+# Layout convention inside assets/projects/<id>/models/ :
+#
+#   models/
+#     silo.glb            <- web-ready model, PUSHED (this is what the site loads)
+#     Silo/               <- helper/source files for that model, LOCAL ONLY
+#       Silo.3dm  Silo.obj  Silo.mtl  Silo.3dmbak ...
+#
+# One subfolder per model, named after it, so a project can hold several
+# models without its sources getting mixed together.
+#
+# Rules below: ignore everything *inside* models/ (note `/*`, not `/` — with a
+# trailing slash git will not descend into the directory at all and a later
+# negation cannot rescue anything), then un-ignore .glb files sitting directly
+# in models/. Source subfolders match the first rule as directories, so their
+# contents never get walked.
+#
+# This replaced a per-file exception list (previously one hand-written line per
+# pushed model, which meant a new model silently failed to deploy while working
+# fine locally).
+assets/projects/*/models/*
+assets/projects/*/model/*
+!assets/projects/*/models/*.glb
+!assets/projects/*/model/*.glb
 
 # Claude Code local settings - internal, never pushed
 .claude/

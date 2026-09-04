@@ -45,11 +45,37 @@ projects pointed at a `.glb` that doesn't exist. One copy only, from here on.
 - **Gallery labels:** `imgs()` accepts `['01.webp', 'My Label']` tuples as well
   as bare filenames.
 
-## Gitignore note for 3D models
+## 3D models — folder layout
 
-`.gitignore` blocks `assets/projects/*/models/` — models are large and stay
-local by default. The only pushed exception is
-`assets/projects/101-gates/models/spring.glb`, un-ignored explicitly.
+One subfolder per model, named after it, so a project can hold several models
+without their source files getting mixed together:
 
-**A new model will not deploy until it has its own exception**, even though it
-works locally. Add one, or restructure the rule. (Tracked as `3D-03`.)
+```
+assets/projects/<id>/models/
+    silo.glb          <- web-ready model. PUSHED. This is what config.js points at.
+    Silo/             <- helper/source files for that model. LOCAL ONLY, never pushed.
+        Silo.3dm
+        Silo.obj
+        Silo.mtl
+        Silo.3dmbak
+```
+
+Then point `config.js` at the `.glb`:
+
+```js
+model: 'assets/projects/re-possessing-industrial/models/silo.glb',
+```
+
+**Rules, handled automatically by `.gitignore` (no per-model edits needed):**
+
+- `.glb` files sitting **directly** in `models/` are pushed and deploy.
+- **Anything in a subfolder of `models/` stays local** — Rhino files, `.obj`,
+  `.mtl`, textures, `.3dmbak`, whatever you want to keep for your own use.
+
+**Paths are case-sensitive on GitHub Pages** even though Windows doesn't care.
+`models/Silo/` (folder) and `models/silo.glb` (file) differ only in case, and
+that is fine — but the string in `config.js` must match the real filename
+exactly, or the model 404s live while working perfectly on your machine.
+
+`.3dm.rhl` files are Rhino lock files — safe to delete once Rhino has closed
+the document. They're ignored either way.
