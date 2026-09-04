@@ -147,3 +147,6 @@ assets/projects/*/model/
 # Exception: 101-gates model is small enough to push
 !assets/projects/101-gates/models/
 !assets/projects/101-gates/models/spring.glb
+
+# Claude Code local settings - internal, never pushed
+.claude/

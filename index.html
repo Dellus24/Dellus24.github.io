@@ -1153,6 +1153,13 @@
         }
 
         // ג"€ג"€ GALLERY WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // Gallery grids render 400px derivatives from gallery/thumbs/, not the
+        // full-size originals — the originals run 1900-3840px wide, which cost
+        // ~29 MB to draw a grid of ~190px cells. Clicking still opens the full
+        // image via openImage(). Regenerate with D:/projects/Website/tools/make-thumbs.mjs (outside git).
+        // Falls back to the original if a thumb is missing (see 'error' handler).
+        const thumbSrc = src => src.replace(/\/gallery\/(?!thumbs\/)([^/]+)$/, '/gallery/thumbs/$1');
+
         function openGallery(project) {
             focusOrCreate(`gallery-${project.id}`, () => {
                 const frame = makeFrame({ title: project.title + ' — Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}` });
@@ -1167,7 +1174,7 @@
                         <div class="gallery-grid">
                             ${project.images.map((img, i) => `
                                 <div class="gallery-thumb" data-i="${i}">
-                                    <img src="${img.src}" alt="${img.label || ''}" loading="lazy" decoding="async">
+                                    <img src="${thumbSrc(img.src)}" data-full="${img.src}" alt="${img.label || ''}" loading="lazy" decoding="async">
                                     ${img.label ? `<div class="thumb-label">${img.label}</div>` : ''}
                                 </div>
                             `).join('')}
@@ -1175,6 +1182,10 @@
                     `;
                     body.querySelectorAll('.gallery-thumb').forEach(el => {
                         const i = parseInt(el.dataset.i);
+                        // Missing/failed thumb: fall back to the full image once,
+                        // so a project without generated thumbs still renders.
+                        const thumbEl = el.querySelector('img');
+                        thumbEl.addEventListener('error', () => { thumbEl.src = thumbEl.dataset.full; }, { once: true });
                         el.addEventListener('click', () => {
                             const img = project.images[i];
                             const existing = openWins[primaryKey];
