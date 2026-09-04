@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- noindex: this page renders personal contact details. It exists so the
+         CV can be read and printed cleanly, not to be found by search. Remove
+         only deliberately - see the note in assets/projects/README.md. -->
+    <meta name="robots" content="noindex, nofollow">
+    <title>CV — Nir Dellus</title>
+    <link rel="preload" href="assets/fonts/Junicode/JunicodeVF-Roman.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+        @font-face {
+            font-family: 'JunicodeVF';
+            src: url('assets/fonts/Junicode/JunicodeVF-Roman.woff2') format('woff2');
+            font-weight: 100 900;
+            font-style: normal;
+            font-display: swap;
+        }
+        :root { --bg: #ffffff; --fg: #000; --border-soft: rgba(0,0,0,0.18); }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            background: var(--bg); color: var(--fg);
+            font-family: 'JunicodeVF', serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .sheet {
+            max-width: 46rem;
+            margin: 0 auto;
+            padding: 40px 32px 64px;
+        }
+        .toolbar {
+            display: flex; gap: 10px; align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-soft);
+        }
+        .toolbar h1 { font-size: 0.9rem; font-weight: 400; letter-spacing: 0.02em; }
+        .toolbar .spacer { margin-left: auto; }
+        .btn {
+            font-family: inherit; font-size: 0.72rem;
+            color: var(--fg); background: none;
+            border: 1px solid var(--fg); padding: 5px 12px;
+            cursor: pointer; text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn:hover, .btn:focus-visible { background: var(--fg); color: var(--bg); }
+        .btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+        /* The CV body is pre-formatted plain text in config.js - column
+           alignment is done with spaces, so it must stay monospaced-ish and
+           preserve whitespace. */
+        .cv-body {
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            font-size: 0.9rem;
+            line-height: 1.62;
+        }
+        .fallback { font-size: 0.86rem; line-height: 1.6; }
+        .fallback a { color: var(--fg); }
+
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #111; --fg: #f0f0f0; --border-soft: rgba(255,255,255,0.2); }
+        }
+
+        /* ── PRINT / PDF ────────────────────────────────────────────────────
+           Force light ink-on-paper regardless of screen theme, drop the
+           chrome, and let the text break across pages sensibly. */
+        @page { margin: 18mm 16mm; }
+        @media print {
+            :root { --bg: #fff; --fg: #000; --border-soft: rgba(0,0,0,0.25); }
+            html, body { background: #fff !important; color: #000 !important; }
+            .toolbar { display: none !important; }
+            .sheet { max-width: none; margin: 0; padding: 0; }
+            .cv-body { font-size: 10.5pt; line-height: 1.45; orphans: 3; widows: 3; }
+            a { text-decoration: none; color: #000; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sheet">
+        <div class="toolbar">
+            <h1>Curriculum Vitae</h1>
+            <span class="spacer"></span>
+            <a class="btn" href="/">Portfolio</a>
+            <button class="btn" id="print-btn" type="button">Print / Save as PDF</button>
+        </div>
+        <main id="cv" class="cv-body" aria-label="Curriculum vitae"></main>
+    </div>
+
+    <!-- config.js is the single source of truth (see HYG-01). This page reads
+         STATIC.cv from it rather than holding its own copy, so the CV can
+         never drift from what the main site shows. -->
+    <script src="js/config.js"></script>
+    <script>
+        (function () {
+            var el = document.getElementById('cv');
+            var cv = (typeof STATIC !== 'undefined') && STATIC.cv;
+            if (cv && cv.body) {
+                el.textContent = cv.body;                 // textContent, not innerHTML
+                if (cv.title) document.title = cv.title;
+            } else {
+                // Never leave a blank page if config.js fails to load.
+                el.className = 'fallback';
+                el.innerHTML = 'The CV could not be loaded. ' +
+                    '<a href="/">Open the portfolio</a> and choose &ldquo;CV&rdquo; from the menu.';
+            }
+            document.getElementById('print-btn')
+                .addEventListener('click', function () { window.print(); });
+        })();
+    </script>
+</body>
+</html>

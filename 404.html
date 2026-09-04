@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Not found — Nir Dellus</title>
+    <link rel="preload" href="assets/fonts/Junicode/JunicodeVF-Roman.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+        @font-face {
+            font-family: 'JunicodeVF';
+            src: url('assets/fonts/Junicode/JunicodeVF-Roman.woff2') format('woff2');
+            font-weight: 100 900;
+            font-style: normal;
+            font-display: swap;
+        }
+        :root { --bg: #ffffff; --fg: #000; --border-soft: rgba(0,0,0,0.15); }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            background: var(--bg); color: var(--fg);
+            font-family: 'JunicodeVF', serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        body {
+            display: flex; align-items: center; justify-content: center;
+            padding: 32px;
+        }
+        .card {
+            max-width: 420px;
+            border: 1px solid var(--fg);
+            padding: 22px 26px 20px;
+        }
+        .bar {
+            display: flex; align-items: baseline; gap: 8px;
+            border-bottom: 1px solid var(--border-soft);
+            padding-bottom: 8px; margin-bottom: 14px;
+        }
+        .bar-title { font-size: 0.82rem; letter-spacing: 0.02em; }
+        .bar-tag {
+            font-size: 0.5rem; letter-spacing: 0.14em; text-transform: uppercase;
+            opacity: 0.4; margin-left: auto;
+        }
+        h1 { font-size: 1.5rem; font-weight: 400; line-height: 1.15; margin-bottom: 10px; }
+        p { font-size: 0.86rem; line-height: 1.55; opacity: 0.75; margin-bottom: 16px; }
+        code {
+            font-family: ui-monospace, monospace; font-size: 0.74rem;
+            background: rgba(0,0,0,0.05); padding: 1px 4px;
+            overflow-wrap: anywhere;
+        }
+        a.home {
+            display: inline-block;
+            font-size: 0.8rem; color: var(--fg); text-decoration: none;
+            border: 1px solid var(--fg); padding: 6px 14px;
+            transition: background 0.15s, color 0.15s;
+        }
+        a.home:hover, a.home:focus-visible { background: var(--fg); color: var(--bg); }
+        a.home:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #111; --fg: #f0f0f0; --border-soft: rgba(255,255,255,0.18); }
+            code { background: rgba(255,255,255,0.08); }
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="bar">
+            <span class="bar-title">Nir Dellus</span>
+            <span class="bar-tag">404</span>
+        </div>
+        <h1>This page doesn&rsquo;t exist.</h1>
+        <p>
+            The address <code id="path"></code> wasn&rsquo;t found. Some older
+            pages were retired &mdash; everything now lives in the main workspace.
+        </p>
+        <a class="home" href="/">Go to the portfolio</a>
+    </main>
+    <script>
+        // Show what was actually requested, escaped as text so a crafted URL
+        // cannot inject markup into the page.
+        document.getElementById('path').textContent =
+            location.pathname + location.search;
+    </script>
+</body>
+</html>
