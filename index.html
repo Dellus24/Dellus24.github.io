@@ -27,15 +27,23 @@
          (dellus.xyz) -> copy the token out of the snippet it gives you, and
          paste it as TOKEN below.
 
-         Until a real 32-char hex token is in place this block is completely
-         inert — it makes no request at all, so shipping it unconfigured
-         costs visitors nothing. -->
+         The guard stays in place: blank the token and this block goes
+         completely inert again, making no request at all.
+
+         The token is not a secret — Cloudflare's own snippet puts it in
+         client-side HTML on every page, so it is public by design. The only
+         consequence is that someone could send junk beacons to it; that is
+         inherent to the product, not to this setup.
+
+         Loaded as type="module" to match the snippet Cloudflare issues —
+         beacon.min.js is an ES module, and a classic script tag can fail on
+         it. Module scripts are deferred by default, so no `defer` needed. -->
     <script>
         (function () {
-            var TOKEN = 'PASTE_CLOUDFLARE_TOKEN_HERE';
-            if (!/^[0-9a-f]{32}$/i.test(TOKEN)) return;   // not configured yet
+            var TOKEN = '2c4403d505934e24b4b2fb86743dc101';
+            if (!/^[0-9a-f]{32}$/i.test(TOKEN)) return;   // blanked / not configured
             var s = document.createElement('script');
-            s.defer = true;
+            s.type = 'module';
             s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
             s.setAttribute('data-cf-beacon', JSON.stringify({ token: TOKEN }));
             document.head.appendChild(s);
