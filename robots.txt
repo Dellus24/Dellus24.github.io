@@ -1,0 +1,14 @@
+# dellus.xyz — SEO-05
+User-agent: *
+Allow: /
+
+# Retired scratch experiment, still served. Not content. (HYG-05)
+Disallow: /pages/
+
+# NOTE: /cv.html is deliberately NOT disallowed here.
+# It carries <meta name="robots" content="noindex, nofollow">, and a crawler
+# has to be allowed to fetch the page in order to read that tag. Blocking it
+# here instead would let the bare URL still surface in results (linked from
+# elsewhere, no snippet) with the noindex never seen.
+
+Sitemap: https://dellus.xyz/sitemap.xml

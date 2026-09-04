@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SEO-05. One entry, and that is not an oversight.
+
+  The site is a single-page app: every project opens as a window on "/" and
+  has no URL of its own, so there is nothing else legitimate to list. Adding
+  invented per-project URLs would just produce 404s for crawlers.
+
+  /cv.html is excluded on purpose (noindex - it renders personal contact
+  details) and so is /404.html.
+
+  If deep-linkable project URLs are ever added (e.g. /#/101-gates plus real
+  paths), list them here.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://dellus.xyz/</loc>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

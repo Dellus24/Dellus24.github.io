@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dellus</title>
+
+    <!-- SEO-01 -->
+    <title>Nir Dellus — Architecture &amp; Design Portfolio</title>
+    <meta name="description" content="Architecture and design portfolio of Nir Dellus — academic and professional projects spanning computational design, architectural theory, and digital fabrication.">
+    <meta name="author" content="Nir Dellus">
+    <link rel="canonical" href="https://dellus.xyz/">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
     <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEDUlEQVR4AeyZTyg9URTHv/NCpJAoREmJsCBJZCMWFrLwp1BSWMmGlJKyk8hGkfJ3oShKsbDypxSlbJRQQlFCEmEj3u93rt54d+bN7/Fm5nV/M1Pue/ecuW/mfj/nvHlzDhcAt50HAfir375/DgD7xv5LuSoD3G43rDy+ZH+/qgB8H7LHzAFgjzhrq3QyQJuNPY44GWCPOGurdDJAm409jqgyQJIkSJJ1hzKsKgDKBVazlXpUAKxcB5A2vwCUC6xuqzLA6oKV+hwASiJ2s50MsFvElXqdDFASsZvtZIDdIq7Ua1gGrK2tBVxEJSUloby8HENDQzg+PsbHx4dyn6bZhgFISUlBS0sLMjIyNDfb1NSEhYUFLC0tsTE2NobS0lLc3t5iY2MDPT09yMrKQmJiIoPx/PyseS6jDhgGIDc3F9PT0zg5OcHy8jJcLv7UNTU1mJmZQX19PWpra9lob2/H5uYmSOjU1BSioqKYrvv7ewaDoBIwMzOC3yW7vP6X4uJiJCcncycqKChASEgI5/MYkZGRaG1txenpKaqqqjxuBqaxsRFtbW14fX2V/UZOTAEQ6AYTEhKwuLjIYHifY25uDp2dnXh/f/d2/2jub5FQAGizERERGBkZQVlZGZnymJycxOjoqGwbNREOAAmLjo5Gf38/wsLCyJQHgTk7O5NtIyZCAiBhRUVFqK6upqk8bm5uMD8/L9tGTIQFQDfMhoYGlcbt7W28vLyo/IE6hAVAgnJyckA3Rpp7Bv1S3N3deUzd70IDoOeC2NhYTiQ9Mzw+PnI+PYbQAMLDwxEfH69Hn9/PuvyusPgCoQHQ09/V1ZWpIRAewNvbGwcgLi4OVD1yTh2G0ADOz89ZpeitLz09XS6avP2BzoUGcHBwAOW/s0pKSkDFU6CClZ8TFsDT0xNWVla4/cbExLAymnPqNIQFsLe3h/39fU5eRUUFMjMzOZ9eQ0gAFP2BgQEu/enm19fXp9lTCBRE0AD8tKtD3/nx8XHs7OzImqi7NDExgezsbNmnNfmtP2gAjo6OuIj62ihBGhwcRG9vL3eYmqXKypBboMMwBcDu7i6ur6+5bW1tbbGWF+f0Mi4uLlj56y2eagHqNnd1dbGOs9dyw6aGAbi8vERHRwe7SVHT8/Pzk9sk1fKFhYWs2UlNU8+g6Obl5SEtLQ2rq6vsM6Ghoeju7gY9BVZWVpomni5mGICHhwfMzs7+M8pUyZHguro6eAa1wg8PD5Gamorm5masr6+zZujw8LChDzwk1tcwDEB+fj7r3NJN7LeDvvv0FaDmJ/3UURXoa7Nm+AwDYMbmgnFOB0AwKIt8DScDRI5OMPbmZEAwKIt8DVUGSJLEnrwkyZrvymCoACgXWN12APzvEda7/z8AAAD//7ZAg6UAAAAGSURBVAMAZOLRX8u3t88AAAAASUVORK5CYII=">
     <link rel="preload" href="assets/fonts/Junicode/JunicodeVF-Roman.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,6 +18,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Trispace:wdth,wght@75..125,300..800&family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Trispace:wdth,wght@75..125,300..800&family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap" rel="stylesheet"></noscript>
     <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js">
+
+    <!-- ── OPS-01: Cloudflare Web Analytics ──────────────────────────────
+         Cookie-less, no cross-site tracking, no personal data collected, and
+         it does NOT require the domain to be proxied through Cloudflare.
+
+         TO ACTIVATE: Cloudflare dashboard -> Web Analytics -> Add a site
+         (dellus.xyz) -> copy the token out of the snippet it gives you, and
+         paste it as TOKEN below.
+
+         Until a real 32-char hex token is in place this block is completely
+         inert — it makes no request at all, so shipping it unconfigured
+         costs visitors nothing. -->
+    <script>
+        (function () {
+            var TOKEN = 'PASTE_CLOUDFLARE_TOKEN_HERE';
+            if (!/^[0-9a-f]{32}$/i.test(TOKEN)) return;   // not configured yet
+            var s = document.createElement('script');
+            s.defer = true;
+            s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+            s.setAttribute('data-cf-beacon', JSON.stringify({ token: TOKEN }));
+            document.head.appendChild(s);
+        })();
+    </script>
     <style>
         :root {
             --bg:            #ffffff;
@@ -2348,6 +2378,67 @@
                 rows[(i + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length].focus();
             });
         }
+        // ── STRUCTURED DATA (SEO-06) ──────────────────────────────────────
+        // Built from PROJECTS/STATIC at runtime rather than hand-written into
+        // the markup, so it can never drift from the content the site shows
+        // (the meta.md lesson — one source of truth, see assets/projects/README.md).
+        //
+        // Tradeoff: this requires the crawler to execute JS. Google does;
+        // some others do not. Static JSON-LD would be more robust, but with
+        // no build step in this repo it would mean a second copy of every
+        // project's metadata. If a build step ever lands, prerender this.
+        //
+        // Deliberately omits email and date of birth — STATIC.cv holds both,
+        // and structured data is exactly the wrong place to publish them.
+        function injectStructuredData() {
+            const SITE = 'https://dellus.xyz/';
+            const person = {
+                '@type': 'Person',
+                '@id': SITE + '#nir-dellus',
+                name: 'Nir Dellus',
+                jobTitle: 'Architect and Researcher',
+                url: SITE,
+                alumniOf: { '@type': 'CollegeOrUniversity', name: 'Bezalel Academy of Arts and Design' },
+                knowsAbout: ['Architecture', 'Computational Design', 'Architectural Theory', 'Digital Fabrication'],
+            };
+            const works = (typeof PROJECTS !== 'undefined' ? PROJECTS : []).map(p => {
+                const w = {
+                    '@type': 'CreativeWork',
+                    name: p.title,
+                    creator: { '@id': SITE + '#nir-dellus' },
+                    isPartOf: { '@id': SITE + '#portfolio' },
+                };
+                if (p.year)        w.dateCreated     = p.year;
+                if (p.location)    w.locationCreated = { '@type': 'Place', name: p.location };
+                if (p.type)        w.genre           = p.type;
+                // First line only — the full descriptions run to 4,000+ chars.
+                if (p.description) w.description     = String(p.description).split('\n')[0].slice(0, 500);
+                if (p.images && p.images.length) w.image = SITE + (p.images[0].src || p.images[0]);
+                return w;
+            });
+            const graph = {
+                '@context': 'https://schema.org',
+                '@graph': [
+                    person,
+                    {
+                        '@type': 'WebSite',
+                        '@id': SITE + '#portfolio',
+                        url: SITE,
+                        name: 'Nir Dellus — Architecture & Design Portfolio',
+                        inLanguage: 'en',
+                        author: { '@id': SITE + '#nir-dellus' },
+                    },
+                    ...works,
+                ],
+            };
+            const tag = document.createElement('script');
+            tag.type = 'application/ld+json';
+            // textContent, never innerHTML — project text is user-authored.
+            tag.textContent = JSON.stringify(graph);
+            document.head.appendChild(tag);
+        }
+        injectStructuredData();
+
         buildMenuWindow();
         openTheme();
         requestAnimationFrame(() => {
