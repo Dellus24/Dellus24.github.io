@@ -175,6 +175,7 @@ Supported and funded by the Bezalel Research Authority.`,
 
 Role: research assistant, prototyping and manufacturing.
 Curated by Edith Kofsky and Oren Eldar.`,
+        model: 'assets/projects/cloud-to-ground/models/Pavilion Model.glb',
         images: imgs('assets/projects/cloud-to-ground/gallery/', [
             'cast.webp', 'mold_draft.webp', 'mold_01.webp', 'mold_02.webp', 'mold_03.webp',
             'tile_sample.webp', 'tile_sample_01.webp', 'iso_gardem_F0.webp', 'iso_gardem_F1.webp',

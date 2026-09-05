@@ -148,13 +148,6 @@
         .proj-row:hover .proj-name { opacity: 1; font-weight: bold; }
         .proj-row.open .proj-name  { opacity: 0.3; }
 
-        .proj-badge {
-            font-size: 0.38rem; letter-spacing: 0.08em;
-            opacity: 0.3; border: 1px solid rgba(0,0,0,0.2);
-            padding: 1px 4px; user-select: none; white-space: nowrap;
-            flex-shrink: 0;
-        }
-
         /* ── WORKSPACE ──────────────────────────────────────── */
         .workspace {
             position: fixed; top: 0;
@@ -2260,9 +2253,8 @@
                         ${projs.map(p => `
                             <div class="proj-row" data-id="${p.id}" style="padding-left:8px;"
                                  role="button" tabindex="0"
-                                 aria-label="Open ${p.title}${p.model ? ', includes a 3D model' : ''}">
+                                 aria-label="Open ${p.title}">
                                 <span class="proj-name">${p.title}</span>
-                                ${p.model ? '<span class="proj-badge" aria-hidden="true">3D</span>' : ''}
                             </div>
                         `).join('')}
                     </div>
