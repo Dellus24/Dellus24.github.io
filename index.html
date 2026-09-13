@@ -511,8 +511,8 @@
             text-align: center;
         }
         .viewer-loading .ld-txt {
-            font-size: 0.5rem; letter-spacing: 0.12em;
-            text-transform: uppercase; white-space: pre-wrap; max-width: 200px;
+            font-size: 0.5rem; letter-spacing: 0.03em;
+            white-space: pre-wrap; max-width: 200px;
         }
         .viewer-loading .ld-track { opacity: 0.2; }
         .viewer-loading .ld-arc { transition: stroke-dashoffset 0.2s linear; }
@@ -538,7 +538,7 @@
             display: flex; flex-direction: column; align-items: center; gap: 2px;
             white-space: nowrap; user-select: none;
         }
-        .focus-label { font-size: 0.38rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+        .focus-label { font-size: 0.38rem; letter-spacing: 0.03em; opacity: 0.7; }
         .focus-btn.visible { opacity: 0.45; pointer-events: auto; }
         .focus-btn.visible:hover { opacity: 0.9; }
 
@@ -556,8 +556,7 @@
         .setting-row { display: flex; align-items: center; gap: 10px; }
 
         .setting-label {
-            font-size: 0.42rem; letter-spacing: 0.12em;
-            text-transform: uppercase; opacity: 0.35;
+            font-size: 0.42rem; letter-spacing: 0.03em; opacity: 0.35;
             white-space: nowrap; width: 46px; flex-shrink: 0;
         }
 
@@ -577,7 +576,7 @@
 
         .ctrl-toggle {
             font-family: var(--font-family);
-            font-size: 0.42rem; letter-spacing: 0.1em; text-transform: uppercase;
+            font-size: 0.42rem; letter-spacing: 0.03em;
             background: none; border: 1px solid rgba(0,0,0,0.2); cursor: pointer;
             padding: 2px 7px; color: var(--fg); opacity: 0.4;
             transition: opacity 0.2s, background 0.2s, color 0.2s;
@@ -589,7 +588,7 @@
 
         .charset-option {
             font-family: var(--font-family);
-            font-size: 0.42rem; letter-spacing: 0.08em; text-transform: uppercase;
+            font-size: 0.42rem; letter-spacing: 0.03em;
             background: none; border: 1px solid rgba(0,0,0,0.12); cursor: pointer;
             padding: 2px 6px; color: var(--fg); opacity: 0.3;
             transition: opacity 0.2s, border-color 0.2s;
@@ -597,26 +596,44 @@
         .charset-option:hover { opacity: 0.55; }
         .charset-option.active { opacity: 1; border-color: var(--fg); font-weight: bold; }
 
+        /* Reveal strip. Matches the bar height so approaching the bottom edge from
+           anywhere fills the bar in. It sits below the bar in z-order and never
+           swallows the pointer events the orbit controller needs - pointerdown on
+           it still bubbles to the viewer body. */
         .win-bottom-hover {
             position: absolute; bottom: 0; left: 0; right: 0;
-            height: 12px; z-index: 20;
+            height: 28px; z-index: 20;
         }
 
+        /* The bar is always mounted but rests BARE: no background, no rule, and only
+           the Settings button visible, so the viewer reads clean while still
+           advertising that it can be edited. Hover fills the rest in; clicking
+           Settings pins it open until you click away.
+           pointer-events stays none on the bar itself so the bottom 28px of the
+           viewer stays draggable - only the Settings button opts back in. */
         .win-bottom-bar {
             position: absolute; bottom: 0; left: 0; right: 0;
-            height: 28px; border-top: 1px solid var(--border-strong);
+            height: 28px; border-top: 1px solid transparent;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 10px; background: var(--bg); z-index: 21;
+            padding: 0 10px; background: transparent; z-index: 21;
+            pointer-events: none;
+            transition: background 0.25s, border-color 0.25s;
+        }
+        .win-bottom-bar.visible {
+            background: var(--bg); border-top-color: var(--border-strong);
+            pointer-events: auto;
+        }
+
+        .wbb-left {
+            display: flex; align-items: center; gap: 2px;
             opacity: 0; transform: translateY(4px); pointer-events: none;
             transition: opacity 0.25s, transform 0.25s;
         }
-        .win-bottom-bar.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
-
-        .wbb-left { display: flex; align-items: center; gap: 2px; }
+        .win-bottom-bar.visible .wbb-left { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
         .mode-btn {
             font-family: var(--font-family);
-            font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+            font-size: 0.65rem; letter-spacing: 0.03em;
             background: none; border: none; cursor: pointer;
             padding: 3px 4px; color: var(--fg); opacity: 0.3;
             transition: opacity 0.2s, font-weight 0.15s; white-space: nowrap;
@@ -624,16 +641,18 @@
         .mode-btn:hover { opacity: 0.55; }
         .mode-btn.active { opacity: 1; font-weight: bold; }
 
+        /* The one control that is always visible, so it carries normal weight and
+           full opacity rather than the bar's faded treatment. */
         .settings-toggle-btn {
             font-family: var(--font-family);
-            font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+            font-size: 0.65rem; letter-spacing: 0.03em;
             background: none; border: none; cursor: pointer;
-            padding: 3px 4px; color: var(--fg); opacity: 0.3;
+            padding: 3px 4px; color: var(--fg); opacity: 1;
             transition: opacity 0.2s; white-space: nowrap;
             display: flex; align-items: center; gap: 4px;
+            pointer-events: auto;
         }
-        .settings-toggle-btn:hover { opacity: 0.55; }
-        .settings-toggle-btn.open { opacity: 0.8; }
+        .settings-toggle-btn:hover { opacity: 0.6; }
 
         .settings-arrow { font-size: 0.5rem; transition: transform 0.25s; display: inline-block; }
         .settings-toggle-btn.open .settings-arrow { transform: rotate(180deg); }
@@ -646,7 +665,7 @@
         .speed-inline .ctrl-slider { width: 55px; }
         .speed-inline-label {
             font-family: var(--font-family);
-            font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+            font-size: 0.65rem; letter-spacing: 0.03em;
         }
 
         /* ── IMAGE VIEWER ─────────────────────────────────────── */
@@ -1850,7 +1869,7 @@
                 body.innerHTML = `
                     <div class="cv-canvas" role="img" aria-label="Interactive 3D model of ${project.title}. Drag to orbit. Not conveyable as text; see the project description and images."></div>
                     <div class="cv-ascii" aria-hidden="true"></div>
-                    <button class="focus-btn" aria-label="Reset camera to model"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">orient on model</span></button>
+                    <button class="focus-btn" aria-label="Reset camera to model"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
                     <div class="win-settings">
                         <div class="settings-inner ascii-settings">
                             <div class="setting-row"><span class="setting-label">Res</span><input type="range" class="ctrl-slider res-slider" min="0.1" max="1.0" step="0.05" value="0.4"></div>
@@ -2032,23 +2051,42 @@
                 let barLocked = false, hideT = null;
                 const showBar = () => { clearTimeout(hideT); bottomBar.classList.add('visible'); };
                 const hideBar = () => { if (barLocked) return; hideT = setTimeout(() => bottomBar.classList.remove('visible'), 300); };
+                const closeSettings = thenHide => {
+                    settingsPanel.classList.remove('open');
+                    settingsToggle.classList.remove('open');
+                    barLocked = false;
+                    if (thenHide) hideBar();
+                };
                 bottomHover.addEventListener('mouseenter', showBar);
                 bottomBar.addEventListener('mouseenter', () => clearTimeout(hideT));
                 bottomBar.addEventListener('mouseleave', hideBar);
-                // Touch has no hover: a tap on the viewer reveals the bar, which
-                // hides itself after a few seconds (unless settings are open).
+                // Settings is the only part of the resting bar that stays
+                // hit-testable, so hovering it has to reveal the rest itself - the
+                // hover strip underneath never sees that pointer.
+                settingsToggle.addEventListener('mouseenter', showBar);
+                // The faded controls stay in the tab order, so reveal the bar when
+                // focus lands inside it rather than leaving a keyboard user driving
+                // buttons they cannot see.
+                bottomBar.addEventListener('focusin', showBar);
+                bottomBar.addEventListener('focusout', e => { if (!bottomBar.contains(e.relatedTarget)) hideBar(); });
                 body.addEventListener('pointerdown', e => {
-                    if (e.pointerType === 'mouse') return;
                     if (e.target.closest('.win-bottom-bar, .win-settings')) return;
+                    // Clicking away from a pinned panel releases the pin.
+                    if (settingsPanel.classList.contains('open')) closeSettings(true);
+                    if (e.pointerType === 'mouse') return;
+                    // Touch has no hover: a tap on the viewer reveals the bar, which
+                    // hides itself after a few seconds (unless settings are open).
                     showBar();
                     hideT = setTimeout(() => { if (!barLocked) bottomBar.classList.remove('visible'); }, 3500);
                 });
                 settingsPanel.addEventListener('mouseenter', () => clearTimeout(hideT));
                 settingsPanel.addEventListener('mouseleave', hideBar);
                 settingsToggle.addEventListener('click', () => {
-                    const opening = !settingsPanel.classList.contains('open');
-                    settingsPanel.classList.toggle('open'); settingsToggle.classList.toggle('open');
-                    barLocked = opening; if (!opening) hideBar();
+                    // Closing from the button itself leaves the pointer over the bar,
+                    // so let mouseleave hide it rather than racing a timer against it.
+                    if (settingsPanel.classList.contains('open')) { closeSettings(false); return; }
+                    settingsPanel.classList.add('open'); settingsToggle.classList.add('open');
+                    barLocked = true; showBar();
                 });
 
                 // Controls
