@@ -87,18 +87,22 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── MENU WINDOW ─────────────────────────────────────── */
+        /* ── MENU WINDOW ───────────────────────────────────────
+           Sentence case throughout, deliberately (2026-09-21). The tracking in
+           these rules existed to open up capitals; with caps gone it read as
+           stretched, so each letter-spacing came down in the same edit. Same
+           change, and same reasoning, as the 3D viewer in 2026-09-13. */
         .menu-body { padding: 20px 20px 16px 20px; overflow-y: auto; }
 
         .menu-landing-title {
-            font-size: 1.45rem; letter-spacing: 0.22em;
-            text-transform: uppercase; font-weight: bold;
+            font-size: 1.45rem; letter-spacing: 0.05em;
+            font-weight: bold;
             user-select: none; line-height: 1;
             margin-bottom: 4px;
         }
         .menu-landing-sub {
-            font-size: 0.45rem; letter-spacing: 0.16em;
-            text-transform: uppercase; opacity: 0.35;
+            font-size: 0.45rem; letter-spacing: 0.04em;
+            opacity: 0.35;
             user-select: none; margin-bottom: 16px;
         }
 
@@ -140,8 +144,8 @@
         }
 
         .proj-name {
-            font-size: 0.65rem; letter-spacing: 0.05em;
-            text-transform: uppercase; opacity: 0.6;
+            font-size: 0.65rem; letter-spacing: 0.02em;
+            opacity: 0.6;
             transition: opacity 0.15s, font-weight 0.15s;
             user-select: none; line-height: 1.4;
         }
@@ -238,19 +242,24 @@
         }
         .win-frame:hover .win-titlebar { border-bottom-color: var(--border-strong); }
 
+        /* Unlike the rest of the titlebar chrome, the title does NOT hide at
+           rest (2026-09-21). A collapsed window is nothing but this bar, so a
+           hover-reveal title left the landing state as a blank rectangle. It
+           rests at the opacity hover used to give and lifts on hover, keeping
+           the bar responsive. Sentence case + tracking down to match the menu. */
         .win-title {
-            font-size: 0.5rem; letter-spacing: 0.12em;
-            text-transform: uppercase; opacity: 0; flex: 1;
+            font-size: 0.5rem; letter-spacing: 0.03em;
+            opacity: 0.5; flex: 1;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             transition: opacity 0.2s;
         }
-        .win-frame:hover .win-title { opacity: 0.5; }
+        .win-frame:hover .win-title { opacity: 0.8; }
         .win-type-tag { transition: opacity 0.2s; }
         .win-frame:hover .win-type-tag { opacity: 0.25; }
 
         .win-type-tag {
-            font-size: 0.38rem; letter-spacing: 0.08em;
-            text-transform: uppercase; opacity: 0;
+            font-size: 0.38rem; letter-spacing: 0.03em;
+            opacity: 0;
             white-space: nowrap;
         }
 
@@ -1572,7 +1581,8 @@
             const content = STATIC[key];
             if (!content) return;
             focusOrCreate(`text-${key}`, () => {
-                const frame = makeFrame({ title: content.title, tag: key.toUpperCase(), w: 420, h: 460, key: `text-${key}`, bodyDrag: true });
+                const tagLabel = key === 'cv' ? 'CV' : key[0].toUpperCase() + key.slice(1);
+                const frame = makeFrame({ title: content.title, tag: tagLabel, w: 420, h: 460, key: `text-${key}`, bodyDrag: true });
                 const body = frame.querySelector('.win-body');
                 body.className += ' text-body';
                 body.innerHTML = `<pre class="text-content">${content.body}</pre>`;
@@ -1636,7 +1646,7 @@
 
         function openTheme() {
             focusOrCreate('theme', () => {
-                const frame = makeFrame({ title: 'Theme', tag: 'Settings', w: 220, h: 380, minW: 180, minH: 200, key: 'theme', collapsible: true });
+                const frame = makeFrame({ title: 'Theme', w: 220, h: 380, minW: 180, minH: 200, key: 'theme', collapsible: true });
                 const body = frame.querySelector('.win-body');
                 body.className += ' theme-body';
 
@@ -2584,7 +2594,7 @@
                     <div class="proj-row menu-cat-toggle" data-cat="${cat.id}" style="cursor:pointer;margin-top:4px;"
                          role="button" tabindex="0" aria-expanded="true" aria-controls="cat-list-${cat.id}"
                          aria-label="${cat.label} projects, collapse section">
-                        <span class="proj-name" style="opacity:0.4;font-size:0.5rem;letter-spacing:0.14em;">${cat.label}</span>
+                        <span class="proj-name" style="opacity:0.4;font-size:0.5rem;letter-spacing:0.04em;">${cat.label}</span>
                         <span class="cat-icon" style="font-size:0.5rem;opacity:0.3;user-select:none;" aria-hidden="true">&#x2212;</span>
                     </div>
                     <div class="cat-proj-list" data-cat-list="${cat.id}" id="cat-list-${cat.id}" role="group" aria-label="${cat.label} projects">
@@ -2715,6 +2725,8 @@
                 e.preventDefault();
                 rows[(i + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length].focus();
             });
+
+            return frame;
         }
         // ── STRUCTURED DATA (SEO-06) ──────────────────────────────────────
         // Built from PROJECTS/STATIC at runtime rather than hand-written into
@@ -2777,16 +2789,21 @@
         }
         injectStructuredData();
 
-        buildMenuWindow();
-        openTheme();
-        requestAnimationFrame(() => {
-            const themeFrame = openWins['theme'];
-            const menuEl = document.querySelector('.win-frame');
-            if (themeFrame && menuEl) {
-                themeFrame.style.left = '28px';
-                themeFrame.style.top  = (menuEl.offsetTop + menuEl.offsetHeight + 8) + 'px';
-            }
-        });
+        // ── LANDING STATE (2026-09-21) ────────────────────────────────────
+        // The menu, collapsed, and nothing else. A deliberate placeholder while
+        // the landing page proper gets designed — an empty canvas with one
+        // closed title bar, rather than a guess at what will eventually sit
+        // here. Expanding the menu restores the full site.
+        //
+        // The theme editor is no longer opened at load; it is reachable from
+        // the menu's Theme row. Every openWins['theme'] read is already
+        // null-guarded (tileProjectWindows, orderWindows), so nothing assumes
+        // it exists. It is now also always a USER-driven open, which means
+        // focusOrCreate is free to move focus to it — the reason it withheld
+        // focus was that opening during page load would steal the skip link
+        // out of first-Tab position.
+        const menuFrame = buildMenuWindow();
+        menuFrame._toggleCollapse();
 
         // Restore saved theme preferences on load
         const savedScale = parseFloat(localStorage.getItem('dellus-font-scale'));
