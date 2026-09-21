@@ -552,6 +552,9 @@
         .win-settings.open { max-height: 200px; opacity: 1; pointer-events: auto; }
 
         .settings-inner { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+        /* Explode and authored views apply in every render mode, so they sit in
+           their own always-on block above the mode-specific settings. */
+        .settings-inner.model-settings { border-bottom: 1px solid rgba(0,0,0,0.12); }
 
         .setting-row { display: flex; align-items: center; gap: 10px; }
 
@@ -1871,6 +1874,10 @@
                     <div class="cv-ascii" aria-hidden="true"></div>
                     <button class="focus-btn" aria-label="Reset camera to model"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
                     <div class="win-settings">
+                        <div class="settings-inner model-settings" style="display:none">
+                            <div class="setting-row explode-row" style="display:none"><span class="setting-label">Explode</span><input type="range" class="ctrl-slider explode-slider" min="0" max="100" step="0.5" value="0" aria-label="Explode the model"><span class="explode-val" style="font-size:0.42rem;opacity:0.5;margin-left:6px">0%</span></div>
+                            <div class="setting-row views-row" style="display:none"><span class="setting-label">Views</span><div class="charset-group views-group"></div></div>
+                        </div>
                         <div class="settings-inner ascii-settings">
                             <div class="setting-row"><span class="setting-label">Res</span><input type="range" class="ctrl-slider res-slider" min="0.1" max="1.0" step="0.05" value="0.4"></div>
                             <div class="setting-row"><span class="setting-label">Invert</span><button class="ctrl-toggle on invert-toggle">On</button></div>
@@ -1908,6 +1915,10 @@
                 const settingsToggle = body.querySelector('.settings-toggle-btn');
                 const bottomBar      = body.querySelector('.win-bottom-bar');
                 const bottomHover    = body.querySelector('.win-bottom-hover');
+                const modelPanel     = body.querySelector('.model-settings');
+                const explodeRow     = body.querySelector('.explode-row');
+                const viewsRow       = body.querySelector('.views-row');
+                const viewsGroup     = body.querySelector('.views-group');
 
                 // preserveDrawingBuffer not needed: the ascii effect samples the
                 // canvas synchronously right after each render call.
@@ -1918,6 +1929,12 @@
                 const vw = body.clientWidth || 560, vh = body.clientHeight || 422;
                 const camera = new THREE.PerspectiveCamera(50, vw / vh, 0.1, 1000);
                 camera.position.set(3, 2.5, 3);
+                // Parallel-projection companion, used only while an authored
+                // orthographic view is selected — an elevation that converges
+                // is not an elevation. SimpleOrbit drives whichever is active.
+                const orthoCam = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.01, 1000);
+                let activeCam = camera;
+                let orthoRefRadius = 5;   // orbit radius at which orthoCam.zoom is 1
 
                 const scene = new THREE.Scene();
                 scene.background = new THREE.Color(BG);
@@ -1938,7 +1955,7 @@
                 const solidEdgeMat = new LineMaterial({ color: 0x000000, linewidth: 1, worldUnits: false, opacity: 0.15, transparent: true, resolution: new THREE.Vector2(vw, vh) });
                 const wireEdgeMat  = new LineMaterial({ color: 0x000000, linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(vw, vh) });
 
-                let modelGroup = null, edgeMeshes = [], wireFillMeshes = [], realMeshes = [];
+                let modelGroup = null, edgeMeshes = [], wireFillMeshes = [], realMeshes = [], edgeSources = [];
                 let wireLinesMode = 'hidden', solidEdges = false, edgesBuilt = false;
                 let alive = true;
 
@@ -1973,6 +1990,8 @@
                         group.traverse(c => { if (c.isMesh && c.geometry) { c.material = matWhite; realMeshes.push(c); } });
                         scene.add(group);
                         modelGroup = group;
+                        setupExplode(gltf);
+                        setupViews(gltf);
                         setMode(mode); // re-apply the active mode to the freshly loaded meshes
                     }).catch(err => {
                         console.error('3D load failed:', err);
@@ -1980,6 +1999,120 @@
                         loadingEl.querySelector('svg').remove();
                         ldTxt.textContent = 'Model unavailable.\nOpen via local server to load 3D files.';
                     });
+                }
+
+                // ---- Explode -------------------------------------------------
+                // The model carries its own explode as glTF animation tracks
+                // authored in Blender. Nothing ever plays: the mixer is used purely
+                // as a posing function driven by the Explode slider, so at any
+                // explode value this is still a model you can orbit, pan and zoom.
+                let mixer = null, explodeActions = [], explodeDur = 0;
+                function pose(frac) {
+                    if (!mixer) return;
+                    const t = Math.max(0, Math.min(1, frac)) * explodeDur;
+                    for (const a of explodeActions) a.time = t;
+                    // mixer.setTime() is useless here: `paused` zeroes an action's
+                    // effective timeScale, so the delta it would apply is multiplied
+                    // by zero and nothing moves. Setting .time by hand and evaluating
+                    // with a zero delta is what actually poses the parts.
+                    mixer.update(0);
+                    syncClones();
+                }
+                function setupExplode(gltf) {
+                    if (!gltf.animations || !gltf.animations.length) return;
+                    mixer = new THREE.AnimationMixer(modelGroup);
+                    explodeActions = gltf.animations.map(clip => {
+                        const a = mixer.clipAction(clip);
+                        a.play(); a.paused = true;   // registered and bound, never advancing
+                        return a;
+                    });
+                    explodeDur = Math.max(...gltf.animations.map(c => c.duration)) || 0;
+                    if (!explodeDur) { mixer.stopAllAction(); mixer = null; explodeActions = []; return; }
+                    pose(0);
+                    explodeRow.style.display = '';
+                    modelPanel.style.display = '';
+                }
+
+                // ---- Authored views ------------------------------------------
+                // Cameras placed in Blender travel inside the .glb. They are read
+                // AFTER normalizeModel, so their world transforms have already been
+                // through the same fit as the geometry and need no mapping; only the
+                // orthographic magnification has to be scaled by hand.
+                function setupViews(gltf) {
+                    const cams = (gltf.cameras || []).filter(c => c.isCamera);
+                    if (!cams.length) return;
+                    const k = modelGroup.scale.x || 1;
+                    cams.forEach((src, i) => {
+                        src.updateWorldMatrix(true, false);
+                        const pos = new THREE.Vector3(), quat = new THREE.Quaternion(), scl = new THREE.Vector3();
+                        src.matrixWorld.decompose(pos, quat, scl);
+                        const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(quat);
+                        // Orbit about the point on this camera's own view axis nearest
+                        // the model centre: that keeps the authored direction exactly
+                        // as framed, and leaves dragging pivoting somewhere sensible.
+                        const dist = Math.max(0.3, pos.clone().negate().dot(dir));
+                        const target = pos.clone().addScaledVector(dir, dist);
+                        // GLTFLoader sanitises names (spaces to underscores); the
+                        // original is kept in userData.name, so prefer that.
+                        const label = (src.userData && src.userData.name) || src.name || `View ${i + 1}`;
+                        addViewButton(label.replace(/_/g, ' '), {
+                            pos, target, dist,
+                            fov: src.isPerspectiveCamera ? src.fov : null,
+                            orthoHalfH: src.isOrthographicCamera ? Math.abs(src.top - src.bottom) / 2 * k : null,
+                        });
+                    });
+                    viewsRow.style.display = '';
+                    modelPanel.style.display = '';
+                }
+
+                function setActiveCam(cam) { activeCam = cam; orbit.camera = cam; resizeVP(); }
+
+                function applyView(v) {
+                    // Auto-spin would drift straight back off an authored view, so
+                    // picking one stops it and the Speed slider follows.
+                    orbit.autoSpeed = 0;
+                    const sp = body.querySelector('.speed-slider'); if (sp) sp.value = '0';
+
+                    if (v.orthoHalfH) {
+                        orthoCam.top = v.orthoHalfH; orthoCam.bottom = -v.orthoHalfH;
+                        orthoRefRadius = v.dist;
+                        setActiveCam(orthoCam);
+                    } else {
+                        if (v.fov) { camera.fov = v.fov; camera.updateProjectionMatrix(); }
+                        setActiveCam(camera);
+                    }
+                    orbit.target.copy(v.target);
+                    orbit.radius = v.dist;
+                    const off = v.pos.clone().sub(v.target);
+                    orbit.tRotX = orbit.rotX = Math.asin(Math.max(-1, Math.min(1, off.y / v.dist)));
+                    orbit.tRotY = orbit.rotY = Math.atan2(off.x, off.z);
+                }
+
+                function addViewButton(label, v) {
+                    const btn = document.createElement('button');
+                    btn.className = 'charset-option';
+                    btn.textContent = label;
+                    btn.addEventListener('click', () => {
+                        viewsGroup.querySelectorAll('.charset-option').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        applyView(v);
+                    });
+                    viewsGroup.appendChild(btn);
+                }
+
+                // The edge and fill clones are siblings of the mesh they trace, so
+                // when the explode moves a part they must be moved with it or the
+                // linework detaches from the geometry it belongs to.
+                function syncClones() {
+                    for (let i = 0; i < edgeMeshes.length; i++) {
+                        const src = edgeSources[i];
+                        edgeMeshes[i].position.copy(src.position);
+                        edgeMeshes[i].quaternion.copy(src.quaternion);
+                        edgeMeshes[i].scale.copy(src.scale);
+                        wireFillMeshes[i].position.copy(src.position);
+                        wireFillMeshes[i].quaternion.copy(src.quaternion);
+                        wireFillMeshes[i].scale.copy(src.scale);
+                    }
                 }
 
                 // Edge/fill helper meshes are expensive to compute (EdgesGeometry
@@ -1992,15 +2125,18 @@
                         const eg = new THREE.EdgesGeometry(child.geometry, 15);
                         const lg = new LineSegmentsGeometry(); lg.setPositions(eg.attributes.position.array); eg.dispose();
                         const em = new LineSegments2(lg, wireEdgeMat);
-                        em.position.copy(child.position); em.rotation.copy(child.rotation); em.scale.copy(child.scale);
-                        em.visible = false; modelGroup.add(em); edgeMeshes.push(em);
+                        em.visible = false;
+                        // Added to the source's OWN parent so their local transforms
+                        // share a space and syncClones() can copy one to the other.
+                        (child.parent || modelGroup).add(em);
+                        edgeMeshes.push(em); edgeSources.push(child);
 
                         const fm = new THREE.Mesh(child.geometry, new THREE.MeshBasicMaterial({
                             color: curBg, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.FrontSide
                         }));
-                        fm.position.copy(child.position); fm.rotation.copy(child.rotation); fm.scale.copy(child.scale);
-                        fm.visible = false; modelGroup.add(fm); wireFillMeshes.push(fm);
+                        fm.visible = false; (child.parent || modelGroup).add(fm); wireFillMeshes.push(fm);
                     });
+                    syncClones();   // the model may already be part-way exploded
                 }
 
                 function resetMeshes() {
@@ -2094,6 +2230,12 @@
                     ascii.resolution = parseFloat(e.target.value); ascii.setSize(body.clientWidth, body.clientHeight);
                 });
                 body.querySelector('.speed-slider').addEventListener('input', e => { orbit.autoSpeed = parseFloat(e.target.value); });
+                const explodeVal = body.querySelector('.explode-val');
+                body.querySelector('.explode-slider').addEventListener('input', e => {
+                    const pct = parseFloat(e.target.value);
+                    explodeVal.textContent = Math.round(pct) + '%';
+                    pose(pct / 100);
+                });
                 const invBtn = body.querySelector('.invert-toggle');
                 invBtn.addEventListener('click', () => {
                     ascii.invert = !ascii.invert; invBtn.classList.toggle('on', ascii.invert); invBtn.textContent = ascii.invert ? 'On' : 'Off';
@@ -2130,12 +2272,21 @@
                 });
 
                 const _mc = new THREE.Vector3(0, 0, 0);
-                focusBtn.addEventListener('click', () => { orbit.target.set(0, 0, 0); orbit.radius = 5; orbit.tRotX = 0.4; });
+                focusBtn.addEventListener('click', () => {
+                    camera.fov = 50; camera.updateProjectionMatrix();
+                    setActiveCam(camera);
+                    viewsGroup.querySelectorAll('.charset-option').forEach(b => b.classList.remove('active'));
+                    orbit.target.set(0, 0, 0); orbit.radius = 5; orbit.tRotX = 0.4;
+                });
 
                 function resizeVP() {
                     const w = body.clientWidth, h = body.clientHeight;
                     if (w < 1 || h < 1) return;
                     camera.aspect = w / h; camera.updateProjectionMatrix();
+                    // The authored frame's height is what we honour; width follows
+                    // the window, which is resizable and so cannot match Blender's.
+                    orthoCam.left = -orthoCam.top * (w / h); orthoCam.right = orthoCam.top * (w / h);
+                    orthoCam.updateProjectionMatrix();
                     renderer.setSize(w, h); ascii.setSize(w, h);
                     wireEdgeMat.resolution.set(w, h); solidEdgeMat.resolution.set(w, h);
                 }
@@ -2157,6 +2308,7 @@
                 frame.querySelector('.win-close').addEventListener('click', () => {
                     alive = false;
                     window.removeEventListener('theme-change', onThemeChange);
+                    if (mixer) { mixer.stopAllAction(); if (modelGroup) mixer.uncacheRoot(modelGroup); mixer = null; }
                     orbit.dispose();
                     // Free GPU memory held by geometries and materials
                     scene.traverse(o => {
@@ -2171,10 +2323,16 @@
                     if (!alive) return;
                     requestAnimationFrame(loop);
                     orbit.update();
-                    if (mode === 'ascii') ascii.render(scene, camera);
-                    else renderer.render(scene, camera);
+                    if (activeCam === orthoCam) {
+                        // Orthographic has no perspective divide, so distance cannot
+                        // zoom it; map the orbit radius onto the frustum instead.
+                        const z = orthoRefRadius / Math.max(0.0001, orbit.radius);
+                        if (Math.abs(orthoCam.zoom - z) > 1e-4) { orthoCam.zoom = z; orthoCam.updateProjectionMatrix(); }
+                    }
+                    if (mode === 'ascii') ascii.render(scene, activeCam);
+                    else renderer.render(scene, activeCam);
                     if (modelGroup) {
-                        const ndc = _mc.clone().project(camera);
+                        const ndc = _mc.clone().project(activeCam);
                         focusBtn.classList.toggle('visible', Math.abs(ndc.x) > 0.92 || Math.abs(ndc.y) > 0.92 || ndc.z > 1);
                     }
                 })();
