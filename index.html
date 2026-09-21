@@ -552,7 +552,7 @@
         .win-settings.open { max-height: 200px; opacity: 1; pointer-events: auto; }
 
         .settings-inner { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
-        /* Explode and authored views apply in every render mode, so they sit in
+        /* Deconstruct and authored views apply in every render mode, so they sit in
            their own always-on block above the mode-specific settings. */
         .settings-inner.model-settings { border-bottom: 1px solid rgba(0,0,0,0.12); }
 
@@ -560,8 +560,19 @@
 
         .setting-label {
             font-size: 0.42rem; letter-spacing: 0.03em; opacity: 0.35;
-            white-space: nowrap; width: 46px; flex-shrink: 0;
+            white-space: nowrap; width: 62px; flex-shrink: 0;
         }
+        /* A row label that is also the row's action. Underlined so it reads as
+           clickable without adding a button box next to the slider it drives. */
+        .setting-label.label-btn {
+            font-family: var(--font-family); font-size: 0.42rem;
+            background: none; border: none; padding: 0; margin: 0;
+            color: var(--fg); opacity: 0.5; cursor: pointer; text-align: left;
+            text-decoration: underline; text-underline-offset: 2px;
+            text-decoration-thickness: 1px;
+            transition: opacity 0.2s;
+        }
+        .setting-label.label-btn:hover { opacity: 1; }
 
         .ctrl-slider {
             -webkit-appearance: none; appearance: none;
@@ -1804,6 +1815,10 @@
                 this._c = document.createElement('canvas');
                 this._x = this._c.getContext('2d', { willReadFrequently: true });
                 this._w = 0; this._h = 0;
+                // When set to { glyphs }, the scene is expected to be rendering
+                // flat per-part id colours and each part gets its own character
+                // instead of a shading ramp. See buildPartGlyphs() in open3D.
+                this.partPass = null;
             }
             get characters() { return this._chars; } set characters(v) { this._chars = v; }
             get invert() { return this._inv; } set invert(v) { this._inv = v; }
@@ -1819,8 +1834,10 @@
                 this.domElement.style.lineHeight = (h / rows / fs).toFixed(3);
             }
             render(scene, camera) {
-                this.renderer.render(scene, camera);
                 const cW = this._c.width, cH = this._c.height;
+                if (this.partPass) return this._renderParts(scene, camera, cW, cH);
+                this.renderer.render(scene, camera);
+                this._x.imageSmoothingEnabled = true;
                 this._x.clearRect(0, 0, cW, cH);
                 this._x.drawImage(this.renderer.domElement, 0, 0, cW, cH);
                 const d = this._x.getImageData(0, 0, cW, cH).data, ch = this._chars, inv = this._inv;
@@ -1836,6 +1853,36 @@
                 }
                 this.domElement.textContent = s;
             }
+            // Each part is painted a flat colour on a 6-level-per-channel grid, so
+            // rounding each channel back to that grid recovers the part id exactly.
+            // The target has no multisampling and is already grid-sized, so no
+            // filtering ever blends two parts into a third id that isn't on screen.
+            // Render-target pixels stay in the working (linear) space, which is the
+            // space buildPartGlyphs() writes the id colours in, so they round-trip.
+            _renderParts(scene, camera, cW, cH) {
+                if (!this._rt) this._rt = new THREE.WebGLRenderTarget(cW, cH);
+                else if (this._rt.width !== cW || this._rt.height !== cH) this._rt.setSize(cW, cH);
+                if (!this._idBuf || this._idBuf.length !== cW * cH * 4) this._idBuf = new Uint8Array(cW * cH * 4);
+                const prev = this.renderer.getRenderTarget();
+                this.renderer.setRenderTarget(this._rt);
+                this.renderer.render(scene, camera);
+                this.renderer.setRenderTarget(prev);
+                this.renderer.readRenderTargetPixels(this._rt, 0, 0, cW, cH, this._idBuf);
+                const d = this._idBuf, g = this.partPass.glyphs;
+                let s = '';
+                // readRenderTargetPixels hands back rows bottom-up.
+                for (let y = cH - 1; y >= 0; y -= 2) {
+                    const row = y * cW * 4;
+                    for (let x = 0; x < cW; x++) {
+                        const i = row + x * 4;
+                        const id = Math.round(d[i] / 51) + 6 * Math.round(d[i + 1] / 51) + 36 * Math.round(d[i + 2] / 51);
+                        s += id ? (g[id] || '#') : ' ';   // id 0 is the cleared background
+                    }
+                    s += '\n';
+                }
+                this.domElement.textContent = s;
+            }
+            dispose() { if (this._rt) { this._rt.dispose(); this._rt = null; } this._idBuf = null; }
         }
 
         function normalizeModel(group, targetSize = 3) {
@@ -1853,6 +1900,9 @@
         dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
         gltfLoader.setDRACOLoader(dracoLoader);
         const CHAR_SETS = [
+            // 'Parts' is not a density ramp: it gives every authored part its own
+            // character (see the part pass in AsciiEffect below).
+            { name: 'Parts',    parts: true },
             { name: 'Standard', chars: ' .·:;=+x#%@' },
             { name: 'Detailed', chars: " .':;~=+*x#X%@$&" },
             { name: 'Blocky',   chars: ' ░▒▓█' },
@@ -1875,7 +1925,7 @@
                     <button class="focus-btn" aria-label="Reset camera to model"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
                     <div class="win-settings">
                         <div class="settings-inner model-settings" style="display:none">
-                            <div class="setting-row explode-row" style="display:none"><span class="setting-label">Explode</span><input type="range" class="ctrl-slider explode-slider" min="0" max="100" step="0.5" value="0" aria-label="Explode the model"><span class="explode-val" style="font-size:0.42rem;opacity:0.5;margin-left:6px">0%</span></div>
+                            <div class="setting-row decon-row" style="display:none"><button class="setting-label label-btn decon-btn" aria-label="Deconstruct the model, or put it back together">Deconstruct</button><input type="range" class="ctrl-slider decon-slider" min="0" max="100" step="0.5" value="0" aria-label="How far the model is deconstructed"><span class="decon-val" style="font-size:0.42rem;opacity:0.5;margin-left:6px">0%</span></div>
                             <div class="setting-row views-row" style="display:none"><span class="setting-label">Views</span><div class="charset-group views-group"></div></div>
                         </div>
                         <div class="settings-inner ascii-settings">
@@ -1916,7 +1966,7 @@
                 const bottomBar      = body.querySelector('.win-bottom-bar');
                 const bottomHover    = body.querySelector('.win-bottom-hover');
                 const modelPanel     = body.querySelector('.model-settings');
-                const explodeRow     = body.querySelector('.explode-row');
+                const deconRow     = body.querySelector('.decon-row');
                 const viewsRow       = body.querySelector('.views-row');
                 const viewsGroup     = body.querySelector('.views-group');
 
@@ -1937,7 +1987,11 @@
                 let orthoRefRadius = 5;   // orbit radius at which orthoCam.zoom is 1
 
                 const scene = new THREE.Scene();
-                scene.background = new THREE.Color(BG);
+                // Kept as handles because the per-part ascii pass has to clear to
+                // pure black (part id 0) rather than to the page background.
+                let bgInt = BG;
+                const sceneBg = new THREE.Color(BG);
+                scene.background = sceneBg;
                 scene.add(new THREE.AmbientLight(0xffffff, 0.5));
                 const dl = new THREE.DirectionalLight(0xffffff, 0.8); dl.position.set(5, 8, 5); scene.add(dl);
                 const fl = new THREE.DirectionalLight(0xffffff, 0.3); fl.position.set(-3, 2, -3); scene.add(fl);
@@ -1954,6 +2008,59 @@
                 const matSolid   = new THREE.MeshLambertMaterial({ color: 0xcccccc });
                 const solidEdgeMat = new LineMaterial({ color: 0x000000, linewidth: 1, worldUnits: false, opacity: 0.15, transparent: true, resolution: new THREE.Vector2(vw, vh) });
                 const wireEdgeMat  = new LineMaterial({ color: 0x000000, linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(vw, vh) });
+
+                // ---- Per-part ascii ------------------------------------------
+                // Shading alone reads the model as one mass: every mesh shares one
+                // white material, so neighbouring parts whose planes face the same
+                // way get the same character. Instead each authored part is given a
+                // flat id colour and its own character, so the drawing reads as
+                // parts rather than as a silhouette.
+                const PART_GLYPHS = '#%@&$XOWMBQ8DHKNRSAZEPGUVTY=+*oxcsv:.';
+                let partMats = [], partGlyphs = [], partCount = 0;
+                let asciiScheme = 'shade';
+
+                function buildPartGlyphs() {
+                    // Grouped by authored name: Blender splits one Rhino object into
+                    // many meshes (Name.001, Name.002 ...) which must read as one
+                    // part. GLTFLoader sanitizes .name but keeps the authored string
+                    // in userData.name, so prefer that and strip only the duplicate
+                    // suffix - trailing digits can be part of the name itself.
+                    const idOf = new Map(), matOf = new Map();
+                    partMats = []; partGlyphs = [];
+                    realMeshes.forEach((m, i) => {
+                        const authored = (m.userData && m.userData.name) || '';
+                        const base = authored ? authored.replace(/\.\d+$/, '')
+                                              : (m.name || 'part').replace(/\d+$/, '');
+                        if (!idOf.has(base)) {
+                            const k = idOf.size;
+                            // 216 flat colours are addressable and id 0 is the
+                            // background, so ids wrap after 215.
+                            const id = (k % 215) + 1;
+                            idOf.set(base, id);
+                            partGlyphs[id] = PART_GLYPHS[k % PART_GLYPHS.length];
+                            matOf.set(id, new THREE.MeshBasicMaterial({
+                                color: new THREE.Color().setRGB(
+                                    (id % 6) * 51 / 255,
+                                    (Math.floor(id / 6) % 6) * 51 / 255,
+                                    (Math.floor(id / 36) % 6) * 51 / 255),
+                            }));
+                        }
+                        partMats[i] = matOf.get(idOf.get(base));
+                    });
+                    partCount = idOf.size;
+                }
+
+                // Parts mode needs the render to carry ids, not light, so it swaps
+                // the materials and the clear colour together with the decoder.
+                function applyAsciiScheme() {
+                    const parts = mode === 'ascii' && asciiScheme === 'parts' && partCount > 0;
+                    if (modelGroup && mode === 'ascii') {
+                        realMeshes.forEach((c, i) => c.material = parts ? partMats[i] : matWhite);
+                    }
+                    ascii.partPass = parts ? { glyphs: partGlyphs } : null;
+                    scene.background = parts ? null : sceneBg;
+                    renderer.setClearColor(parts ? 0x000000 : bgInt, 1);
+                }
 
                 let modelGroup = null, edgeMeshes = [], wireFillMeshes = [], realMeshes = [], edgeSources = [];
                 let wireLinesMode = 'hidden', solidEdges = false, edgesBuilt = false;
@@ -1990,9 +2097,14 @@
                         group.traverse(c => { if (c.isMesh && c.geometry) { c.material = matWhite; realMeshes.push(c); } });
                         scene.add(group);
                         modelGroup = group;
-                        setupExplode(gltf);
+                        buildPartGlyphs();
+                        setupDeconstruct(gltf);
                         setupViews(gltf);
                         setMode(mode); // re-apply the active mode to the freshly loaded meshes
+                        // Per-part characters are for models authored as an
+                        // assembly. A model carrying no deconstruction was not
+                        // authored that way, so it keeps the shading ramp.
+                        selectCharset(mixer && partCount >= 2 ? 'Parts' : 'Standard');
                     }).catch(err => {
                         console.error('3D load failed:', err);
                         loadingEl.classList.remove('indet');
@@ -2001,16 +2113,16 @@
                     });
                 }
 
-                // ---- Explode -------------------------------------------------
-                // The model carries its own explode as glTF animation tracks
+                // ---- Deconstruct ---------------------------------------------
+                // The model carries its own deconstruction as glTF animation tracks
                 // authored in Blender. Nothing ever plays: the mixer is used purely
-                // as a posing function driven by the Explode slider, so at any
-                // explode value this is still a model you can orbit, pan and zoom.
-                let mixer = null, explodeActions = [], explodeDur = 0;
+                // as a posing function driven by the Deconstruct slider, so at any
+                // value this is still a model you can orbit, pan and zoom.
+                let mixer = null, deconActions = [], deconDur = 0;
                 function pose(frac) {
                     if (!mixer) return;
-                    const t = Math.max(0, Math.min(1, frac)) * explodeDur;
-                    for (const a of explodeActions) a.time = t;
+                    const t = Math.max(0, Math.min(1, frac)) * deconDur;
+                    for (const a of deconActions) a.time = t;
                     // mixer.setTime() is useless here: `paused` zeroes an action's
                     // effective timeScale, so the delta it would apply is multiplied
                     // by zero and nothing moves. Setting .time by hand and evaluating
@@ -2018,18 +2130,18 @@
                     mixer.update(0);
                     syncClones();
                 }
-                function setupExplode(gltf) {
+                function setupDeconstruct(gltf) {
                     if (!gltf.animations || !gltf.animations.length) return;
                     mixer = new THREE.AnimationMixer(modelGroup);
-                    explodeActions = gltf.animations.map(clip => {
+                    deconActions = gltf.animations.map(clip => {
                         const a = mixer.clipAction(clip);
                         a.play(); a.paused = true;   // registered and bound, never advancing
                         return a;
                     });
-                    explodeDur = Math.max(...gltf.animations.map(c => c.duration)) || 0;
-                    if (!explodeDur) { mixer.stopAllAction(); mixer = null; explodeActions = []; return; }
+                    deconDur = Math.max(...gltf.animations.map(c => c.duration)) || 0;
+                    if (!deconDur) { mixer.stopAllAction(); mixer = null; deconActions = []; return; }
                     pose(0);
-                    explodeRow.style.display = '';
+                    deconRow.style.display = '';
                     modelPanel.style.display = '';
                 }
 
@@ -2101,7 +2213,7 @@
                 }
 
                 // The edge and fill clones are siblings of the mesh they trace, so
-                // when the explode moves a part they must be moved with it or the
+                // when the deconstruction moves a part they must move with it or the
                 // linework detaches from the geometry it belongs to.
                 function syncClones() {
                     for (let i = 0; i < edgeMeshes.length; i++) {
@@ -2136,7 +2248,7 @@
                         }));
                         fm.visible = false; (child.parent || modelGroup).add(fm); wireFillMeshes.push(fm);
                     });
-                    syncClones();   // the model may already be part-way exploded
+                    syncClones();   // the model may already be part-way deconstructed
                 }
 
                 function resetMeshes() {
@@ -2173,15 +2285,26 @@
                     body.querySelector('.wire-settings').style.display  = m === 'wireframe' ? '' : 'none';
                     body.querySelector('.solid-settings').style.display = m === 'solid'     ? '' : 'none';
                     if (modelGroup) {
-                        if (m === 'ascii') { resetMeshes(); realMeshes.forEach(c => c.material = matWhite); }
+                        if (m === 'ascii') { resetMeshes(); applyAsciiScheme(); }
                         else if (m === 'wireframe') applyWire();
                         else applySolid();
                     }
+                    if (!modelGroup) applyAsciiScheme();
                     canvasCont.style.display = m === 'ascii' ? 'none'  : 'block';
                     asciiCont.style.display  = m === 'ascii' ? 'flex'   : 'none';
                 }
                 body.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
                 setMode('ascii');
+
+                function selectCharset(name) {
+                    const btns = [...charsetGrp.querySelectorAll('.charset-option')];
+                    const btn = btns.find(b => b.dataset.cs === name) || btns[0];
+                    const cs  = CHAR_SETS.find(c => c.name === btn.dataset.cs);
+                    btns.forEach(b => b.classList.toggle('active', b === btn));
+                    asciiScheme = cs.parts ? 'parts' : 'shade';
+                    if (cs.chars) ascii.characters = cs.chars;
+                    applyAsciiScheme();
+                }
 
                 // Bottom bar show/hide
                 let barLocked = false, hideT = null;
@@ -2207,8 +2330,9 @@
                 bottomBar.addEventListener('focusout', e => { if (!bottomBar.contains(e.relatedTarget)) hideBar(); });
                 body.addEventListener('pointerdown', e => {
                     if (e.target.closest('.win-bottom-bar, .win-settings')) return;
-                    // Clicking away from a pinned panel releases the pin.
-                    if (settingsPanel.classList.contains('open')) closeSettings(true);
+                    // An open panel is pinned and stays pinned: orbiting, panning and
+                    // zooming the model are the whole point of having it open, so only
+                    // the Settings button itself closes it.
                     if (e.pointerType === 'mouse') return;
                     // Touch has no hover: a tap on the viewer reveals the bar, which
                     // hides itself after a few seconds (unless settings are open).
@@ -2230,11 +2354,32 @@
                     ascii.resolution = parseFloat(e.target.value); ascii.setSize(body.clientWidth, body.clientHeight);
                 });
                 body.querySelector('.speed-slider').addEventListener('input', e => { orbit.autoSpeed = parseFloat(e.target.value); });
-                const explodeVal = body.querySelector('.explode-val');
-                body.querySelector('.explode-slider').addEventListener('input', e => {
-                    const pct = parseFloat(e.target.value);
-                    explodeVal.textContent = Math.round(pct) + '%';
+                const deconVal    = body.querySelector('.decon-val');
+                const deconSlider = body.querySelector('.decon-slider');
+                const setDecon = pct => {
+                    deconVal.textContent = Math.round(pct) + '%';
                     pose(pct / 100);
+                };
+                // Scrubbing by hand takes over from a running tween rather than
+                // fighting it for the slider value.
+                let deconTween = null;
+                const stopTween = () => { if (deconTween) cancelAnimationFrame(deconTween); deconTween = null; };
+                deconSlider.addEventListener('input', e => { stopTween(); setDecon(parseFloat(e.target.value)); });
+                // The row label doubles as the button: it runs the slider all the
+                // way out, and a second click brings it back.
+                body.querySelector('.decon-btn').addEventListener('click', () => {
+                    const from = parseFloat(deconSlider.value), to = from > 50 ? 0 : 100;
+                    stopTween();
+                    const t0 = performance.now(), dur = 900;
+                    const step = now => {
+                        const k = Math.min(1, (now - t0) / dur);
+                        const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+                        const v = from + (to - from) * e;
+                        deconSlider.value = String(v);
+                        setDecon(v);
+                        deconTween = k < 1 ? requestAnimationFrame(step) : null;
+                    };
+                    deconTween = requestAnimationFrame(step);
                 });
                 const invBtn = body.querySelector('.invert-toggle');
                 invBtn.addEventListener('click', () => {
@@ -2244,13 +2389,9 @@
                 const charsetGrp = body.querySelector('.ascii-charset');
                 CHAR_SETS.forEach((cs, i) => {
                     const btn = document.createElement('button');
-                    btn.classList.add('charset-option'); if (i === 0) btn.classList.add('active');
-                    btn.textContent = cs.name;
-                    btn.addEventListener('click', () => {
-                        ascii.characters = cs.chars;
-                        charsetGrp.querySelectorAll('.charset-option').forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                    });
+                    btn.classList.add('charset-option'); if (cs.name === 'Standard') btn.classList.add('active');
+                    btn.textContent = cs.name; btn.dataset.cs = cs.name;
+                    btn.addEventListener('click', () => selectCharset(cs.name));
                     charsetGrp.appendChild(btn);
                 });
 
@@ -2295,12 +2436,12 @@
                 const onThemeChange = () => {
                     const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
                     const fg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
-                    const bgInt = parseInt(bg.replace('#',''), 16);
+                    bgInt = parseInt(bg.replace('#',''), 16);
                     const fgInt = parseInt(fg.replace('#',''), 16);
                     ascii.domElement.style.color = fg;
                     ascii.domElement.style.backgroundColor = bg;
-                    renderer.setClearColor(bgInt, 1);
-                    scene.background.set(bgInt);
+                    sceneBg.set(bgInt);
+                    applyAsciiScheme();   // keeps the clear colour right in either scheme
                     matWireAll.color.set(fgInt); wireEdgeMat.color.set(fgInt); solidEdgeMat.color.set(fgInt);
                     wireFillMeshes.forEach(f => f.material.color.set(bgInt));
                 };
@@ -2316,6 +2457,7 @@
                         if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose());
                     });
                     solidEdgeMat.dispose(); wireEdgeMat.dispose();
+                    ascii.dispose();
                     renderer.dispose();
                 });
 
