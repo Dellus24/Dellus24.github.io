@@ -87,9 +87,10 @@
         <main id="cv" class="cv-body" aria-label="Curriculum vitae"></main>
     </div>
 
-    <!-- config.js is the single source of truth (see HYG-01). This page reads
-         STATIC.cv from it rather than holding its own copy, so the CV can
-         never drift from what the main site shows. -->
+    <!-- This page reads STATIC.cv rather than holding its own copy, so the CV
+         can never drift from what the main site shows (HYG-01). js/config.js is
+         generated from content/cv.txt — edit that, not this, and not config.js.
+         See assets/projects/README.md. -->
     <script src="js/config.js"></script>
     <script>
         (function () {

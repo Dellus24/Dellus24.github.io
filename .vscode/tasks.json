@@ -1,0 +1,23 @@
+{
+    // Ctrl+Shift+B rebuilds js/config.js from the .txt content sources.
+    // The same thing the pre-commit hook does — this is just for checking your
+    // edits before you commit.
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build site content",
+            "type": "shell",
+            "command": "node tools/build-content.mjs",
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Check site content is up to date",
+            "type": "shell",
+            "command": "node tools/build-content.mjs --check",
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1094,10 +1094,12 @@
                 openWins[`slides-${project.id}`] = el;
 
                 // Alt text is positional rather than descriptive: these are
-                // 145-slide project sequences with no per-slide captions in
-                // config.js, and inventing descriptions would be worse than
-                // stating position honestly. Add captions to config.js and
-                // this can use them.
+                // 145-slide project sequences with no per-slide captions
+                // authored anywhere, and inventing descriptions would be worse
+                // than stating position honestly. Slides are auto-scanned from
+                // the folder, so per-slide captions would need a `slides:`
+                // block in project.txt carrying `file | caption` pairs — the
+                // same shape the `gallery:` block already uses.
                 const slideAlt = i => `${project.title} — slide ${i + 1} of ${slides.length}`;
 
                 el.setAttribute('role', 'group');

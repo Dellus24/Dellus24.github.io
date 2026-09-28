@@ -1,0 +1,39 @@
+#!/bin/sh
+# Keeps js/config.js in step with the .txt content sources on every commit, so
+# committing from VS Code is all you ever have to do.
+#
+# Git hooks are NOT tracked by git, so this file is the copy that lives in the
+# repo. Install (or reinstall after a fresh clone):
+#
+#     cp tools/pre-commit .git/hooks/pre-commit
+#
+# Remove it any time with:  rm .git/hooks/pre-commit
+# Nothing else depends on it — `node tools/build-content.mjs` by hand does the
+# same job.
+
+set -e
+
+REPO="$(git rev-parse --show-toplevel)"
+cd "$REPO"
+
+# Only bother when a content source or the builder itself is part of this commit.
+if ! git diff --cached --name-only | grep -qE '(project\.txt|^content/.*\.txt|^tools/build-content\.mjs)$'; then
+    exit 0
+fi
+
+echo "pre-commit: rebuilding js/config.js from the .txt sources"
+
+if ! node tools/build-content.mjs; then
+    echo ""
+    echo "pre-commit: BUILD FAILED — commit stopped."
+    echo "Fix the errors above in the .txt file they name, then commit again."
+    exit 1
+fi
+
+# Fold the regenerated config into this same commit.
+if ! git diff --quiet -- js/config.js; then
+    git add js/config.js
+    echo "pre-commit: js/config.js was regenerated and added to this commit"
+fi
+
+exit 0
