@@ -319,17 +319,27 @@
             overflow: hidden;
         }
 
+        /* Meta and participants read at the same weight as the description —
+           they were half-tone grey (0.4 / 0.35 against the text's 0.75) and
+           uppercase, which made them look like chrome rather than part of the
+           text. Tracking comes down with the caps, as everywhere else: it was
+           there to space capitals. */
         .info-meta {
             display: flex; align-items: center; gap: 5px;
-            font-size: 0.48rem; letter-spacing: 0.08em;
-            text-transform: uppercase; opacity: 0.4;
+            font-size: 0.5rem; letter-spacing: 0.03em;
+            opacity: 0.75;
             flex-wrap: wrap; flex-shrink: 0;
         }
-        .info-meta-sep { opacity: 0.4; }
+        /* Was 0.4 — a half-tone separator inside a line that is no longer
+           half-tone. Kept a touch lighter than the text so it reads as
+           punctuation, not as a word. */
+        .info-meta-sep { opacity: 0.55; }
 
+        /* Sits BELOW the description now, not above it — it is a credit, and it
+           reads as one at the end of the text rather than as a header. */
         .info-participants {
-            font-size: 0.48rem; letter-spacing: 0.06em;
-            text-transform: uppercase; opacity: 0.35;
+            font-size: 0.5rem; letter-spacing: 0.03em;
+            opacity: 0.75;
             flex-shrink: 0;
         }
 
@@ -361,15 +371,25 @@
             padding-top: 10px; flex-shrink: 0;
         }
 
+        /* The frame is kept but transparent, so the button occupies the same box
+           at rest as it does on hover — nothing shifts when the fill appears.
+           border-color, not `border: none`, for exactly that reason. */
         .action-btn {
             font-family: var(--font-family);
-            font-size: 0.5rem; letter-spacing: 0.1em;
-            text-transform: uppercase; background: none;
-            border: 1px solid rgba(0,0,0,0.25); cursor: pointer;
-            padding: 4px 10px; color: var(--fg); opacity: 0.5;
-            transition: opacity 0.15s, background 0.15s, color 0.15s;
+            font-size: 0.55rem; letter-spacing: 0.03em;
+            background: none;
+            border: 1px solid transparent; cursor: pointer;
+            padding: 4px 10px; color: var(--fg); opacity: 0.6;
+            transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
         }
-        .action-btn:hover { opacity: 1; background: var(--fg); color: var(--bg); }
+        .action-btn:hover {
+            opacity: 1; background: var(--fg); color: var(--bg);
+            border-color: var(--fg);
+        }
+        /* Pull the first button back by its own padding + border so its TEXT
+           lines up with the description above it. With the frame visible that
+           inset read as the button's edge; invisible, it just looked misaligned. */
+        .info-actions .action-btn:first-child { margin-left: -11px; }
 
         /* ג"€ג"€ GALLERY WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
         .gallery-body { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
@@ -937,7 +957,7 @@
                     <span class="win-title">${title}</span>
                     ${tag ? `<span class="win-type-tag">${tag}</span>` : ''}
                     ${collapsible ? `<span class="win-collapse" role="button" tabindex="0" aria-label="Collapse ${title}" aria-expanded="true">&#x2212;</span>` : ''}
-                    <span class="win-close" role="button" tabindex="0" aria-label="Close ${title}">&#x2014;</span>
+                    <span class="win-close" role="button" tabindex="0" aria-label="Close ${title}">&#x00D7;</span>
                 </div>
                 <div class="win-body"></div>
                 <div class="cscroll-track"><div class="cscroll-thumb"></div></div>
@@ -1140,7 +1160,7 @@
                     <div class="slide-bar">
                         <span class="slide-title">${project.title}</span>
                         <span class="slide-counter" aria-live="polite" aria-atomic="true">1 / ${slides.length}</span>
-                        <span class="slide-close" role="button" tabindex="0" aria-label="Close ${project.title} slideshow">&#x2014;</span>
+                        <span class="slide-close" role="button" tabindex="0" aria-label="Close ${project.title} slideshow">&#x00D7;</span>
                     </div>
                     <div class="slide-resize"></div>
                 `;
@@ -1327,7 +1347,9 @@
 
         function openInfo(project) {
             focusOrCreate(`info-${project.id}`, () => {
-                const frame = makeFrame({ title: project.title, tag: 'Info', w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true });
+                // No type tag: the window title is the project name, and an
+                // "Info" tag beside it said nothing the title did not.
+                const frame = makeFrame({ title: project.title, w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true });
                 const body = frame.querySelector('.win-body');
                 body.className += ' info-body';
 
@@ -1341,13 +1363,13 @@
                 body.innerHTML = `
                     <div class="info-meta">
                         <span>${project.year}</span>
-                        <span class="info-meta-sep">ֲ·</span>
+                        <span class="info-meta-sep">·</span>
                         <span>${project.location}</span>
-                        <span class="info-meta-sep">ֲ·</span>
+                        <span class="info-meta-sep">·</span>
                         <span>${project.type}</span>
                     </div>
-                    <div class="info-participants">${project.participants}</div>
                     <div class="info-desc">${project.description}</div>
+                    <div class="info-participants">${project.participants}</div>
                     <div class="info-actions">
                         ${hasSlides ? `<button class="action-btn slides-btn">Slides</button>` : ''}
                         ${hasImages ? `<button class="action-btn gallery-btn">Gallery</button>` : ''}
