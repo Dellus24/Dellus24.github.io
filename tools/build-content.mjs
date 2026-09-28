@@ -29,7 +29,7 @@ const warn = (m) => warnings.push(m);
 const HEAD_KEYS = ['title', 'year', 'category', 'location', 'participants', 'type'];
 const CATEGORIES = ['academic', 'employment'];
 const STATIC_KEYS = ['about', 'cv', 'contact'];   // hard-coded in the menu markup
-const BLOCK_KEYS = ['gallery', 'slides'];
+const BLOCK_KEYS = ['gallery', 'slides', 'models'];
 
 // Numeric-aware sort: a plain string sort puts '100.webp' before '99.webp'.
 const natCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -126,23 +126,70 @@ for (const id of fs.readdirSync(projectsDir).sort(natCmp)) {
         description: body,
     };
 
-    // ── model: auto-discover the single .glb, require `model:` when ambiguous.
-    //    Taking the name off disk also guarantees the exact casing — a
-    //    hand-typed path works on Windows and 404s on GitHub Pages.
+    // ── models: a project can carry several. One .glb needs no authoring at
+    //    all — it is auto-discovered, which also takes its casing FROM DISK,
+    //    and a hand-typed path that differs in case works on Windows and 404s
+    //    on GitHub Pages. Several need a `models:` block saying the order and
+    //    which one opens; mark the default with a leading `*`.
+    //
+    //        models:
+    //          * Cabine.glb
+    //          Bridge.glb
+    //
+    //    Dropped names come from the filename (Nir, 2026-09-28) — there is
+    //    deliberately no label field to drift from what is on disk.
     const modelsDir = path.join(dir, 'models');
     const glbs = listFiles(modelsDir).filter(f => f.toLowerCase().endsWith('.glb'));
-    if (head.model) {
-        if (!glbs.includes(head.model)) {
-            const near = glbs.find(g => g.toLowerCase() === head.model.toLowerCase());
-            err(near
-                ? `${where}: model "${head.model}" is a case mismatch — the file on disk is "${near}" (paths are case-sensitive live)`
-                : `${where}: model "${head.model}" not found in models/ (present: ${glbs.join(', ') || 'none'})`);
+
+    const resolveGlb = (name) => {
+        if (glbs.includes(name)) return name;
+        const near = glbs.find(g => g.toLowerCase() === name.toLowerCase());
+        err(near
+            ? `${where}: model "${name}" is a case mismatch — the file on disk is "${near}" (paths are case-sensitive live)`
+            : `${where}: model "${name}" not found in models/ (present: ${glbs.join(', ') || 'none'})`);
+        return null;
+    };
+
+    let modelFiles = [];          // ordered; index 0 is the one that opens
+    if (blocks.models) {
+        const listed = [];
+        let defaultIdx = -1;
+        for (const line of blocks.models) {
+            const isDefault = line.startsWith('*');
+            const name = line.replace(/^\*\s*/, '').trim();
+            if (!name) continue;
+            if (listed.includes(name)) { err(`${where}: model "${name}" listed twice`); continue; }
+            if (isDefault) {
+                if (defaultIdx !== -1) err(`${where}: two models marked "*" — only one opens`);
+                defaultIdx = listed.length;
+            }
+            if (resolveGlb(name)) listed.push(name);
         }
-        rec.model = `assets/projects/${id}/models/${head.model}`;
+        // The marked one opens; with none marked the first line does.
+        if (defaultIdx > 0) listed.unshift(...listed.splice(defaultIdx, 1));
+        modelFiles = listed;
+        for (const g of glbs) {
+            if (!listed.includes(g)) warn(`${where}: models/${g} is on disk but not listed — it will not appear`);
+        }
+    } else if (head.model) {
+        if (resolveGlb(head.model)) modelFiles = [head.model];
     } else if (glbs.length === 1) {
-        rec.model = `assets/projects/${id}/models/${glbs[0]}`;
+        modelFiles = [glbs[0]];
     } else if (glbs.length > 1) {
-        err(`${where}: ${glbs.length} .glb files in models/ — add a "model:" line naming one of: ${glbs.join(', ')}`);
+        err(`${where}: ${glbs.length} .glb files in models/ — add a "models:" block listing them, ` +
+            `marking the one that opens with a leading "*" (present: ${glbs.join(', ')})`);
+    }
+
+    if (modelFiles.length) {
+        // `model` stays a plain string so everything that already reads it keeps
+        // working; `models` only appears when there is genuinely more than one.
+        rec.model = `assets/projects/${id}/models/${modelFiles[0]}`;
+        if (modelFiles.length > 1) {
+            rec.models = modelFiles.map(f => ({
+                src:   `assets/projects/${id}/models/${f}`,
+                label: f.replace(/\.glb$/i, ''),
+            }));
+        }
     }
 
     // ── gallery: explicit. The order is curated and the labels live here.
@@ -258,6 +305,11 @@ for (const p of projects) {
     out.push(`        type:         ${q(p.type)},`);
     out.push(`        description:  ${tpl(p.description)},`);
     if (p.model) out.push(`        model:        ${q(p.model)},`);
+    if (p.models) {
+        out.push('        models:       [');
+        for (const m of p.models) out.push(`            { src: ${q(m.src)}, label: ${q(m.label)} },`);
+        out.push('        ],');
+    }
     if (p.images) {
         const folder = `assets/projects/${p.id}/gallery/`;
         const entries = p.images.map(im => {

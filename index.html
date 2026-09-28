@@ -389,7 +389,34 @@
         /* Pull the first button back by its own padding + border so its TEXT
            lines up with the description above it. With the frame visible that
            inset read as the button's edge; invisible, it just looked misaligned. */
-        .info-actions .action-btn:first-child { margin-left: -11px; }
+        .info-actions > .action-btn:first-child,
+        .info-actions > .model-picker:first-child .action-btn { margin-left: -11px; }
+
+        /* Model dropdown — only built when a project carries several models. */
+        .model-picker { position: relative; display: inline-flex; }
+        .action-caret { margin-left: 5px; font-size: 0.85em; }
+
+        /* Opens UPWARD: these buttons sit at the bottom of the box, so a menu
+           dropping down would fall outside the window. */
+        .model-menu {
+            position: absolute; bottom: 100%; left: 0; margin-bottom: 5px;
+            background: var(--bg); border: 1px solid var(--border-strong);
+            display: flex; flex-direction: column; min-width: 100%;
+            z-index: 20; white-space: nowrap;
+        }
+        /* MUST come after the rule above. `display: flex` is an author style and
+           beats the browser's own [hidden] { display: none }, so without this the
+           menu renders even with the hidden attribute set — and `el.hidden`
+           still reads true, which makes it easy to test and miss. */
+        .model-menu[hidden] { display: none; }
+        .model-menu-item {
+            font-family: var(--font-family);
+            font-size: 0.55rem; letter-spacing: 0.03em;
+            background: none; border: none; cursor: pointer;
+            padding: 5px 10px; color: var(--fg); opacity: 0.7;
+            text-align: left; transition: opacity 0.15s, background 0.15s, color 0.15s;
+        }
+        .model-menu-item:hover { opacity: 1; background: var(--fg); color: var(--bg); }
 
         /* ג"€ג"€ GALLERY WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
         .gallery-body { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
@@ -980,6 +1007,10 @@
             // released when the window closes, so they don't accumulate.
             const docAC = new AbortController();
             const docSig = { signal: docAC.signal };
+            // Exposed so a window's own content can hang document-level
+            // listeners off the same lifetime (openInfo's model dropdown uses
+            // it for its click-away handler).
+            frame._sig = docAC.signal;
 
             // Close. closeFrame is shared by the button, Enter/Space on it,
             // and Escape from anywhere inside the window.
@@ -1356,6 +1387,8 @@
                 const hasModel  = !!project.model;
                 const hasImages = project.images && project.images.length > 0;
                 const hasSlides = project.slides && project.slides.length > 0;
+                // Several models ⇒ the 3D button grows a caret and drops a list.
+                const modelList = (project.models && project.models.length > 1) ? project.models : null;
 
                 // Warm the HTTP cache so the 3D viewer opens without a download wait
                 if (hasModel) fetch(project.model, { priority: 'low' }).catch(() => {});
@@ -1373,7 +1406,14 @@
                     <div class="info-actions">
                         ${hasSlides ? `<button class="action-btn slides-btn">Slides</button>` : ''}
                         ${hasImages ? `<button class="action-btn gallery-btn">Gallery</button>` : ''}
-                        ${hasModel  ? `<button class="action-btn viewer-btn">3D View</button>` : ''}
+                        ${hasModel ? (modelList ? `
+                            <span class="model-picker">
+                                <button class="action-btn viewer-btn" aria-haspopup="true" aria-expanded="false">3D View<span class="action-caret" aria-hidden="true">&#x25BE;</span></button>
+                                <div class="model-menu" role="menu" hidden>
+                                    ${modelList.map((m, i) => `<button class="model-menu-item" role="menuitem" data-model-index="${i}">${m.label}</button>`).join('')}
+                                </div>
+                            </span>`
+                            : `<button class="action-btn viewer-btn">3D View</button>`) : ''}
                     </div>
                 `;
 
@@ -1382,7 +1422,48 @@
 
                 if (hasSlides) body.querySelector('.slides-btn').addEventListener('click', () => openSlideshow(project));
                 if (hasImages) body.querySelector('.gallery-btn').addEventListener('click', () => openGallery(project));
-                if (hasModel)  body.querySelector('.viewer-btn').addEventListener('click', () => open3D(project));
+
+                if (hasModel && !modelList) {
+                    body.querySelector('.viewer-btn').addEventListener('click', () => open3D(project));
+                } else if (hasModel) {
+                    const trigger = body.querySelector('.viewer-btn');
+                    const menu    = body.querySelector('.model-menu');
+                    const setOpen = (open) => {
+                        menu.hidden = !open;
+                        trigger.setAttribute('aria-expanded', String(open));
+                    };
+                    const picker = body.querySelector('.model-picker');
+                    trigger.addEventListener('click', e => {
+                        e.stopPropagation();
+                        setOpen(menu.hidden);
+                        trigger.focus();     // so Escape below has somewhere to land
+                    });
+                    menu.querySelectorAll('.model-menu-item').forEach(item => {
+                        item.addEventListener('click', e => {
+                            e.stopPropagation();
+                            setOpen(false);
+                            open3D(project, Number(item.dataset.modelIndex));
+                        });
+                    });
+                    // Close on click-away and on Escape. Scoped to the window's
+                    // own AbortController so it tears down with the frame.
+                    document.addEventListener('click', e => {
+                        if (!e.target.closest('.model-picker')) setOpen(false);
+                    }, { signal: frame._sig });
+                    // On the PICKER, not the frame. makeFrame already has an
+                    // Escape→close-window listener on the frame, registered
+                    // first, so a second frame listener fires too late and the
+                    // whole box closes instead of the menu. A listener on this
+                    // descendant runs before the frame's, so Escape closes the
+                    // menu when focus is inside the picker and still closes the
+                    // window from anywhere else.
+                    picker.addEventListener('keydown', e => {
+                        if (e.key !== 'Escape' || menu.hidden) return;
+                        e.stopPropagation();
+                        setOpen(false);
+                        trigger.focus();
+                    });
+                }
 
                 // Mark sidebar row as open
                 const row = document.querySelector(`.proj-row[data-id="${project.id}"]`);
@@ -1394,9 +1475,13 @@
         }
 
         // Open a project = Info + every feature it has, then tile them.
+        // Opening a project shows the text box, the gallery and the 3D model —
+        // NOT the slides, which are one button away (Nir, 2026-09-28). Opening
+        // everything at once made the box's buttons a re-opener rather than a
+        // way in; now they are the way in. A project carrying several models
+        // still opens only ONE window, the one marked in its project.txt.
         function openProject(project) {
             openInfo(project);
-            if (project.slides && project.slides.length) openSlideshow(project);
             if (project.images && project.images.length) openGallery(project);
             if (project.model) open3D(project);
             requestAnimationFrame(() => tileProjectWindows(project));
@@ -1425,7 +1510,11 @@
             const items = [];
 
             // 3D — the hero, a little bigger than the rest
-            const el3d = openWins[`3d-${project.id}`];
+            // A multi-model project keys its windows `3d-<id>-<n>`; a single
+            // model keeps the plain key. Only the one openProject opened (n=0)
+            // takes part in the tiling — later picks from the dropdown spawn
+            // normally, like any window opened on its own.
+            const el3d = openWins[`3d-${project.id}`] || openWins[`3d-${project.id}-0`];
             if (el3d) {
                 let w = clamp(vw * 0.40, 460, capW);
                 let h = clamp(w * 0.78, 340, capH);
@@ -2069,9 +2158,19 @@
             { name: 'Minimal',  chars: ' .:#' },
         ];
 
-        async function open3D(project) {
-            focusOrCreate(`3d-${project.id}`, async () => {
-                const frame = makeFrame({ title: project.title + ' — 3D', tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key: `3d-${project.id}` });
+        // `which` indexes project.models when a project carries several. Index 0
+        // is the model marked in project.txt and the only one openProject opens;
+        // the rest come from the 3D View dropdown, each in its own window so two
+        // models can sit side by side.
+        async function open3D(project, which = 0) {
+            const list  = (project.models && project.models.length > 1) ? project.models : null;
+            const entry = list ? list[which] : null;
+            const src   = entry ? entry.src : project.model;
+            if (!src) return;
+            const key   = list ? `3d-${project.id}-${which}` : `3d-${project.id}`;
+            const label = entry ? entry.label : '3D';
+            focusOrCreate(key, async () => {
+                const frame = makeFrame({ title: project.title + ' — ' + label, tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key });
                 const body = frame.querySelector('.win-body');
                 Object.assign(body.style, { padding: '0', overflow: 'hidden', position: 'relative' });
 
@@ -2227,7 +2326,7 @@
 
                 // Load model asynchronously — the viewer opens immediately and
                 // the model pops in when ready, with download progress shown.
-                if (project.model) {
+                if (src) {
                     const CIRC = 125.66; // 2πr for r=20
                     const loadingEl = document.createElement('div');
                     loadingEl.className = 'viewer-loading indet';
@@ -2242,7 +2341,7 @@
                     const ldArc = loadingEl.querySelector('.ld-arc');
                     const ldTxt = loadingEl.querySelector('.ld-txt');
 
-                    gltfLoader.loadAsync(project.model, e => {
+                    gltfLoader.loadAsync(src, e => {
                         if (!e.total) return; // no content-length: keep the spinner
                         const frac = Math.min(1, e.loaded / e.total);
                         loadingEl.classList.remove('indet');
