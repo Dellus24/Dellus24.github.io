@@ -307,29 +307,43 @@
         .win-resize-edge[data-dir="se"] { bottom: -3px; right: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
 
         /* ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
+        /* The box sizes itself to its text (see openInfo), so the BODY never
+           scrolls — only .info-desc does, once the text passes the line cap.
+           That keeps the meta line and the Slides/Gallery/3D buttons on screen
+           at all times: they are what makes this box the project's menu, and
+           when the whole body scrolled they were the first thing to disappear
+           below the fold on 8 of 9 projects. */
         .info-body {
             padding: 16px 18px;
             display: flex; flex-direction: column; gap: 10px;
-            overflow-y: auto;
+            overflow: hidden;
         }
 
         .info-meta {
             display: flex; align-items: center; gap: 5px;
             font-size: 0.48rem; letter-spacing: 0.08em;
             text-transform: uppercase; opacity: 0.4;
-            flex-wrap: wrap;
+            flex-wrap: wrap; flex-shrink: 0;
         }
         .info-meta-sep { opacity: 0.4; }
 
         .info-participants {
             font-size: 0.48rem; letter-spacing: 0.06em;
             text-transform: uppercase; opacity: 0.35;
+            flex-shrink: 0;
         }
 
+        /* min-height:0 is load-bearing: without it a flex child refuses to
+           shrink below its content and the max-height set by openInfo is
+           ignored, so the box grows to the full text again. */
         .info-desc {
             font-size: 0.62rem; letter-spacing: 0.03em;
-            line-height: 1.7; opacity: 0.75; flex: 1;
+            line-height: 1.7; opacity: 0.75;
+            flex: 1 1 auto; min-height: 0;
+            overflow-y: auto;
+            scrollbar-width: none; -ms-overflow-style: none;
         }
+        .info-desc::-webkit-scrollbar { display: none; }
 
         .info-tags {
             display: flex; flex-wrap: wrap; gap: 5px;
@@ -344,7 +358,7 @@
         .info-actions {
             display: flex; gap: 8px; margin-top: 4px;
             border-top: 1px solid rgba(0,0,0,0.08);
-            padding-top: 10px;
+            padding-top: 10px; flex-shrink: 0;
         }
 
         .action-btn {
@@ -1057,23 +1071,36 @@
             document.addEventListener('pointerup', endFrameResize, docSig);
             document.addEventListener('pointercancel', endFrameResize, docSig);
 
-            // Custom scrollbar
+            // Custom scrollbar. Tracks .win-body by default, but a window whose
+            // body does not itself scroll can point it at the element that does
+            // (openInfo scrolls .info-desc so its buttons stay put).
             const cTrack = frame.querySelector('.cscroll-track');
             const cThumb = frame.querySelector('.cscroll-thumb');
             const cBody  = frame.querySelector('.win-body');
+            let cScrollEl = cBody;
             function syncScroll() {
                 const tbH = frame.querySelector('.win-titlebar').offsetHeight;
                 cTrack.style.top    = (tbH + 6) + 'px';
                 cTrack.style.bottom = '6px';
-                if (cBody.scrollHeight <= cBody.clientHeight + 1) { cTrack.style.opacity = '0'; return; }
+                if (cScrollEl.scrollHeight <= cScrollEl.clientHeight + 1) { cTrack.style.opacity = '0'; return; }
                 cTrack.style.opacity = '';
-                const ratio   = cBody.scrollTop / (cBody.scrollHeight - cBody.clientHeight);
+                const ratio   = cScrollEl.scrollTop / (cScrollEl.scrollHeight - cScrollEl.clientHeight);
                 const availH  = cTrack.offsetHeight - 6;
                 cThumb.style.top = Math.round(ratio * availH) + 'px';
             }
-            cBody.addEventListener('scroll', syncScroll);
+            const cRO = new ResizeObserver(syncScroll);
+            cScrollEl.addEventListener('scroll', syncScroll);
             frame.addEventListener('mouseenter', syncScroll);
-            new ResizeObserver(syncScroll).observe(cBody);
+            cRO.observe(cScrollEl);
+            frame._setScrollEl = (el) => {
+                if (!el || el === cScrollEl) return;
+                cScrollEl.removeEventListener('scroll', syncScroll);
+                cRO.unobserve(cScrollEl);
+                cScrollEl = el;
+                cScrollEl.addEventListener('scroll', syncScroll);
+                cRO.observe(cScrollEl);
+                syncScroll();
+            };
 
             setTimeout(() => frame.classList.remove('spawning'), 320);
             return frame;
@@ -1224,6 +1251,80 @@
             });
         }
 
+        // The project box is the project's menu, so it opens already showing its
+        // text and its buttons rather than a fixed rectangle with both cut off.
+        // Nir's rule (2026-09-28): about 10 words to a line, at most 20 lines,
+        // and only then does the description scroll.
+        const INFO_WORDS_PER_LINE = 10;
+        const INFO_MAX_LINES      = 20;
+
+        function sizeInfoToText(frame, body) {
+            const desc = body.querySelector('.info-desc');
+            if (!desc) return;
+            const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+            const words = (desc.textContent || '').trim().split(/\s+/).filter(Boolean).length;
+            const lineH = parseFloat(getComputedStyle(desc).lineHeight) || 20;
+
+            // Width is DERIVED, never a fixed 400px: the theme editor can swap
+            // the font family and scale it, and 400px of Junicode is not 400px
+            // of Courier. Measure the real text offscreen, then solve for the
+            // width that yields ~10 words a line. Characters-per-line scales
+            // about linearly with width, so one probe plus one correction lands
+            // within a word.
+            const probe = desc.cloneNode(true);
+            probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;' +
+                                  'max-height:none;overflow:visible;flex:none;';
+            document.body.appendChild(probe);
+
+            const REF = 360;
+            probe.style.width = REF + 'px';
+            const refLines  = Math.max(1, Math.round(probe.offsetHeight / lineH));
+            const wantLines = Math.max(1, Math.ceil(words / INFO_WORDS_PER_LINE));
+            const innerW    = clampN(Math.round(REF * refLines / wantLines), 240, 520);
+
+            probe.style.width = innerW + 'px';
+            const fullH = probe.offsetHeight;                       // unclamped text height
+            probe.remove();
+
+            const bcs  = getComputedStyle(body);
+            const padH = parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight);
+            frame.style.width = Math.round(innerW + padH + 2) + 'px';   // +2 = frame border
+
+            desc.style.flex = '0 0 auto';
+
+            // Measure everything that is NOT the description — the meta line,
+            // the participants line, the buttons, padding and titlebar. Summed
+            // explicitly rather than read off scrollHeight, because the meta
+            // line and the buttons wrap, so their heights are only real once the
+            // width above has been applied.
+            const padV    = parseFloat(bcs.paddingTop) + parseFloat(bcs.paddingBottom);
+            const gap     = parseFloat(bcs.rowGap) || 0;
+            const kids    = [...body.children];
+            const chromeH = frame.querySelector('.win-titlebar').offsetHeight + 2;
+            let fixedH    = padV + gap * Math.max(0, kids.length - 1) + chromeH;
+            for (const k of kids) if (k !== desc) fixedH += k.offsetHeight;
+
+            // The description takes its own height, the 20-line cap, or whatever
+            // the screen leaves once the fixed parts are paid for — whichever is
+            // smallest. The screen term matters on a laptop, where 20 lines does
+            // not fit; without it the box is clamped but the description is not,
+            // and the buttons are the thing pushed out of view. They are what
+            // makes this box the project's menu, so they are never squeezed.
+            const capPx  = Math.round(INFO_MAX_LINES * lineH);
+            const roomPx = (window.innerHeight - 38) - fixedH;
+            const descH  = Math.max(lineH, Math.min(fullH, capPx, roomPx));
+
+            desc.style.maxHeight = Math.round(descH) + 'px';
+            const h = Math.max(180, Math.round(fixedH + descH));
+            frame.style.height = h + 'px';
+
+            // Hand the measured size to the packer so it arranges around the box
+            // instead of recomputing one for it.
+            frame._naturalW = frame.offsetWidth;
+            frame._naturalH = h;
+        }
+
         function openInfo(project) {
             focusOrCreate(`info-${project.id}`, () => {
                 const frame = makeFrame({ title: project.title, tag: 'Info', w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true });
@@ -1253,6 +1354,9 @@
                         ${hasModel  ? `<button class="action-btn viewer-btn">3D View</button>` : ''}
                     </div>
                 `;
+
+                sizeInfoToText(frame, body);
+                frame._setScrollEl(body.querySelector('.info-desc'));
 
                 if (hasSlides) body.querySelector('.slides-btn').addEventListener('click', () => openSlideshow(project));
                 if (hasImages) body.querySelector('.gallery-btn').addEventListener('click', () => openGallery(project));
@@ -1338,10 +1442,20 @@
                 items.push({ el: elG, w, h, frame: true });
             }
 
-            // Info / text — modest and readable, never stretched
+            // The project box keeps the size openInfo measured for its text —
+            // the packer arranges AROUND it rather than computing a size for it.
+            // It is also pinned first so it packs leftmost, nearest the menu:
+            //   menu | text box | 3D / slides / gallery
+            // It used to land rightmost, because the packer sorts tallest-first
+            // and it was the shortest window.
             const elI = openWins[`info-${project.id}`];
             if (elI) {
-                items.push({ el: elI, w: 340, h: clamp(vh * 0.40, 300, capH), frame: true });
+                items.push({
+                    el: elI,
+                    w: elI._naturalW || elI.offsetWidth || 340,
+                    h: elI._naturalH || elI.offsetHeight || 340,
+                    frame: true, pinFirst: true, noShrink: true,
+                });
             }
 
             if (!items.length) return;
@@ -1349,17 +1463,24 @@
             const themeFrame = openWins['theme'];
             const mine = new Set(items.map(it => it.el));
 
-            // Shelf-pack tallest-first into a block with a LOCAL origin (0,0),
-            // so we can drop the whole block anywhere afterwards.
-            items.sort((a, b) => b.h - a.h);
+            // Shelf-pack into a block with a LOCAL origin (0,0), so we can drop
+            // the whole block anywhere afterwards. Tallest-first, EXCEPT the
+            // pinned project box, which always goes first so it sits leftmost.
+            const pinned = items.filter(it => it.pinFirst);
+            const others = items.filter(it => !it.pinFirst).sort((a, b) => b.h - a.h);
+            const order  = [...pinned, ...others];
             function pack(scale) {
                 let x = 0, y = 0, rowH = 0, maxR = 0, maxB = 0;
                 const rects = [];
-                for (const it of items) {
+                for (const it of order) {
+                    // noShrink windows sit out the global fit-to-screen pass —
+                    // the project box was sized to its text and shrinking it
+                    // would clip the text again, which is the whole point.
+                    const sc = it.noShrink ? 1 : scale;
                     // .win-frame has CSS min 260x180 — never size a frame below it,
                     // or it renders larger than we think and overlaps its neighbour.
-                    const w = it.frame ? Math.max(260, it.w * scale) : it.w * scale;
-                    const h = it.frame ? Math.max(180, it.h * scale) : it.h * scale;
+                    const w = it.frame ? Math.max(260, it.w * sc) : it.w * sc;
+                    const h = it.frame ? Math.max(180, it.h * sc) : it.h * sc;
                     if (x > 0 && x + w > availW) { x = 0; y += rowH + gap; rowH = 0; }
                     rects.push({ el: it.el, frame: it.frame, x, y, w, h });
                     x += w + gap; rowH = Math.max(rowH, h);
@@ -1367,10 +1488,14 @@
                 }
                 return { rects, maxR, maxB };
             }
-            let L = pack(1);
-            // Global fit-to-screen: shrink the block uniformly if it overflows
-            const s = Math.min(1, availW / L.maxR, availH / L.maxB);
-            if (s < 1) L = pack(s);
+            // Global fit-to-screen: shrink the block if it overflows. Iterated,
+            // because the pinned project box sits out the shrink — one pass of
+            // availW/maxR would undershoot now that part of the block is fixed.
+            let L = pack(1), s = 1;
+            for (let i = 0; i < 4 && (L.maxR > availW + 0.5 || L.maxB > availH + 0.5); i++) {
+                s *= Math.min(1, availW / L.maxR, availH / L.maxB);
+                L = pack(s);
+            }
             const bw = L.maxR, bh = L.maxB;
 
             // Drop the block in the first free spot: to the RIGHT of an earlier

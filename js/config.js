@@ -175,7 +175,7 @@ After dealing with the social side, the environmental problem remained and how t
 
 In summary, the planning proposes an almost complete preservation of the existing building and its conversion into a living community center, while adding floors that support this transition. All of this takes place alongside the rehabilitation of the soil in a manner as ecological and moral as possible.
 
-Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
+Guided by Matan Gal and Omri Levy.`,
         model:        'assets/projects/pray-and-play/models/Floor Detail.glb',
         slides:       sl('assets/projects/pray-and-play/slides/', [
             '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',
