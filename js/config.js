@@ -31,6 +31,10 @@ const PROJECTS = [
 
 Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
         model:        'assets/projects/101-gates/models/spring.glb',
+        models:       [
+            { src: 'assets/projects/101-gates/models/spring.glb', label: 'spring' },
+            { src: 'assets/projects/101-gates/models/Detail.glb', label: 'Detail' },
+        ],
         images:       imgs('assets/projects/101-gates/gallery/', [
             ['01.webp', 'Details Model']
         ]),

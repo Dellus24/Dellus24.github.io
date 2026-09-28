@@ -5,6 +5,9 @@ location: Jerusalem, Israel
 participants: Nir Dellus
 type: Studio 9-10
 order: 10
+models:
+  * spring.glb
+  Detail.glb
 gallery:
   01.webp | Details Model
 
