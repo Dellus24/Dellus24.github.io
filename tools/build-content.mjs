@@ -227,7 +227,7 @@ for (const id of fs.readdirSync(projectsDir).sort(natCmp)) {
         const thumbs = new Set(listFiles(path.join(galleryDir, 'thumbs')));
         const noThumb = [...listed].filter(f => !thumbs.has(f));
         if (noThumb.length) {
-            warn(`${id}: ${noThumb.length} gallery image(s) have no thumbs/ derivative — run tools/make-thumbs.mjs (${noThumb.slice(0, 3).join(', ')}${noThumb.length > 3 ? ', …' : ''})`);
+            warn(`${id}: ${noThumb.length} gallery image(s) have no thumbs/ derivative — run _local/tools/make-thumbs.mjs, outside the repo (${noThumb.slice(0, 3).join(', ')}${noThumb.length > 3 ? ', …' : ''})`);
         }
     } else if (onDisk.length) {
         warn(`${where}: gallery/ holds ${onDisk.length} file(s) but the txt has no "gallery:" block — none will show`);

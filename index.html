@@ -1669,7 +1669,7 @@
         // Gallery grids render 400px derivatives from gallery/thumbs/, not the
         // full-size originals — the originals run 1900-3840px wide, which cost
         // ~29 MB to draw a grid of ~190px cells. Clicking still opens the full
-        // image via openImage(). Regenerate with D:/projects/Website/tools/make-thumbs.mjs (outside git).
+        // image via openImage(). Regenerate with D:/projects/Website/_local/tools/make-thumbs.mjs (outside git).
         // Falls back to the original if a thumb is missing (see 'error' handler).
         const thumbSrc = src => src.replace(/\/gallery\/(?!thumbs\/)([^/]+)$/, '/gallery/thumbs/$1');
 

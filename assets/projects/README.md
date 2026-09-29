@@ -123,10 +123,10 @@ project folder with no `project.txt` at all.
 - **Project ID** = folder name = kebab-case, no spaces. There is no `id:` key —
   the folder name *is* the id.
 - To hide a project, use `hidden: yes`. (A `_` folder prefix still works too.)
-- Images are `.webp`; originals live in the sibling `Dellus24-originals-backup/`.
+- Images are `.webp`; originals live outside the repo in `_local/backups/originals/`.
 - **Gallery grids load `gallery/thumbs/` 400px derivatives, never the
-  originals.** After adding gallery images run `tools/make-thumbs.mjs` (it lives
-  outside the repo, at `D:/projects/Website/tools/`, and needs `sharp`). The
+  originals.** After adding gallery images run `make-thumbs.mjs` (it lives
+  outside the repo, at `D:/projects/Website/_local/tools/`, and needs `sharp`). The
   build warns when a thumbnail is missing.
 
 ## 3D models — folder layout
