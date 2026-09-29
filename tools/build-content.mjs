@@ -29,7 +29,7 @@ const warn = (m) => warnings.push(m);
 const HEAD_KEYS = ['title', 'year', 'category', 'location', 'participants', 'type'];
 const CATEGORIES = ['academic', 'employment'];
 const STATIC_KEYS = ['about', 'cv', 'contact'];   // hard-coded in the menu markup
-const BLOCK_KEYS = ['gallery', 'slides', 'models'];
+const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit'];
 
 // Numeric-aware sort: a plain string sort puts '100.webp' before '99.webp'.
 const natCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -125,6 +125,17 @@ for (const id of fs.readdirSync(projectsDir).sort(natCmp)) {
         ...Object.fromEntries(HEAD_KEYS.map(k => [k, head[k]])),
         description: body,
     };
+
+    // credit: the trailing attribution — "Guided by …", "Curated by …",
+    // "Supported and funded by …". Kept OUT of the description so it can be set
+    // like the other metadata rather than read as a last paragraph. Write it on
+    // one line, or as an indented block when it runs to several:
+    //     credit: Guided by Helle Blom.
+    //     credit:
+    //       Role: research assistant, prototyping and manufacturing.
+    //       Curated by Edith Kofsky and Oren Eldar.
+    const credit = blocks.credit ? blocks.credit.join('\n') : (head.credit || '');
+    if (credit) rec.credit = credit;
 
     // ── models: a project can carry several. One .glb needs no authoring at
     //    all — it is auto-discovered, which also takes its casing FROM DISK,
@@ -304,6 +315,7 @@ for (const p of projects) {
     out.push(`        participants: ${q(p.participants)},`);
     out.push(`        type:         ${q(p.type)},`);
     out.push(`        description:  ${tpl(p.description)},`);
+    if (p.credit) out.push(`        credit:       ${tpl(p.credit)},`);
     if (p.model) out.push(`        model:        ${q(p.model)},`);
     if (p.models) {
         out.push('        models:       [');

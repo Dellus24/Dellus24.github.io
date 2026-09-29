@@ -354,6 +354,18 @@
             scrollbar-width: none; -ms-overflow-style: none;
         }
         .info-desc::-webkit-scrollbar { display: none; }
+        /* Paragraphs as authored. margin collapse is avoided by zeroing the
+           outer two, so the first line still sits flush with the meta above. */
+        .info-desc p { margin: 0 0 0.85em; }
+        .info-desc p:last-child { margin-bottom: 0; }
+
+        /* The trailing credit — "Guided by …", "Curated by …". Reads as
+           metadata like the participants line directly above it, not as a last
+           paragraph of the description, which is how it used to look. */
+        .info-credit {
+            font-size: 0.5rem; letter-spacing: 0.03em;
+            opacity: 0.75; flex-shrink: 0;
+        }
 
         .info-tags {
             display: flex; flex-wrap: wrap; gap: 5px;
@@ -1309,6 +1321,21 @@
         const INFO_WORDS_PER_LINE = 10;
         const INFO_MAX_LINES      = 20;
 
+        const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+        // Blank lines in a project.txt description are real paragraph breaks and
+        // are rendered as such. They used to be discarded: the text went into a
+        // single div, so CSS collapsed every break and ran the paragraphs
+        // together — Pray & Play's seven became one block. Escaped rather than
+        // interpolated raw, so an & or < in authored text can't break the markup.
+        const descHTML = (text) => String(text ?? '')
+            .split(/\n\s*\n/)
+            .map(p => p.trim())
+            .filter(Boolean)
+            .map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`)
+            .join('');
+
         function sizeInfoToText(frame, body) {
             const desc = body.querySelector('.info-desc');
             if (!desc) return;
@@ -1401,8 +1428,9 @@
                         <span class="info-meta-sep">·</span>
                         <span>${project.type}</span>
                     </div>
-                    <div class="info-desc">${project.description}</div>
-                    <div class="info-participants">${project.participants}</div>
+                    <div class="info-desc">${descHTML(project.description)}</div>
+                    <div class="info-participants">${esc(project.participants)}</div>
+                    ${project.credit ? `<div class="info-credit">${esc(project.credit).replace(/\n/g, '<br>')}</div>` : ''}
                     <div class="info-actions">
                         ${hasSlides ? `<button class="action-btn slides-btn">Slides</button>` : ''}
                         ${hasImages ? `<button class="action-btn gallery-btn">Gallery</button>` : ''}
