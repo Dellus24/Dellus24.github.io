@@ -2,9 +2,6 @@
 User-agent: *
 Allow: /
 
-# Retired scratch experiment, still served. Not content. (HYG-05)
-Disallow: /pages/
-
 # Content SOURCES, not pages. js/config.js is generated from these, so every
 # line already appears on the site proper — indexing them would only create
 # plain-text duplicates competing with the real pages. content/cv.txt also
