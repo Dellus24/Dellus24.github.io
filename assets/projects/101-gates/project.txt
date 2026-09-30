@@ -5,6 +5,12 @@ location: Jerusalem, Israel
 participants: Nir Dellus
 type: Studio 9-10
 order: 10
+# PLACEHOLDER colours - both are yours to change.
+#   color      = the ink (text, lines, the 3D render)
+#   background = the surface behind it
+# Together they are what the whole page wears while this project is open.
+color: #000000
+background: #ffffff
 models:
   * spring.glb
   Detail.glb

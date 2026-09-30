@@ -5,6 +5,12 @@ location: Tel Aviv, Israel
 participants: Nir Dellus
 type: Studio 3
 order: 60
+# PLACEHOLDER colours - both are yours to change.
+#   color      = the ink (text, lines, the 3D render)
+#   background = the surface behind it
+# Together they are what the whole page wears while this project is open.
+color: #ffffff
+background: #000000
 credit: Guided by Matan Gal and Omri Levy.
 
 ---

@@ -5,6 +5,12 @@ location: São Paulo, Brazil
 participants: Nir Dellus, Thai Zehavi
 type: Studio 6
 order: 40
+# PLACEHOLDER colours - both are yours to change.
+#   color      = the ink (text, lines, the 3D render)
+#   background = the surface behind it
+# Together they are what the whole page wears while this project is open.
+color: #ff0000
+background: #ffffff
 credit: Guided by Zvi Efrat and Liran Messer.
 
 ---

@@ -54,7 +54,12 @@
             --bg:            #ffffff;
             --fg:            #000;
             --border-strong: #000;
-            --border-soft:   rgba(0, 0, 0, 0.15);
+            /* Derived from the ink, not hardcoded black. Ten rules used to
+               hand-write rgba(0,0,0,0.x) for this job, so every one of them
+               stayed grey-black while the rest of the site took a project's
+               colour — and stayed black on a dark theme too. */
+            --border-soft:   color-mix(in srgb, var(--fg) 15%, transparent);
+            --border-faint:  color-mix(in srgb, var(--fg) 8%, transparent);
             --font-family:   'JunicodeVF', serif;
             --font-var:      normal;
             --font-scale:    1.5;
@@ -128,7 +133,7 @@
         .nav-sep { font-size: 0.55rem; opacity: 0.25; user-select: none; }
 
         .menu-rule {
-            border: none; border-top: 1px solid rgba(0,0,0,0.1);
+            border: none; border-top: 1px solid var(--border-soft);
             margin: 12px 0;
         }
 
@@ -374,12 +379,12 @@
         .tag {
             font-size: 0.38rem; letter-spacing: 0.1em;
             text-transform: uppercase; opacity: 0.3;
-            border: 1px solid rgba(0,0,0,0.2); padding: 2px 6px;
+            border: 1px solid var(--border-soft); padding: 2px 6px;
         }
 
         .info-actions {
             display: flex; gap: 8px; margin-top: 4px;
-            border-top: 1px solid rgba(0,0,0,0.08);
+            border-top: 1px solid var(--border-faint);
             padding-top: 10px; flex-shrink: 0;
         }
 
@@ -441,7 +446,7 @@
 
         .gallery-thumb {
             position: relative; aspect-ratio: 4/3;
-            overflow: hidden; cursor: pointer; background: rgba(0,0,0,0.04);
+            overflow: hidden; cursor: pointer; background: var(--border-faint);
         }
         .gallery-thumb img {
             width: 100%; height: 100%; object-fit: cover;
@@ -553,7 +558,7 @@
         .theme-font-btn {
             font-size: 0.42rem; letter-spacing: 0.08em;
             text-transform: uppercase; background: none;
-            border: 1px solid rgba(0,0,0,0.2); cursor: pointer;
+            border: 1px solid var(--border-soft); cursor: pointer;
             padding: 3px 8px; color: var(--fg); opacity: 0.4;
             transition: opacity 0.15s, border-color 0.15s, font-weight 0.15s;
         }
@@ -636,7 +641,7 @@
         .settings-inner { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
         /* Deconstruct and authored views apply in every render mode, so they sit in
            their own always-on block above the mode-specific settings. */
-        .settings-inner.model-settings { border-bottom: 1px solid rgba(0,0,0,0.12); }
+        .settings-inner.model-settings { border-bottom: 1px solid var(--border-soft); }
 
         .setting-row { display: flex; align-items: center; gap: 10px; }
 
@@ -673,7 +678,7 @@
         .ctrl-toggle {
             font-family: var(--font-family);
             font-size: 0.42rem; letter-spacing: 0.03em;
-            background: none; border: 1px solid rgba(0,0,0,0.2); cursor: pointer;
+            background: none; border: 1px solid var(--border-soft); cursor: pointer;
             padding: 2px 7px; color: var(--fg); opacity: 0.4;
             transition: opacity 0.2s, background 0.2s, color 0.2s;
         }
@@ -685,7 +690,7 @@
         .charset-option {
             font-family: var(--font-family);
             font-size: 0.42rem; letter-spacing: 0.03em;
-            background: none; border: 1px solid rgba(0,0,0,0.12); cursor: pointer;
+            background: none; border: 1px solid var(--border-soft); cursor: pointer;
             padding: 2px 6px; color: var(--fg); opacity: 0.3;
             transition: opacity 0.2s, border-color 0.2s;
         }
@@ -787,8 +792,8 @@
             content: ''; position: absolute;
             bottom: 3px; right: 3px;
             width: 7px; height: 7px;
-            border-right: 1px solid rgba(0,0,0,0.2);
-            border-bottom: 1px solid rgba(0,0,0,0.2);
+            border-right: 1px solid var(--border-soft);
+            border-bottom: 1px solid var(--border-soft);
         }
 
         .img-float-bar {
@@ -859,6 +864,83 @@
             padding: 0; margin: -1px; overflow: hidden;
             clip: rect(0 0 0 0); white-space: nowrap; border: 0;
         }
+        /* ── PROJECT SIGNATURE ─────────────────────────────────────────────
+           --sig is the project's own colour, set per menu row when the menu is
+           built. It is deliberately scoped to the row: the menu stays a neutral
+           black index, and a project's colour appears only where that project
+           is being pointed at or is the one you are in. */
+        .proj-row[data-id] .proj-name { transition: color 0.15s; }
+        .proj-row[data-id].hot   .proj-name,
+        .proj-row[data-id]:hover .proj-name,
+        .proj-row[data-id].active .proj-name { color: var(--sig, inherit); }
+        /* .open dims a row to 0.3 while that project is on screen, which would
+           otherwise all but erase the one project you are actually in. */
+        .proj-row[data-id].active .proj-name,
+        .proj-row[data-id].hot   .proj-name { opacity: 1; }
+        .proj-mark {
+            width: 4px; height: 4px; flex-shrink: 0; margin-left: auto;
+            background: var(--sig, currentColor);
+            opacity: 0; transition: opacity 0.15s;
+        }
+        .proj-row[data-id].active .proj-mark { opacity: 1; }
+
+        /* ── LANDING HATCH ─────────────────────────────────────────────────
+           Follows .img-float-chrome: a full-cover overlay that is
+           pointer-events:none AT REST, so the model underneath stays orbitable
+           and thumbnails stay clickable. It only becomes clickable once it has
+           actually appeared, which is what lets the window be live first and an
+           invitation second. */
+        .win-hatch {
+            position: absolute; inset: 0; z-index: 5;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.18s ease;
+            background:
+                repeating-linear-gradient(45deg,
+                    color-mix(in srgb, var(--fg) 28%, transparent) 0 1px,
+                    transparent 1px 7px),
+                color-mix(in srgb, var(--bg) 84%, transparent);
+        }
+        /* Development-only layout tool (?layout). Deliberately plain and
+           outside the theme — it is scaffolding, not part of the site. */
+        #layout-tool {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 9000;
+            background: #111; color: #eee; padding: 6px 10px 8px;
+            font: 11px/1.45 ui-monospace, Menlo, Consolas, monospace;
+        }
+        .layout-tool-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .layout-tool-head strong { font-weight: 600; }
+        #layout-tool button {
+            font: inherit; background: #eee; color: #111; border: 0;
+            padding: 2px 10px; cursor: pointer;
+        }
+        #layout-tool textarea {
+            width: 100%; box-sizing: border-box; background: #000; color: #9f9;
+            border: 1px solid #333; font: inherit; padding: 5px; resize: vertical;
+        }
+        .theme-proj-pair { display: flex; align-items: center; gap: 5px; margin: 3px 0 5px; }
+        .theme-proj-pair .theme-row-sublabel { margin: 0 6px 0 0; }
+        .win-hatch.shown { opacity: 1; pointer-events: auto; }
+        /* An .img-float's frame is normally a hover-only reveal, which left a
+           landing image showing no colour at rest — the one thing the landing
+           exists to show. Landing images wear theirs permanently. */
+        .img-float[data-landing] .img-float-chrome { opacity: 1; }
+        .win-hatch-inner {
+            display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            padding: 8px 10px;
+        }
+        .win-hatch button {
+            font-family: var(--font-family);
+            font-size: 0.55rem; letter-spacing: 0.03em;
+            background: none; border: 1px solid transparent; cursor: pointer;
+            padding: 3px 10px; color: var(--fg); opacity: 0.7;
+            transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .win-hatch button:hover { opacity: 1; background: var(--fg); color: var(--bg); border-color: var(--fg); }
+        .win-hatch .win-hatch-stay { opacity: 0.45; font-size: 0.5rem; }
+
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 animation-duration: 0.01ms !important;
@@ -976,7 +1058,7 @@
             wins[wins.length - 1].focus?.();
         }
 
-        function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180, bodyDrag = false, collapsible = false }) {
+        function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180, bodyDrag = false, collapsible = false, projectId = null }) {
             const { x, y } = nextSpawn(w, h);
             const ws = document.getElementById('workspace');
 
@@ -1012,6 +1094,12 @@
 
             ws.appendChild(frame);
             if (key) openWins[key] = frame;
+            // Which project this window belongs to. The openWins key encodes it
+            // too, but only as a dictionary key — and the 3D keys carry an
+            // open-ended `-<n>` suffix for multi-model projects. Stamping the
+            // element means "close everything belonging to project A" is one
+            // querySelectorAll, with no key spelling to keep in sync.
+            if (projectId) frame.dataset.projectId = projectId;
 
             frame.addEventListener('pointerdown', () => frame.style.zIndex = ++topZ);
 
@@ -1182,6 +1270,7 @@
                 el.className = 'slide-float spawning';
                 el.style.cssText = `left:${x}px;top:${y}px;z-index:${++topZ};width:640px;height:440px;`;
                 openWins[`slides-${project.id}`] = el;
+                el.dataset.projectId = project.id;
 
                 // Alt text is positional rather than descriptive: these are
                 // 145-slide project sequences with no per-slide captions
@@ -1407,7 +1496,7 @@
             focusOrCreate(`info-${project.id}`, () => {
                 // No type tag: the window title is the project name, and an
                 // "Info" tag beside it said nothing the title did not.
-                const frame = makeFrame({ title: project.title, w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true });
+                const frame = makeFrame({ title: project.title, w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true, projectId: project.id });
                 const body = frame.querySelector('.win-body');
                 body.className += ' info-body';
 
@@ -1493,12 +1582,12 @@
                     });
                 }
 
-                // Mark sidebar row as open
-                const row = document.querySelector(`.proj-row[data-id="${project.id}"]`);
-                if (row) row.classList.add('open');
-                frame.querySelector('.win-close').addEventListener('click', () => {
-                    if (row) row.classList.remove('open');
-                });
+                // Sidebar "open" state is DERIVED from what is actually on the
+                // canvas (see syncMenuOpen). It used to be added here and removed
+                // only by a click on the × — so closing with Escape, or from
+                // code, left the row dimmed to 0.3 forever. Switching projects
+                // does exactly that, which is how the old bug surfaced.
+                syncMenuOpen();
             });
         }
 
@@ -1513,6 +1602,112 @@
             if (project.images && project.images.length) openGallery(project);
             if (project.model) open3D(project);
             requestAnimationFrame(() => tileProjectWindows(project));
+        }
+
+        // ── NAVIGATING BETWEEN PROJECTS ───────────────────────────────────────
+        // Every window a project owns is stamped with data-project-id when it is
+        // built, so this needs no knowledge of the openWins key spelling — which
+        // matters because a multi-model project's 3D keys carry an open-ended
+        // `-<n>` suffix.
+        const projectWindows = id =>
+            [...document.querySelectorAll(`[data-project-id="${id}"]`)].filter(el => !el.classList.contains('closing'));
+
+        function closeProjectWindows(id) {
+            const wins = id ? projectWindows(id) : [];
+            wins.forEach(el => el._close && el._close());
+            return wins.length;
+        }
+
+        // Every project window on the canvas except one project's. Left-click
+        // means "take me here", so it clears whatever else is open — including
+        // a project that was added alongside by right-click, which is not the
+        // active one and so used to survive the swap.
+        function closeOtherProjects(keepId) {
+            const wins = [...document.querySelectorAll('[data-project-id]')]
+                .filter(el => !el.classList.contains('closing') && el.dataset.projectId !== keepId);
+            wins.forEach(el => el._close && el._close());
+            return wins.length;
+        }
+
+        // Left-click / Enter on a menu row, and the landing's "Go to project".
+        // The old project's windows go; About / CV / Contact and the theme
+        // editor are not owned by any project, so they survive (Nir's call).
+        // The open is DELAYED past the close animation, so it has to be
+        // cancellable: clicking a third project before the previous open landed
+        // used to let that pending open fire with nothing left to close it, and
+        // its windows stayed on screen for good.
+        let pendingOpen = null;
+
+        function goToProject(project) {
+            clearTimeout(pendingOpen);
+            const closed = closeOtherProjects(project.id) + closeLanding();
+
+            activeProject = project;
+            tintSite(project);
+            syncMenuActive();
+            syncProjectColorRow();
+            announce(`${project.title} opened`);
+
+            // closeFrame removes the element on a 220ms timer, and the tiler
+            // treats every .win-frame on screen as an obstacle — so opening
+            // immediately would lay the new project out around windows that are
+            // already dying. Wait them out, but only when something closed.
+            if (closed) pendingOpen = setTimeout(() => openProject(project), 240);
+            else openProject(project);
+        }
+
+        // Right-click / Shift+Enter. Opens next to what is already here and
+        // tints only its OWN windows, leaving the site's colour untouched.
+        function openAlongside(project) {
+            openProject(project);
+            // Ink only, same reason as the landing: the page background belongs
+            // to whichever project owns the page, not to one opened beside it.
+            const paint = () => projectWindows(project.id).forEach(el => tintFrame(el, inkOf(project), null));
+            paint();
+            requestAnimationFrame(paint);      // catch windows built on the next frame
+            announce(`${project.title} opened alongside`);
+        }
+
+        // Home closes EVERY project window, not just the active project's. The
+        // "only the old project closes" rule is about switching between
+        // projects; Home means "back to the front door", and a project opened
+        // alongside by right-click would otherwise be left scattered across the
+        // landing it just reopened. About / CV / Contact and the theme editor
+        // belong to no project and survive, as they do everywhere else.
+        function goHome() {
+            clearTimeout(pendingOpen);
+            const stray = [...document.querySelectorAll('[data-project-id]')]
+                .filter(el => !el.classList.contains('closing'));
+            stray.forEach(el => el._close && el._close());
+            closeLanding();
+            clearTint();
+            announce('Home');
+            setTimeout(openLanding, 260);
+        }
+
+        // Menu feedback: `hot` is the hover signal, shown both when you hover
+        // the row itself and when you hover one of that project's windows on
+        // the landing, so the two light up together.
+        function setMenuHot(id, on) {
+            const row = document.querySelector(`.proj-row[data-id="${id}"]`);
+            if (row) row.classList.toggle('hot', !!on);
+        }
+        // `.open` dims a project's menu row while its windows are on screen.
+        // Derived, never bookkept: a row is open if a window carrying that
+        // project id exists and is not already closing.
+        function syncMenuOpen() {
+            const live = new Set([...document.querySelectorAll('[data-project-id]')]
+                .filter(el => !el.classList.contains('closing') && !el.dataset.landing)
+                .map(el => el.dataset.projectId));
+            document.querySelectorAll('.proj-row[data-id]').forEach(row => {
+                row.classList.toggle('open', live.has(row.dataset.id));
+            });
+        }
+
+        function syncMenuActive() {
+            document.querySelectorAll('.proj-row[data-id]').forEach(row => {
+                row.classList.toggle('active', !!activeProject && row.dataset.id === activeProject.id);
+            });
         }
 
         // Content-proportional packer for a single project's windows.
@@ -1675,7 +1870,7 @@
 
         function openGallery(project) {
             focusOrCreate(`gallery-${project.id}`, () => {
-                const frame = makeFrame({ title: project.title + ' — Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}` });
+                const frame = makeFrame({ title: project.title + ' — Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}`, projectId: project.id });
                 const body = frame.querySelector('.win-body');
                 body.className += ' gallery-body';
 
@@ -1706,7 +1901,7 @@
                             if (existing && existing.isConnected) {
                                 swapImageContent(existing, img.src, img.label);
                             } else {
-                                openImage({ src: img.src, label: img.label, key: primaryKey,
+                                openImage({ src: img.src, label: img.label, key: primaryKey, projectId: project.id,
                                             fallbackLabel: `${project.title} — image ${i + 1} of ${project.images.length}` });
                             }
                         };
@@ -1715,7 +1910,7 @@
                         el.addEventListener('contextmenu', e => {
                             e.preventDefault();
                             const img = project.images[i];
-                            openImage({ src: img.src, label: img.label, key: `img-sec-${project.id}-${++secondaryCount}` });
+                            openImage({ src: img.src, label: img.label, key: `img-sec-${project.id}-${++secondaryCount}`, projectId: project.id });
                         });
                     });
                 }
@@ -1737,7 +1932,7 @@
             announce(alt);          // the window is reused, so nothing else signals the change
         }
 
-        function openImage({ src, label = '', key, fallbackLabel = '' }) {
+        function openImage({ src, label = '', key, fallbackLabel = '', projectId = null }) {
             const ws = document.getElementById('workspace');
             const { x, y } = nextSpawn(220, 220);
             // The visible bar shows label only (blank is fine there), but the
@@ -1755,6 +1950,7 @@
             const opener = document.activeElement;
             if (opener && opener !== document.body) el._opener = opener;
             if (key) openWins[key] = el;
+            if (projectId) el.dataset.projectId = projectId;
 
             el.innerHTML = `
                 <img draggable="false" src="${src}" alt="${altText}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;">
@@ -1771,6 +1967,10 @@
             // Size to natural image dimensions once loaded
             const img = el.querySelector('img');
             img.addEventListener('load', () => {
+                // An authored landing size wins over the image's own dimensions
+                // — sizing the window is the whole point of composing a landing,
+                // and this handler would otherwise snap it back on load.
+                if (el.dataset.sizeLocked) return;
                 const maxW = window.innerWidth  * 0.80;
                 const maxH = window.innerHeight * 0.75;
                 const scale = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight);
@@ -1855,6 +2055,130 @@
             });
         }
 
+        // ── PROJECT COLOUR ─────────────────────────────────────────────────────
+        // Every project can own a colour, authored as `color:` in its own
+        // project.txt. It is used at two scopes, and they are the SAME two CSS
+        // custom properties in both cases — which is the whole trick:
+        //
+        //   on one .win-frame  →  that window alone is tinted (the landing, and
+        //                         projects opened alongside by right-click)
+        //   on :root           →  the entire site is tinted (the active project)
+        //
+        // Custom properties inherit, and every rule in this stylesheet already
+        // reads var(--fg) / var(--border-strong), so a frame-level override
+        // repaints that window's border, title, body text and buttons for free.
+        //
+        // A project with no `color:` returns null here and tints nothing, so the
+        // whole system is invisible until a colour is actually authored.
+        const projectColorKey = (id, which) => `dellus-proj-${which}-${id}`;
+        const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+
+        // A project's pair: ink and background. Either can be overridden by the
+        // visitor from the Theme window; neither is required.
+        function inkOf(project) {
+            if (!project) return null;
+            return lsGet(projectColorKey(project.id, 'color')) || project.color || null;
+        }
+        function bgOf(project) {
+            if (!project) return null;
+            return lsGet(projectColorKey(project.id, 'background')) || project.background || null;
+        }
+        // Kept as the one-call form used all over the window code.
+        const colorOf = inkOf;
+
+        // Paint a pair onto an element (or the document root). Kept separate
+        // from persistence on purpose — see applyFg below.
+        //
+        // A PROJECT OWNS BOTH COLOURS (Nir, 2026-09-29). The site already works
+        // in exactly two — a background and an ink — so a project simply sets
+        // both. Nothing is derived or mixed: what is authored is what is shown.
+        // The site is 1px linework, so an ink-only change had almost no area to
+        // read in; the background is where the colour actually lives.
+        function paintPair(el, ink, bg) {
+            if (ink) { el.style.setProperty('--fg', ink); el.style.setProperty('--border-strong', ink); }
+            if (bg)  { el.style.setProperty('--bg', bg); }
+        }
+        const paintInk = (el, hex) => paintPair(el, hex, null);
+        function tintFrame(frame, ink, bg) {
+            if (!frame || (!ink && !bg)) return;
+            paintPair(frame, ink, bg);
+            // The 3D viewer reads its colours from its own frame, not the root,
+            // so a tinted landing model needs to be told the frame changed.
+            frame.dispatchEvent(new CustomEvent('frame-tint', { bubbles: false }));
+        }
+
+        // `userInk` is the visitor's OWN choice and the only ink that is ever
+        // persisted. A project tint borrows the site's colour and gives it back
+        // untouched when the tint ends, so browsing the site never destroys a
+        // theme the visitor picked (Nir, 2026-09-29).
+        // The site's colours at rest. A visitor's own Theme choice wins; with
+        // none saved, the landing's authored pair is the default — that is what
+        // the site wears before any project is opened, and what Home returns to.
+        const LAND = (typeof LANDING !== 'undefined' && LANDING) || {};
+        let userInk    = lsGet('dellus-fg') || LAND.color      || '#000';
+        let userCanvas = lsGet('dellus-bg') || LAND.background || '#ffffff';
+        let activeProject = null;
+
+        function setSitePair(ink, bg) {
+            const root = document.documentElement;
+            root.style.setProperty('--fg', ink);
+            root.style.setProperty('--border-strong', ink);
+            root.style.setProperty('--bg', bg);
+            window.dispatchEvent(new CustomEvent('theme-change', { detail: { fg: ink, bg } }));
+        }
+        const setSiteInk = (hex) => setSitePair(hex, userCanvas);
+        // Back to the visitor's own ink AND their own canvas — a project tint is
+        // borrowed, never kept.
+        function restoreUserTheme() {
+            setSitePair(userInk, userCanvas);
+        }
+        // The whole page takes the project's pair. Anything the project does not
+        // author falls back to the colour the site was already wearing.
+        function tintSite(project) {
+            const ink = inkOf(project), bg = bgOf(project);
+            if (!ink && !bg) restoreUserTheme();
+            else setSitePair(ink || userInk, bg || userCanvas);
+        }
+        // Push a project's (possibly just-changed) colour everywhere it shows:
+        // the site tint if it is the active one, its own windows, and its menu
+        // row's --sig.
+        function repaintProject(project) {
+            const ink = inkOf(project), bg = bgOf(project);
+            const row = document.querySelector(`.proj-row[data-id="${project.id}"]`);
+            if (row) { if (ink) row.style.setProperty('--sig', ink); else row.style.removeProperty('--sig'); }
+            if (activeProject && activeProject.id === project.id) tintSite(project);
+            projectWindows(project.id).forEach(el => {
+                if (el.dataset.landing || !activeProject || activeProject.id !== project.id) tintFrame(el, ink, bg);
+            });
+        }
+
+        // Keeps the Theme window's Colour project row in step with wherever the
+        // visitor is. The row stays PRESENT but disabled with no active project,
+        // so the window does not change height as you browse.
+        function syncProjectColorRow() {
+            const row = document.querySelector('.theme-proj-row');
+            if (!row) return;
+            const inkEl = row.querySelector('.theme-proj-ink');
+            const bgEl  = row.querySelector('.theme-proj-bg');
+            const name  = row.querySelector('.theme-proj-name');
+            const reset = row.querySelector('.theme-proj-reset');
+            const on    = !!activeProject;
+            row.style.opacity = on ? '' : '0.4';
+            inkEl.disabled = bgEl.disabled = reset.disabled = !on;
+            name.textContent = on ? activeProject.title : 'No project open';
+            if (on) {
+                inkEl.value = inkOf(activeProject) || userInk;
+                bgEl.value  = bgOf(activeProject)  || userCanvas;
+            }
+        }
+
+        function clearTint() {
+            activeProject = null;
+            restoreUserTheme();
+            syncMenuActive();
+            syncProjectColorRow();
+        }
+
         // ── THEME WINDOW ───────────────────────────────────────────────────────
         const THEMES = [
             { id: 'white',    bg: '#ffffff', fg: '#000' },
@@ -1882,11 +2206,21 @@
             document.documentElement.style.setProperty('--font-scale', v);
             localStorage.setItem('dellus-font-scale', v);
         }
+        // The visitor's own ink choice — the ONLY path that writes to storage.
+        // Choosing an ink (or a Canvas preset, which calls through to here) is
+        // an explicit statement of preference, so it also drops any active
+        // project tint: otherwise the picker would visibly do nothing while a
+        // project was open. The project's windows stay put; clicking the
+        // project again re-tints.
         function applyFg(hex) {
-            document.documentElement.style.setProperty('--fg', hex);
-            document.documentElement.style.setProperty('--border-strong', hex);
+            userInk = hex;
             localStorage.setItem('dellus-fg', hex);
-            window.dispatchEvent(new CustomEvent('theme-change', { detail: { fg: hex } }));
+            if (activeProject) {
+                activeProject = null;
+                syncMenuActive();
+                syncProjectColorRow();
+            }
+            restoreUserTheme();
         }
         function applyFont(fontId) {
             const f = FONTS.find(x => x.id === fontId);
@@ -1899,6 +2233,7 @@
             });
         }
         function applyBg(hex, id) {
+            userCanvas = hex;                       // the wash is mixed into this
             document.documentElement.style.setProperty('--bg', hex);
             localStorage.setItem('dellus-bg', hex);
             localStorage.setItem('dellus-bg-id', id || '__custom__');
@@ -1971,6 +2306,19 @@
                             <button class="theme-swatch${savedFg === '#fff' ? ' active' : ''}" data-fg-pick="#fff" style="background:#fff;border-color:#999" title="White" aria-label="White ink"></button>
                         </div>
                     </div>
+                    <div class="theme-row theme-proj-row">
+                        <div class="theme-row-label">Colour project</div>
+                        <div class="theme-row-sublabel theme-proj-name"></div>
+                        <div class="theme-proj-pair">
+                            <label class="theme-swatch theme-swatch-custom" title="Project ink" aria-label="Project ink colour" style="width:14px;height:14px;font-size:0.48rem;">+<input type="color" class="theme-color-input theme-proj-ink"></label>
+                            <span class="theme-row-sublabel">Ink</span>
+                            <label class="theme-swatch theme-swatch-custom" title="Project background" aria-label="Project background colour" style="width:14px;height:14px;font-size:0.48rem;">+<input type="color" class="theme-color-input theme-proj-bg"></label>
+                            <span class="theme-row-sublabel">Background</span>
+                        </div>
+                        <div class="theme-fg-swatches">
+                            <button class="theme-font-btn theme-proj-reset" type="button">Reset</button>
+                        </div>
+                    </div>
                 `;
 
                 body.querySelector('.theme-slider').addEventListener('input', e => applyFontScale(parseFloat(e.target.value)));
@@ -1996,6 +2344,27 @@
                     applyFg(e.target.value);
                     body.querySelectorAll('.theme-swatch[data-fg-pick]').forEach(b => b.classList.remove('active'));
                 });
+
+                // Colour project — recolours the project you are currently in.
+                // Unlike Ink colour this does NOT touch the visitor's own ink;
+                // it overrides that one project's colour and re-tints live.
+                const bindProjPick = (sel, which) =>
+                    body.querySelector(sel).addEventListener('input', e => {
+                        if (!activeProject) return;
+                        try { localStorage.setItem(projectColorKey(activeProject.id, which), e.target.value); } catch { /* private mode */ }
+                        repaintProject(activeProject);
+                    });
+                bindProjPick('.theme-proj-ink', 'color');
+                bindProjPick('.theme-proj-bg',  'background');
+                body.querySelector('.theme-proj-reset').addEventListener('click', () => {
+                    if (!activeProject) return;
+                    for (const which of ['color', 'background']) {
+                        try { localStorage.removeItem(projectColorKey(activeProject.id, which)); } catch { /* private mode */ }
+                    }
+                    repaintProject(activeProject);
+                    syncProjectColorRow();
+                });
+                syncProjectColorRow();
             });
         }
 
@@ -2198,12 +2567,18 @@
             const key   = list ? `3d-${project.id}-${which}` : `3d-${project.id}`;
             const label = entry ? entry.label : '3D';
             focusOrCreate(key, async () => {
-                const frame = makeFrame({ title: project.title + ' — ' + label, tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key });
+                const frame = makeFrame({ title: project.title + ' — ' + label, tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key, projectId: project.id });
                 const body = frame.querySelector('.win-body');
                 Object.assign(body.style, { padding: '0', overflow: 'hidden', position: 'relative' });
 
-                const bgHex = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f5fccc';
-                const fgHex = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim() || '#000';
+                // Read the ink and canvas off THIS FRAME, not the document root.
+                // Custom properties inherit, so a frame with no tint of its own
+                // still resolves to the site's — but a landing window carrying
+                // its project's colour renders in that colour instead.
+                const inkOf = () => getComputedStyle(frame).getPropertyValue('--fg').trim() || '#000';
+                const canvasOf = () => getComputedStyle(frame).getPropertyValue('--bg').trim() || '#ffffff';
+                const bgHex = canvasOf();
+                const fgHex = inkOf();
                 const BG = parseInt(bgHex.replace('#', ''), 16);
                 body.innerHTML = `
                     <div class="cv-canvas" role="img" aria-label="Interactive 3D model of ${project.title}. Drag to orbit. Not conveyable as text; see the project description and images."></div>
@@ -2283,17 +2658,33 @@
                 const fl = new THREE.DirectionalLight(0xffffff, 0.3); fl.position.set(-3, 2, -3); scene.add(fl);
 
                 renderer.setSize(vw, vh);
-                const ascii = new AsciiEffect(renderer, ' .·:;=+x#%@', { invert: true, resolution: 0.4, color: fgHex, bg: bgHex });
+                // INVERT FOLLOWS THE CANVAS (2026-09-30). The shading path reads
+                // the luminance of each cell, so on a light canvas empty space is
+                // bright and must invert to a space; on a DARK canvas it is
+                // already dark and inverting fills the whole window with the
+                // densest character. Hardcoding `invert: true` made any project
+                // with a dark background render as a solid block of glyphs.
+                const isDark = (hex) => {
+                    const n = parseInt(String(hex).replace('#', ''), 16);
+                    if (!Number.isFinite(n)) return false;
+                    return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 < 0.5;
+                };
+                let invertTouched = false;        // a manual toggle wins from then on
+                const ascii = new AsciiEffect(renderer, ' .·:;=+x#%@', { invert: !isDark(bgHex), resolution: 0.4, color: fgHex, bg: bgHex });
                 ascii.setSize(vw, vh);
                 asciiCont.appendChild(ascii.domElement);
 
                 const orbit = new SimpleOrbit(camera, body);
 
                 const matWhite   = new THREE.MeshLambertMaterial({ color: 0xffffff });
-                const matWireAll = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true });
+                // These were hardcoded black while the background was read from
+                // the stylesheet, so a viewer opened under any non-black ink drew
+                // black lines until the NEXT theme change happened to correct it.
+                const FG = parseInt(fgHex.replace('#', ''), 16);
+                const matWireAll = new THREE.MeshBasicMaterial({ color: FG, wireframe: true });
                 const matSolid   = new THREE.MeshLambertMaterial({ color: 0xcccccc });
-                const solidEdgeMat = new LineMaterial({ color: 0x000000, linewidth: 1, worldUnits: false, opacity: 0.15, transparent: true, resolution: new THREE.Vector2(vw, vh) });
-                const wireEdgeMat  = new LineMaterial({ color: 0x000000, linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(vw, vh) });
+                const solidEdgeMat = new LineMaterial({ color: FG, linewidth: 1, worldUnits: false, opacity: 0.15, transparent: true, resolution: new THREE.Vector2(vw, vh) });
+                const wireEdgeMat  = new LineMaterial({ color: FG, linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(vw, vh) });
 
                 // ---- Per-part ascii ------------------------------------------
                 // Shading alone reads the model as one mass: every mesh shares one
@@ -2518,7 +2909,7 @@
                 function ensureEdges() {
                     if (edgesBuilt || !modelGroup) return;
                     edgesBuilt = true;
-                    const curBg = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff');
+                    const curBg = new THREE.Color(canvasOf());
                     realMeshes.forEach(child => {
                         const eg = new THREE.EdgesGeometry(child.geometry, 15);
                         const lg = new LineSegmentsGeometry(); lg.setPositions(eg.attributes.position.array); eg.dispose();
@@ -2668,9 +3059,13 @@
                     deconTween = requestAnimationFrame(step);
                 });
                 const invBtn = body.querySelector('.invert-toggle');
-                invBtn.addEventListener('click', () => {
-                    ascii.invert = !ascii.invert; invBtn.classList.toggle('on', ascii.invert); invBtn.textContent = ascii.invert ? 'On' : 'Off';
-                });
+                function setInvert(v) {
+                    ascii.invert = v;
+                    invBtn.classList.toggle('on', v);
+                    invBtn.textContent = v ? 'On' : 'Off';
+                }
+                setInvert(ascii.invert);          // the markup assumes On; the canvas decides
+                invBtn.addEventListener('click', () => { invertTouched = true; setInvert(!ascii.invert); });
 
                 const charsetGrp = body.querySelector('.ascii-charset');
                 CHAR_SETS.forEach((cs, i) => {
@@ -2720,18 +3115,20 @@
                 frame.addEventListener('win-resize', resizeVP);
 
                 const onThemeChange = () => {
-                    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-                    const fg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
+                    const bg = canvasOf();
+                    const fg = inkOf();
                     bgInt = parseInt(bg.replace('#',''), 16);
                     const fgInt = parseInt(fg.replace('#',''), 16);
                     ascii.domElement.style.color = fg;
                     ascii.domElement.style.backgroundColor = bg;
+                    if (!invertTouched) setInvert(!isDark(bg));
                     sceneBg.set(bgInt);
                     applyAsciiScheme();   // keeps the clear colour right in either scheme
                     matWireAll.color.set(fgInt); wireEdgeMat.color.set(fgInt); solidEdgeMat.color.set(fgInt);
                     wireFillMeshes.forEach(f => f.material.color.set(bgInt));
                 };
                 window.addEventListener('theme-change', onThemeChange);
+                frame.addEventListener('frame-tint', onThemeChange);
                 frame.querySelector('.win-close').addEventListener('click', () => {
                     alive = false;
                     window.removeEventListener('theme-change', onThemeChange);
@@ -2875,10 +3272,11 @@
                     </div>
                     <div class="cat-proj-list" data-cat-list="${cat.id}" id="cat-list-${cat.id}" role="group" aria-label="${cat.label} projects">
                         ${projs.map(p => `
-                            <div class="proj-row" data-id="${p.id}" style="padding-left:8px;"
+                            <div class="proj-row" data-id="${p.id}" style="padding-left:8px;${inkOf(p) ? `--sig:${inkOf(p)};` : ''}"
                                  role="button" tabindex="0"
-                                 aria-label="Open ${p.title}">
+                                 aria-label="Open ${p.title}. Shift+Enter to open it alongside what is already here.">
                                 <span class="proj-name">${p.title}</span>
+                                <span class="proj-mark" aria-hidden="true"></span>
                             </div>
                         `).join('')}
                     </div>
@@ -2889,7 +3287,7 @@
             frame.setAttribute('aria-label', 'Site menu');
             frame.innerHTML = `
                 <div class="win-titlebar" style="cursor:move;">
-                    <span class="win-title">Nir Dellus</span>
+                    <span class="win-title menu-home" role="button" tabindex="0" aria-label="Home — close the open project and return to the landing">Nir Dellus</span>
                     <span class="menu-collapse" style="font-size:0.55rem;opacity:0.3;cursor:pointer;user-select:none;padding:0 2px;flex-shrink:0;"
                           role="button" tabindex="0" aria-expanded="true" aria-label="Collapse menu">&#x2212;</span>
                 </div>
@@ -2976,9 +3374,30 @@
             // by keyboard, not just by pointer.
             const bind = (el, fn) => { el.addEventListener('click', fn); onActivateKey(el, fn); };
 
+            // A project row has two behaviours (Nir, 2026-09-29):
+            //   left-click / Enter   → GO TO the project: the one you were in
+            //                          closes, this one opens, and its colour
+            //                          becomes the colour of the whole site
+            //   right-click / Shift+Enter → open it ALONGSIDE whatever is
+            //                          already here, tinted in its own colour
+            //                          but leaving the site's alone
+            // Right-click is mouse-only, hence the Shift+Enter twin — every
+            // other control in this file is reachable from the keyboard and
+            // this one is no exception.
             frame.querySelectorAll('.proj-row[data-id]').forEach(el => {
                 const project = PROJECTS.find(p => p.id === el.dataset.id);
-                if (project) bind(el, () => openProject(project));
+                if (!project) return;
+                el.addEventListener('click', () => goToProject(project));
+                onActivateKey(el, (e) => {
+                    if (e && e.shiftKey) openAlongside(project);
+                    else goToProject(project);
+                });
+                el.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                    openAlongside(project);
+                });
+                el.addEventListener('pointerenter', () => setMenuHot(project.id, true));
+                el.addEventListener('pointerleave', () => setMenuHot(project.id, false));
             });
             frame.querySelectorAll('.proj-row[data-static]').forEach(el => {
                 bind(el, () => openText(el.dataset.static));
@@ -2988,6 +3407,17 @@
                 if (action === 'theme')   bind(el, () => openTheme());
                 if (action === 'arrange') bind(el, () => { orderWindows(); announce('Windows arranged'); });
             });
+
+            // Home. The title sits inside the titlebar, which is also the drag
+            // handle and carries a dblclick-to-collapse — so this has to stop
+            // pointerdown from reaching the drag, or every click would start a
+            // drag instead of going home.
+            const homeEl = frame.querySelector('.menu-home');
+            if (homeEl) {
+                homeEl.addEventListener('pointerdown', e => e.stopPropagation());
+                homeEl.addEventListener('dblclick', e => e.stopPropagation());
+                bind(homeEl, e => { if (e) e.stopPropagation(); goHome(); });
+            }
 
             // Roving arrow-key navigation between menu rows, so a keyboard
             // user can walk the project list without tabbing through every
@@ -3004,6 +3434,231 @@
 
             return frame;
         }
+        // ── LANDING ───────────────────────────────────────────────────────
+        // Opens what content/landing.txt describes. Nothing here is a new kind
+        // of window: an `image` entry goes through openImage and a `model`
+        // entry through open3D, exactly as a project's own windows do. The only
+        // additions are the project's colour painted onto the frame, and the
+        // hatch that offers the way in.
+        function landingWindows() {
+            return [...document.querySelectorAll('[data-landing]')].filter(el => !el.classList.contains('closing'));
+        }
+        function closeLanding() {
+            const wins = landingWindows();
+            wins.forEach(el => el._close && el._close());
+            return wins.length;
+        }
+
+        // The pointer rests → the window hatches over and offers the way in.
+        // Live FIRST, invitation second (Nir, 2026-09-29): the overlay is
+        // pointer-events:none until it actually appears, and any movement or
+        // press restarts the timer, so orbiting a model never summons it.
+        function attachHatch(el, project) {
+            const host = el.querySelector('.win-body') || el;
+            if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+
+            const ov = document.createElement('div');
+            ov.className = 'win-hatch';
+            ov.innerHTML = `
+                <div class="win-hatch-inner">
+                    <button type="button" class="win-hatch-go">Go to ${project.title}</button>
+                    <button type="button" class="win-hatch-stay">Stay here</button>
+                </div>`;
+            host.appendChild(ov);
+
+            let timer = null, shown = false, suppressed = false;
+            const show = () => { if (shown || suppressed) return; shown = true; ov.classList.add('shown'); };
+            const hide = () => { shown = false; ov.classList.remove('shown'); };
+            const arm  = () => {
+                if (shown || suppressed) return;
+                clearTimeout(timer);
+                timer = setTimeout(show, 900);
+            };
+            const disarm = () => clearTimeout(timer);
+
+            host.addEventListener('pointerenter', () => { setMenuHot(project.id, true); arm(); });
+            host.addEventListener('pointermove', arm);
+            host.addEventListener('pointerdown', arm);
+            host.addEventListener('pointerleave', () => {
+                setMenuHot(project.id, false);
+                disarm(); hide(); suppressed = false;   // leaving clears the refusal
+            });
+
+            ov.querySelector('.win-hatch-go').addEventListener('click', () => goToProject(project));
+            // The clear "no" Nir asked for. Suppressed until the pointer leaves
+            // and comes back, so it cannot immediately nag again.
+            const cancel = () => { disarm(); hide(); suppressed = true; };
+            ov.querySelector('.win-hatch-stay').addEventListener('click', cancel);
+            // Escape must cancel the HATCH, not close the window. makeFrame
+            // registers its own Escape→close on the frame at creation, and a
+            // later frame listener runs after it — so this goes on the overlay,
+            // a descendant, which fires first. Same fix as the model dropdown.
+            ov.addEventListener('keydown', e => {
+                if (e.key !== 'Escape' || !shown) return;
+                e.stopPropagation();
+                cancel();
+            });
+            ov.tabIndex = -1;
+        }
+
+        // Authored geometry is in PERCENT of the viewport, so a composition
+        // holds its proportions on any screen instead of being pinned to the
+        // pixels of whatever display it was arranged on.
+        function placeLanding(el, entry) {
+            if (!entry || !entry.at || !entry.size) return;
+            const [x, y] = entry.at, [w, h] = entry.size;
+            el.dataset.sizeLocked = '1';
+            Object.assign(el.style, {
+                left:   (x / 100 * window.innerWidth)  + 'px',
+                top:    (y / 100 * window.innerHeight) + 'px',
+                width:  (w / 100 * window.innerWidth)  + 'px',
+                height: (h / 100 * window.innerHeight) + 'px',
+            });
+            el.dispatchEvent(new CustomEvent('win-resize'));
+        }
+
+        // ── LAYOUT TOOL — DEVELOPMENT ONLY ────────────────────────────────
+        // Off unless the URL carries ?layout, so a visitor can never reach it
+        // and nothing about it is built into the page they load. Arrange the
+        // landing windows by hand, press Copy, paste the block into
+        // content/landing.txt.
+        //
+        // An image window is the awkward one: openImage resizes it to the
+        // image's natural size on load, so its authored height is only
+        // honoured once — read the real rect, not the authored numbers.
+        function initLayoutTool() {
+            if (!new URLSearchParams(location.search).has('layout')) return;
+            if (document.getElementById('layout-tool')) return;
+
+            const pct = (v, total) => Math.round(v / total * 1000) / 10;   // percent, one decimal
+            const block = () => {
+                const rows = [...document.querySelectorAll('[data-landing]')]
+                    .sort((a, b) => (+a.dataset.landingIdx) - (+b.dataset.landingIdx))
+                    .map(el => {
+                        const r = el.getBoundingClientRect();
+                        const geo = `at ${pct(r.left, innerWidth)} ${pct(r.top, innerHeight)}` +
+                                    ` size ${pct(r.width, innerWidth)} ${pct(r.height, innerHeight)}`;
+                        if (el.dataset.landing === 'text') return `  text${' '.repeat(38)}${geo}`;
+                        // Only an image line carries a filename, and it is the
+                        // path relative to that project's gallery/ — a model
+                        // line names no file at all.
+                        const file = el.dataset.landing === 'image' && el.dataset.landingSrc
+                            ? ' ' + el.dataset.landingSrc.split('/gallery/')[1] : '';
+                        const head = `  ${el.dataset.projectId}  ${el.dataset.landing}${file}`;
+                        return head + ' '.repeat(Math.max(2, 42 - head.length)) + geo;
+                    });
+                return 'windows:\n' + rows.join('\n');
+            };
+
+            const el = document.createElement('div');
+            el.id = 'layout-tool';
+            el.innerHTML = `
+                <div class="layout-tool-head">
+                    <strong>Layout</strong> — drag and resize, then copy into content/landing.txt
+                    <button type="button" class="layout-copy">Copy</button>
+                    <button type="button" class="layout-refresh">Refresh</button>
+                </div>
+                <textarea class="layout-out" readonly rows="7" spellcheck="false"></textarea>`;
+            document.body.appendChild(el);
+
+            const out = el.querySelector('.layout-out');
+            const refresh = () => { out.value = block(); };
+            refresh();
+            el.querySelector('.layout-refresh').addEventListener('click', refresh);
+            el.querySelector('.layout-copy').addEventListener('click', async () => {
+                refresh();
+                out.select();
+                const btn = el.querySelector('.layout-copy');
+                try { await navigator.clipboard.writeText(out.value); btn.textContent = 'Copied'; }
+                catch { btn.textContent = 'Select + copy'; }
+                setTimeout(() => { btn.textContent = 'Copy'; }, 1400);
+            });
+            // Keep it current as the windows are moved about.
+            document.addEventListener('pointerup', () => setTimeout(refresh, 60));
+        }
+
+        function openLanding() {
+            if (typeof LANDING === 'undefined' || !LANDING) { menuFrame._toggleCollapse(); return; }
+            restoreUserTheme();     // the landing's own pair, unless the visitor has chosen
+
+            // The text window. Plain makeFrame — it belongs to no project, so it
+            // carries no colour and no hatch.
+            const tf = makeFrame({ title: LANDING.title, w: 380, h: 200, minH: 120, key: 'landing-text', bodyDrag: true });
+            tf.dataset.landing = 'text';
+            const textEntry = LANDING.windows.find(w => w.kind === 'text');
+            tf.dataset.landingIdx = String(LANDING.windows.indexOf(textEntry));
+            placeLanding(tf, textEntry);
+            const tb = tf.querySelector('.win-body');
+            tb.className += ' info-body';
+            tb.innerHTML = `<div class="info-desc">${descHTML(LANDING.text)}</div>`;
+
+            // open3D awaits the GLTF loader, so its window does not exist yet
+            // when this returns. Each entry dresses itself once its window
+            // appears, and the canvas is only laid out when the last one has —
+            // tiling earlier arranges a half-built landing.
+            // Geometry is all-or-nothing: a composition is either fully authored
+            // (every window carries at + size) or fully auto-tiled. A mixture
+            // would leave some windows placed and some landing wherever, which
+            // reads as a bug rather than as a layout.
+            const placed = LANDING.windows.length > 0 &&
+                           LANDING.windows.every(w => w.at && w.size);
+            let pending = LANDING.windows.filter(w => w.kind !== 'text').length;
+            const finish = () => {
+                if (!placed) requestAnimationFrame(() => orderWindows());
+                requestAnimationFrame(initLayoutTool);
+            };
+            const settle = () => { if (--pending <= 0) finish(); };
+
+            LANDING.windows.forEach((w, i) => {
+                if (w.kind === 'text') return;              // already built above
+                const project = PROJECTS.find(p => p.id === w.project);
+                if (!project) { settle(); return; }
+                if (w.kind === 'model') {
+                    open3D(project);
+                } else {
+                    openImage({ src: w.src, key: `landing-img-${i}`, projectId: project.id,
+                                fallbackLabel: `${project.title} — from the gallery` });
+                }
+                let tries = 0;
+                const dress = () => {
+                    const wins = projectWindows(project.id).filter(el => !el.dataset.landing);
+                    if (!wins.length) {
+                        if (++tries < 180) requestAnimationFrame(dress);
+                        else settle();                       // gave up; don't strand the layout
+                        return;
+                    }
+                    wins.forEach(el => {
+                        el.dataset.landing = w.kind;
+                        // INK ONLY on the landing (Nir, 2026-09-29). Every window
+                        // here shares the landing's background; what differs per
+                        // project is the ink — the border, the title, the ASCII.
+                        // The background only shifts once you enter a project and
+                        // that project owns the page.
+                        tintFrame(el, inkOf(project), null);
+                        attachHatch(el, project);
+                        el.dataset.landingIdx = String(i);
+                        if (w.src) el.dataset.landingSrc = w.src;
+                        placeLanding(el, w);
+                    });
+                    // openImage resizes the window to the image's natural size
+                    // on load — which lands AFTER the tiler would have run and
+                    // snaps the window back to its own width while keeping the
+                    // tiled position, pushing it off a narrow screen. So an
+                    // image entry is not "settled" until its image is in.
+                    const img = w.kind === 'image' && wins[0].querySelector('img');
+                    if (img && !img.complete) {
+                        img.addEventListener('load',  settle, { once: true });
+                        img.addEventListener('error', settle, { once: true });
+                    } else {
+                        settle();
+                    }
+                };
+                dress();
+            });
+
+            if (pending <= 0) finish();   // a landing with no project windows
+        }
+
         // ── STRUCTURED DATA (SEO-06) ──────────────────────────────────────
         // Built from PROJECTS/STATIC at runtime rather than hand-written into
         // the markup, so it can never drift from the content the site shows
@@ -3065,23 +3720,19 @@
         }
         injectStructuredData();
 
-        // ── LANDING STATE (2026-09-21) ────────────────────────────────────
-        // The menu, collapsed, and nothing else. A deliberate placeholder while
-        // the landing page proper gets designed — an empty canvas with one
-        // closed title bar, rather than a guess at what will eventually sit
-        // here. Expanding the menu restores the full site.
+        // ── LANDING STATE (2026-09-29) ────────────────────────────────────
+        // Replaces the 2026-09-21 placeholder (the menu, collapsed, and nothing
+        // else). A visitor now arrives at a set of ORDINARY windows borrowed
+        // from real projects — same openImage / open3D factories as everything
+        // else, no special case — each tinted in its project's own colour, plus
+        // one text window. What appears is authored in content/landing.txt.
         //
-        // The theme editor is no longer opened at load; it is reachable from
-        // the menu's Theme row. Every openWins['theme'] read is already
-        // null-guarded (tileProjectWindows, orderWindows), so nothing assumes
-        // it exists. It is now also always a USER-driven open, which means
-        // focusOrCreate is free to move focus to it — the reason it withheld
-        // focus was that opening during page load would steal the skip link
-        // out of first-Tab position.
-        const menuFrame = buildMenuWindow();
-        menuFrame._toggleCollapse();
-
-        // Restore saved theme preferences on load
+        // The theme editor is still not opened at load; it is reachable from
+        // the menu's Theme row. Every openWins['theme'] read is null-guarded
+        // (tileProjectWindows, orderWindows), so nothing assumes it exists.
+        // The saved theme is restored BEFORE the landing opens: a landing 3D
+        // viewer reads its ink and canvas at construction, so applying the
+        // visitor's theme afterwards would leave that first render stale.
         const savedScale = parseFloat(localStorage.getItem('dellus-font-scale'));
         if (!isNaN(savedScale)) document.documentElement.style.setProperty('--font-scale', savedScale);
         const savedBg = localStorage.getItem('dellus-bg');
@@ -3099,6 +3750,17 @@
                 document.documentElement.style.setProperty('--font-var', savedFont.varSet);
             }
         }
+
+        const menuFrame = buildMenuWindow();
+
+        // The menu's "open" dimming is derived from the canvas, so it has to be
+        // recomputed whenever a window appears or disappears — including the
+        // 220ms-delayed removal inside closeFrame, and closes triggered by
+        // Escape or by code rather than by the × button.
+        new MutationObserver(syncMenuOpen)
+            .observe(document.getElementById('workspace'), { childList: true });
+
+        openLanding();
 
         document.getElementById('err-banner').style.display = 'none';
 

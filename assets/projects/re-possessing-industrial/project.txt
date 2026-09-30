@@ -5,6 +5,12 @@ location: Thessaloniki, Greece
 participants: Nir Dellus, Shir Yakov, Eran Asulin, Elad Sphindel
 type: Studio 8
 order: 20
+# PLACEHOLDER colours - both are yours to change.
+#   color      = the ink (text, lines, the 3D render)
+#   background = the surface behind it
+# Together they are what the whole page wears while this project is open.
+color: #0091ff
+background: #ffffff
 credit: Guided by Zvi Efrat and Liran Messer.
 
 ---

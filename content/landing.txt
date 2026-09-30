@@ -1,0 +1,42 @@
+title: Nir Dellus
+
+# The default pair: what the site wears before any project is opened,
+# and what it returns to on Home. Yours to change.
+color: #000000
+background: #ffffff
+
+# ── PLACEHOLDER — Nir's to choose ──────────────────────────────────────────
+# Which windows greet a visitor is an editorial call. These three were picked
+# on WEIGHT alone, to keep the front door cheap while the system was built:
+#
+#     silo.glb            105 KB   (the smallest model on the site)
+#     two gallery thumbs   ~5-20 KB each
+#     ────────────────────────────
+#     total               ~140 KB  on top of a 404 KB initial load
+#
+# Swap them for whatever should actually represent the work. The numbers to
+# weigh it against, measured 2026-09-29:
+#
+#     Floor Detail.glb     14 KB      gallery thumb       5-20 KB
+#     silo.glb            105 KB      gallery full-size  500-800 KB
+#     spring.glb          651 KB
+#     Detail.glb          1.1 MB
+#     Cabine.glb          1.4 MB
+#     Pavilion Model.glb  3.0 MB
+#
+# A `thumbs/` prefix loads the 400px derivative; without it you get the
+# full-size image. Three big models plus three full-size images would be
+# 4-6 MB — ten times the current front door.
+#
+# Each window is:  <project-id>  image  <file from that project's gallery/>
+#              or: <project-id>  model
+windows:
+  re-possessing-industrial  model
+  get-lost                  image  thumbs/03.webp
+  cloud-to-ground           image  thumbs/iso_gardem_F0.webp
+
+---
+
+Architecture, research and design.
+
+Every window here belongs to a project. Rest on one to open it, or use the menu — each project brings its own colour with it.

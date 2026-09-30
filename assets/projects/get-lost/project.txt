@@ -5,6 +5,12 @@ location: Bornholm, Denmark
 participants: Nir Dellus
 type: Studio 7 — Exchange
 order: 30
+# PLACEHOLDER colours - both are yours to change.
+#   color      = the ink (text, lines, the 3D render)
+#   background = the surface behind it
+# Together they are what the whole page wears while this project is open.
+color: #1d9f1f
+background: #ffffff
 gallery:
   01.webp
   02.webp

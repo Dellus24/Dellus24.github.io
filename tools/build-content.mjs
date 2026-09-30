@@ -29,7 +29,13 @@ const warn = (m) => warnings.push(m);
 const HEAD_KEYS = ['title', 'year', 'category', 'location', 'participants', 'type'];
 const CATEGORIES = ['academic', 'employment'];
 const STATIC_KEYS = ['about', 'cv', 'contact'];   // hard-coded in the menu markup
-const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit'];
+const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit', 'windows'];
+
+// HEAD_KEYS above are REQUIRED — every one is checked for presence. Optional
+// single-line keys are handled individually further down, like `credit`.
+const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const LINE_STYLES = ['solid', 'double', 'dashed'];
+const LANDING_KINDS = ['image', 'model'];
 
 // Numeric-aware sort: a plain string sort puts '100.webp' before '99.webp'.
 const natCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -136,6 +142,38 @@ for (const id of fs.readdirSync(projectsDir).sort(natCmp)) {
     //       Curated by Edith Kofsky and Oren Eldar.
     const credit = blocks.credit ? blocks.credit.join('\n') : (head.credit || '');
     if (credit) rec.credit = credit;
+
+    // ── color / line: the project's signature (2026-09-29).
+    //
+    //    A project owns TWO colours, exactly like the rest of the site does:
+    //    an ink (`color`) and a background. They apply to this project's
+    //    windows on the landing, and to the ENTIRE page once the project is
+    //    opened — menu, chrome, text and the 3D render alike.
+    //
+    //        color:      #b3261e     the ink
+    //        background: #fbf1f0     the surface behind it
+    //        line:       double
+    //
+    //    All three are OPTIONAL. A project with neither colour never tints
+    //    anything, so the feature is invisible until a colour is authored.
+    //
+    //    `line` is parsed and published but nothing renders it yet — reserved
+    //    so the format does not have to change when it is wanted.
+    for (const k of ['color', 'background']) {
+        if (!head[k]) continue;
+        if (!HEX.test(head[k])) {
+            err(`${where}: ${k} "${head[k]}" must be a hex colour like #b3261e or #b31`);
+        } else {
+            rec[k] = head[k].toLowerCase();
+        }
+    }
+    if (head.line) {
+        if (!LINE_STYLES.includes(head.line)) {
+            err(`${where}: line "${head.line}" must be one of ${LINE_STYLES.join(' | ')}`);
+        } else if (head.line !== 'solid') {
+            rec.line = head.line;          // solid is the default; don't emit it
+        }
+    }
 
     // ── models: a project can carry several. One .glb needs no authoring at
     //    all — it is auto-discovered, which also takes its casing FROM DISK,
@@ -262,6 +300,115 @@ for (const key of STATIC_KEYS) {
     STATIC[key] = { title: head.title, body };
 }
 
+// ── Landing ─────────────────────────────────────────────────────────────────
+// content/landing.txt describes what greets a first visitor: a set of ORDINARY
+// windows borrowed from real projects, each wearing its project's colour, plus
+// one text window holding the body. Nothing new is opened — these go through
+// the same openImage / open3D factories as everything else.
+//
+//     windows:
+//       re-possessing-industrial  model
+//       get-lost                  image  bridge.webp
+//       101-gates                 image  thumbs/Spring_01.webp
+//     ---
+//     The text a visitor reads first.
+//
+// Every line is resolved against the real folders, so a typo is a build error
+// rather than a silent 404 live. The file is optional: without it the site
+// boots to the collapsed menu exactly as it did before.
+//
+// WEIGHT IS THE REAL CONSTRAINT. Models run 14 KB to 3.0 MB and full-size
+// gallery images 500-800 KB, against a 404 KB initial load today — so a
+// thumbs/ path is accepted here precisely so a landing image can cost 5-20 KB.
+let LANDING = null;
+const landingFile = path.join(REPO, 'content/landing.txt');
+if (!fs.existsSync(landingFile)) {
+    warn('content/landing.txt is missing — the site will boot to the collapsed menu alone');
+} else {
+    const where = 'content/landing.txt';
+    const { head, blocks, body } = parseTxt(fs.readFileSync(landingFile, 'utf8'), where);
+    const byId = new Map(projects.map(p => [p.id, p]));
+    const windows = [];
+
+    // A window line is `<project> <kind> [file]`, optionally followed by a
+    // position and size in PERCENT of the viewport:
+    //
+    //     get-lost  image  thumbs/03.webp   at 62 4  size 34 40
+    //     text                              at 62 48 size 34 46
+    //
+    // Percent rather than pixels so a composition holds on any screen. These
+    // numbers are not meant to be typed by hand — open the site with ?layout,
+    // drag the windows into place and copy the block out (see README).
+    //
+    // `text` is the landing's own text window; it takes no project or file and
+    // may appear once. Geometry is all-or-nothing: unless EVERY window carries
+    // both `at` and `size`, the landing falls back to auto-tiling, so a
+    // half-finished composition never renders half-placed.
+    let seenText = false;
+    for (const raw of blocks.windows || []) {
+        let line = raw;
+        const geo = {};
+        const mAt = line.match(/\bat\s+(-?[\d.]+)\s+(-?[\d.]+)/i);
+        if (mAt) { geo.at = [parseFloat(mAt[1]), parseFloat(mAt[2])]; line = line.replace(mAt[0], ' '); }
+        const mSz = line.match(/\bsize\s+(-?[\d.]+)\s+(-?[\d.]+)/i);
+        if (mSz) { geo.size = [parseFloat(mSz[1]), parseFloat(mSz[2])]; line = line.replace(mSz[0], ' '); }
+
+        if (geo.at && geo.at.some(v => v < -50 || v > 150)) {
+            err(`${where}: "${raw.trim()}" — at x y are percentages of the screen, expected roughly 0-100`);
+        }
+        if (geo.size && geo.size.some(v => v <= 0 || v > 200)) {
+            err(`${where}: "${raw.trim()}" — size w h are percentages of the screen, expected 1-100`);
+        }
+
+        const parts = line.trim().split(/\s+/).filter(Boolean);
+
+        if (parts[0] === 'text') {
+            if (parts.length > 1) err(`${where}: "${raw.trim()}" — a text line takes no project or filename`);
+            if (seenText) err(`${where}: more than one "text" line — the landing has one text window`);
+            seenText = true;
+            windows.push({ kind: 'text', ...geo });
+            continue;
+        }
+
+        const [pid, kind, file] = parts;
+        const p = byId.get(pid);
+        if (!p) {
+            err(`${where}: "${pid}" is not a project (present: ${[...byId.keys()].join(', ')})`);
+            continue;
+        }
+        if (!LANDING_KINDS.includes(kind)) {
+            err(`${where}: "${pid} ${kind ?? ''}" — kind must be one of ${LANDING_KINDS.join(' | ')}`);
+            continue;
+        }
+        if (kind === 'model') {
+            if (file) err(`${where}: "${pid} model" takes no filename — it opens the project's own model`);
+            if (!p.model) { err(`${where}: "${pid}" has no .glb in models/`); continue; }
+            windows.push({ project: pid, kind, src: p.model, ...geo });
+        } else {
+            if (!file) { err(`${where}: "${pid} image" needs a filename from that project's gallery/`); continue; }
+            const rel = path.join('assets/projects', pid, 'gallery', file);
+            if (!fs.existsSync(path.join(REPO, rel))) {
+                err(`${where}: "${file}" is not in ${pid}/gallery/`);
+                continue;
+            }
+            windows.push({ project: pid, kind, src: rel.replace(/\\/g, '/'), ...geo });
+        }
+    }
+
+    if (!windows.length) warn(`${where}: no "windows:" block — the landing will be the text alone`);
+    if (!body) warn(`${where}: body is empty — the landing will be the windows alone`);
+
+    // The landing's own pair — the colours the site wears before any project
+    // has been opened, and the ones it returns to on Home.
+    const pair = {};
+    for (const k of ['color', 'background']) {
+        if (!head[k]) continue;
+        if (!HEX.test(head[k])) err(`${where}: ${k} "${head[k]}" must be a hex colour like #b3261e or #b31`);
+        else pair[k] = head[k].toLowerCase();
+    }
+    LANDING = { title: head.title || 'Nir Dellus', text: body, windows, ...pair };
+}
+
 // ── Emit ────────────────────────────────────────────────────────────────────
 const q = (s) => "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 const tpl = (s) => '`' + String(s).replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${') + '`';
@@ -316,6 +463,9 @@ for (const p of projects) {
     out.push(`        type:         ${q(p.type)},`);
     out.push(`        description:  ${tpl(p.description)},`);
     if (p.credit) out.push(`        credit:       ${tpl(p.credit)},`);
+    if (p.color) out.push(`        color:        ${q(p.color)},`);
+    if (p.background) out.push(`        background:   ${q(p.background)},`);
+    if (p.line) out.push(`        line:         ${q(p.line)},`);
     if (p.model) out.push(`        model:        ${q(p.model)},`);
     if (p.models) {
         out.push('        models:       [');
@@ -355,6 +505,32 @@ for (const key of STATIC_KEYS) {
     out.push('    },');
 }
 out.push('};');
+out.push('');
+out.push('// ============================================================================');
+out.push('// LANDING — the windows a first visitor is met by, from content/landing.txt');
+out.push('// ============================================================================');
+out.push('');
+if (LANDING) {
+    out.push('const LANDING = {');
+    out.push(`    title: ${q(LANDING.title)},`);
+    if (LANDING.color) out.push(`    color: ${q(LANDING.color)},`);
+    if (LANDING.background) out.push(`    background: ${q(LANDING.background)},`);
+    out.push(`    text: ${tpl(LANDING.text)},`);
+    out.push('    windows: [');
+    for (const w of LANDING.windows) {
+        const bits = [];
+        if (w.project) bits.push(`project: ${q(w.project)}`);
+        bits.push(`kind: ${q(w.kind)}`);
+        if (w.src) bits.push(`src: ${q(w.src)}`);
+        if (w.at) bits.push(`at: [${w.at.join(', ')}]`);
+        if (w.size) bits.push(`size: [${w.size.join(', ')}]`);
+        out.push(`        { ${bits.join(', ')} },`);
+    }
+    out.push('    ],');
+    out.push('};');
+} else {
+    out.push('const LANDING = null;');
+}
 out.push('');
 
 const generated = out.join('\n');

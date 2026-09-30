@@ -5,6 +5,12 @@ location: Venice, Italy
 participants: Nir Dellus, Edith Kofsky, Oren Eldar
 type: Israeli Pavilion — Venice Biennale
 order: 80
+# PLACEHOLDER colours - both are yours to change.
+#   color      = the ink (text, lines, the 3D render)
+#   background = the surface behind it
+# Together they are what the whole page wears while this project is open.
+color: #14d2b2
+background: #ffffff
 gallery:
   cast.webp
   mold_draft.webp

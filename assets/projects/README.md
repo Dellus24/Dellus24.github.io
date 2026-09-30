@@ -70,11 +70,102 @@ description. A line starting with `#` is a comment.
 | `type` | yes | free text, e.g. `Studio 9-10` |
 | `order` | yes | menu position, low to high. Spaced by 10 so you can insert between without renumbering |
 | `hidden` | no | `hidden: yes` drops the project from the site entirely, files and all. Nothing is deleted — remove the line to bring it back |
+| `color` | no | the project's ink, e.g. `color: #b3261e`. See below |
+| `background` | no | the surface behind the ink, e.g. `background: #fbeeed` |
+| `line` | no | `solid` (default), `double` or `dashed`. Parsed and published, but **nothing renders it yet** — reserved |
 | `model` | no | **only needed if `models/` holds more than one `.glb`.** Otherwise the single `.glb` is found automatically, with its real casing |
 | `gallery:` | no | block list, one file per line, see below |
 | `slides:` | no | block list — **you almost never want this.** Omit it and every file in `slides/` is used, in numeric order |
 
 Everything after `---` is the description. Blank lines inside it are kept.
+
+### `color:` and `background:` — the project's two colours
+
+The whole site works in exactly two colours: an ink and a background. A project
+simply owns its own pair.
+
+```
+color:      #b3261e     the ink — text, lines, the 3D render
+background: #fbeeed     the surface behind it
+```
+
+- **Open the project** and that pair becomes the whole page — menu, windows,
+  text, model, everything. Uniform: the page and the inside of the windows are
+  the same colour.
+- **On the landing** every window shares the landing's own background; what
+  differs per project is the **ink** — each window's border, title and ASCII.
+  The background only shifts once you go into a project and that project owns
+  the page.
+
+`#rgb` or `#rrggbb`. A bad value is a build **error**, so it can never reach the
+live site. Both keys are optional; whatever a project does not set stays as the
+page already was, so colours can be added one project at a time.
+
+A visitor can override either colour from the Theme window's *Colour project*
+row; that override lives in their browser and never touches these files. Their
+own *Ink colour* choice is borrowed while a project is open and handed back
+untouched afterwards.
+
+### The landing — `content/landing.txt`
+
+Separate from the projects, but it points at them. It lists the windows a first
+visitor is met by, each borrowed from a real project:
+
+```
+windows:
+  re-possessing-industrial  model
+  get-lost                  image  thumbs/03.webp
+---
+The text shown in the landing's own window.
+```
+
+`model` opens that project's own `.glb` (the one marked `*` if it has several)
+and takes no filename. `image` takes a file from that project's `gallery/`; a
+`thumbs/` prefix loads the 400px derivative, which is 5-20 KB against 500-800 KB
+for the full-size original. Unknown projects and missing files are build errors.
+
+**Weight is the constraint.** The site's initial load is ~404 KB; models on disk
+run from 14 KB to 3.0 MB. Three large models plus three full-size images would
+make the front door ten times heavier. The file itself carries the current
+per-file numbers in a comment.
+
+`landing.txt` also takes its own `color:` and `background:` — the pair the site
+wears before any project is opened, and the one it returns to on Home.
+
+### Composing the landing — `?layout`
+
+Positions and sizes are not meant to be typed by hand. Open the site with
+`?layout` on the end of the URL:
+
+```
+http://localhost:8899/?layout        (or https://dellus.xyz/?layout)
+```
+
+A black bar appears along the bottom. Drag and resize the landing windows until
+the composition is right, press **Copy**, and paste the block it gives you over
+the `windows:` block in `content/landing.txt`:
+
+```
+windows:
+  text                                      at 75.3 62.4 size 23.3 35.4
+  re-possessing-industrial  model           at 20.1 6.5  size 37 89.3
+  get-lost  image thumbs/03.webp            at 59 3.1    size 14.9 96
+```
+
+`at x y` and `size w h` are **percentages of the screen**, so a composition
+holds its proportions on any display. `text` is the landing's own text window
+and takes no project or filename.
+
+Two things worth knowing:
+
+- **Geometry is all-or-nothing.** Unless every window has both `at` and `size`,
+  the landing ignores the numbers and auto-tiles instead — so a half-finished
+  composition never renders half-placed.
+- **An authored size wins over an image's own dimensions.** Without one, an
+  image window sizes itself to the picture; with one, it does what you said.
+
+The bar exists **only** when `?layout` is in the URL. A visitor cannot reach it
+and never loads it.
 
 ### The `gallery:` block
 

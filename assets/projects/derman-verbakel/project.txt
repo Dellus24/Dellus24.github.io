@@ -5,6 +5,12 @@ location: Tel Aviv, Israel
 participants: Nir Dellus
 type: R&D
 order: 90
+# PLACEHOLDER colours - both are yours to change.
+#   color      = the ink (text, lines, the 3D render)
+#   background = the surface behind it
+# Together they are what the whole page wears while this project is open.
+color: #1e00ff
+background: #ffffff
 
 ---
 
