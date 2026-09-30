@@ -910,14 +910,21 @@
         }
         .layout-tool-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
         .layout-tool-head strong { font-weight: 600; }
+        .layout-hint { opacity: 0.55; }
         #layout-tool button {
             font: inherit; background: #eee; color: #111; border: 0;
             padding: 2px 10px; cursor: pointer;
         }
+        #layout-tool .layout-fold { padding: 2px 8px; }
         #layout-tool textarea {
             width: 100%; box-sizing: border-box; background: #000; color: #9f9;
             border: 1px solid #333; font: inherit; padding: 5px; resize: vertical;
         }
+        /* Folded: one strip, Copy and Refresh still on it. */
+        #layout-tool.folded { padding-bottom: 5px; }
+        #layout-tool.folded .layout-tool-head { margin-bottom: 0; }
+        #layout-tool.folded .layout-out,
+        #layout-tool.folded .layout-hint { display: none; }
         .theme-proj-pair { display: flex; align-items: center; gap: 5px; margin: 3px 0 5px; }
         .theme-proj-pair .theme-row-sublabel { margin: 0 6px 0 0; }
         .win-hatch.shown { opacity: 1; pointer-events: auto; }
@@ -3554,12 +3561,31 @@
             el.id = 'layout-tool';
             el.innerHTML = `
                 <div class="layout-tool-head">
-                    <strong>Layout</strong> — drag and resize, then copy into content/landing.txt
+                    <button type="button" class="layout-fold" aria-expanded="true" title="Fold">−</button>
+                    <strong>Layout</strong>
+                    <span class="layout-hint">— drag and resize, then copy into content/landing.txt</span>
                     <button type="button" class="layout-copy">Copy</button>
                     <button type="button" class="layout-refresh">Refresh</button>
                 </div>
-                <textarea class="layout-out" readonly rows="7" spellcheck="false"></textarea>`;
+                <textarea class="layout-out" readonly rows="6" spellcheck="false"></textarea>`;
             document.body.appendChild(el);
+
+            // Folds to a single strip so it stops covering the canvas you are
+            // composing. Copy and Refresh stay reachable while folded — the
+            // whole point is to arrange, copy, and never unfold. The state is
+            // remembered, so it does not spring open on every reload.
+            const foldBtn = el.querySelector('.layout-fold');
+            const setFold = (folded, save = true) => {
+                el.classList.toggle('folded', folded);
+                foldBtn.textContent = folded ? '+' : '\u2212';
+                foldBtn.title = folded ? 'Unfold' : 'Fold';
+                foldBtn.setAttribute('aria-expanded', String(!folded));
+                if (save) { try { localStorage.setItem('dellus-layout-folded', folded ? '1' : '0'); } catch {} }
+            };
+            let startFolded = false;
+            try { startFolded = localStorage.getItem('dellus-layout-folded') === '1'; } catch {}
+            setFold(startFolded, false);
+            foldBtn.addEventListener('click', () => setFold(!el.classList.contains('folded')));
 
             const out = el.querySelector('.layout-out');
             const refresh = () => { out.value = block(); };

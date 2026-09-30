@@ -164,6 +164,10 @@ Two things worth knowing:
 - **An authored size wins over an image's own dimensions.** Without one, an
   image window sizes itself to the picture; with one, it does what you said.
 
+The `−` button on the left **folds the bar to a single strip** so it stops
+covering the canvas you are composing. Copy and Refresh stay on it while folded,
+and the folded state is remembered between reloads.
+
 The bar exists **only** when `?layout` is in the URL. A visitor cannot reach it
 and never loads it.
 
