@@ -23,6 +23,14 @@ background: #ffffff
 #   text                      this file's own text, below the ---
 #   menu                      the site menu itself
 #
+# A `model` line also carries HOW THE MODEL LOOKS — shape it in the viewer
+# (orbit, zoom, mode, Deconstruct) and Copy writes it out:
+#
+#   101-gates model Detail.glb  at 20 3 size 45 90  angle 120 -25 zoom 4.1 spin 0 decon 65
+#
+# spin 0 is what makes it hold still; without it the model rotates away from
+# whatever angle you set. See assets/projects/README.md for every key.
+#
 # Optionally followed by  at <x> <y>  size <w> <h>  — all PERCENTAGES of the
 # screen, so a composition holds on any display. Geometry is ALL-OR-NOTHING:
 # unless every line carries both, the numbers are ignored and the landing

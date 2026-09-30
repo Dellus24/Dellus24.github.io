@@ -2573,7 +2573,7 @@
         // is the model marked in project.txt and the only one openProject opens;
         // the rest come from the 3D View dropdown, each in its own window so two
         // models can sit side by side.
-        async function open3D(project, which = 0) {
+        async function open3D(project, which = 0, savedView = null) {
             const list  = (project.models && project.models.length > 1) ? project.models : null;
             const entry = list ? list[which] : null;
             const src   = entry ? entry.src : project.model;
@@ -2797,6 +2797,9 @@
                         // assembly. A model carrying no deconstruction was not
                         // authored that way, so it keeps the shading ramp.
                         selectCharset(mixer && partCount >= 2 ? 'Parts' : 'Standard');
+                        // After setup, so the Deconstruct slider and the charset
+                        // it chooses are both real by the time they are overridden.
+                        if (savedView) frame._applyViewState(savedView);
                     }).catch(err => {
                         console.error('3D load failed:', err);
                         loadingEl.classList.remove('indet');
@@ -2870,6 +2873,87 @@
                 }
 
                 function setActiveCam(cam) { activeCam = cam; orbit.camera = cam; resizeVP(); }
+
+                // ── SAVED VIEW ────────────────────────────────────────────
+                // Everything that decides how this model LOOKS, read back out
+                // and put back in. The ?layout composer reads it; the landing
+                // applies it. Angles are degrees so the authored line is
+                // legible; radius, spin and decon are as the viewer holds them.
+                //
+                // Spin matters more than it sounds: auto-rotation is on by
+                // default, so an angle with no spin beside it drifts away
+                // within seconds and the saved pose means nothing.
+                const DEG = 180 / Math.PI;
+                const r1 = n => Math.round(n * 10) / 10;
+                const r3 = n => Math.round(n * 1000) / 1000;
+
+                frame._viewState = () => {
+                    const v = {
+                        angle: [r1(orbit.tRotY * DEG), r1(orbit.tRotX * DEG)],
+                        zoom:  r1(orbit.radius),
+                        spin:  r3(orbit.autoSpeed),
+                        mode,
+                    };
+                    const t = orbit.target;
+                    if (t.lengthSq() > 1e-6) v.pan = [r1(t.x), r1(t.y), r1(t.z)];
+                    if (mode === 'ascii') {
+                        // The active charset lives only in the DOM (the button
+                        // carrying .active), so read it from there.
+                        const csBtn = charsetGrp.querySelector('.charset-option.active');
+                        if (csBtn) v.chars = csBtn.dataset.cs;
+                        v.res    = r1(ascii.resolution);
+                        // Only report invert as SET if it was actually toggled by
+                        // hand. Left alone it follows the canvas, and writing it
+                        // into a landing line would freeze today's answer — so a
+                        // project later given a dark background would reopen with
+                        // the viewer flooded with solid characters.
+                        if (invertTouched) v.invert = ascii.invert;
+                    } else if (mode === 'wireframe') {
+                        v.lines = wireLinesMode;
+                        v.width = r1(parseFloat(body.querySelector('.wire-width-slider').value));
+                    } else if (mode === 'solid') {
+                        v.edges = solidEdges;
+                    }
+                    if (mixer) v.decon = r1(parseFloat(deconSlider.value));
+                    return v;
+                };
+
+                frame._applyViewState = (v) => {
+                    if (!v) return;
+                    if (v.mode && v.mode !== mode) setMode(v.mode);
+                    if (v.chars) selectCharset(v.chars);
+                    if (v.res !== undefined) {
+                        ascii.resolution = v.res;
+                        const rs = body.querySelector('.res-slider'); if (rs) rs.value = String(v.res);
+                    }
+                    if (v.invert !== undefined) { invertTouched = true; setInvert(!!v.invert); }
+                    if (v.lines) {
+                        const lb = body.querySelector(`.wire-lines-group [data-wire="${v.lines}"]`);
+                        if (lb) lb.click();
+                    }
+                    if (v.width !== undefined) {
+                        const ws = body.querySelector('.wire-width-slider');
+                        if (ws) { ws.value = String(v.width); ws.dispatchEvent(new Event('input', { bubbles: true })); }
+                    }
+                    if (v.edges !== undefined && !!v.edges !== solidEdges) {
+                        const et = body.querySelector('.solid-edges-toggle'); if (et) et.click();
+                    }
+                    if (v.decon !== undefined && mixer) {
+                        deconSlider.value = String(v.decon);
+                        setDecon(v.decon);
+                    }
+                    // Camera last: setMode can swap the active camera.
+                    if (v.angle) {
+                        orbit.tRotY = orbit.rotY = v.angle[0] / DEG;
+                        orbit.tRotX = orbit.rotX = v.angle[1] / DEG;
+                    }
+                    if (v.zoom !== undefined) orbit.radius = v.zoom;
+                    if (v.pan) orbit.target.set(v.pan[0], v.pan[1], v.pan[2]);
+                    if (v.spin !== undefined) {
+                        orbit.autoSpeed = v.spin;
+                        const sp = body.querySelector('.speed-slider'); if (sp) sp.value = String(v.spin);
+                    }
+                };
 
                 function applyView(v) {
                     // Auto-spin would drift straight back off an authored view, so
@@ -3593,7 +3677,27 @@
                         }
                         head = `  ${pid}  ${kind}${file}`;
                     }
-                    return head + ' '.repeat(Math.max(2, 46 - head.length)) + geo;
+                    let line = head + ' '.repeat(Math.max(2, 46 - head.length)) + geo;
+                    // A model carries how it was shaped: angle, zoom, spin, mode
+                    // and that mode's own settings. Only what differs from the
+                    // viewer's own defaults is written, so the line stays short.
+                    if (kind === 'model' && el._viewState) {
+                        const v = el._viewState();
+                        const bits = [];
+                        if (v.angle && (v.angle[0] || v.angle[1])) bits.push(`angle ${v.angle[0]} ${v.angle[1]}`);
+                        if (v.pan) bits.push(`pan ${v.pan.join(' ')}`);
+                        bits.push(`zoom ${v.zoom}`, `spin ${v.spin}`);
+                        if (v.mode !== 'ascii') bits.push(`mode ${v.mode}`);
+                        if (v.chars && v.chars !== 'Standard') bits.push(`chars ${v.chars}`);
+                        if (v.res !== undefined && v.res !== 0.4) bits.push(`res ${v.res}`);
+                        if (v.invert !== undefined) bits.push(`invert ${v.invert ? 'on' : 'off'}`);
+                        if (v.lines && v.lines !== 'hidden') bits.push(`lines ${v.lines}`);
+                        if (v.width !== undefined && v.width !== 1) bits.push(`width ${v.width}`);
+                        if (v.edges) bits.push('edges on');
+                        if (v.decon) bits.push(`decon ${v.decon}`);
+                        if (bits.length) line += '  ' + bits.join(' ');
+                    }
+                    return line;
                 });
                 return 'windows:\n' + rows.join('\n');
             };
@@ -3665,7 +3769,7 @@
                 case 'model':
                     return { project,
                              key: (project.models && project.models.length > 1) ? `3d-${project.id}-${which}` : `3d-${project.id}`,
-                             open: () => open3D(project, which) };
+                             open: () => open3D(project, which, w.view || null) };
                 case 'gallery': return { project, key: `gallery-${project.id}`, open: () => openGallery(project) };
                 case 'slides':  return { project, key: `slides-${project.id}`,  open: () => openSlideshow(project) };
                 case 'box':     return { project, key: `info-${project.id}`,    open: () => openInfo(project) };

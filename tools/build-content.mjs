@@ -365,6 +365,30 @@ if (!fs.existsSync(landingFile)) {
         const mSz = line.match(/\bsize\s+(-?[\d.]+)\s+(-?[\d.]+)/i);
         if (mSz) { geo.size = [parseFloat(mSz[1]), parseFloat(mSz[2])]; line = line.replace(mSz[0], ' '); }
 
+        // ── a saved 3D view, for a `model` line ───────────────────────────
+        // Written as plain `key value` pairs so the line stays readable, and
+        // only the settings that differ from the viewer's defaults are ever
+        // emitted. `spin` is not optional in practice: auto-rotation is on by
+        // default, so an angle without it drifts away within seconds.
+        const view = {};
+        const eat = (re, fn) => { const m = line.match(re); if (m) { fn(m); line = line.replace(m[0], ' '); } };
+        eat(/\bangle\s+(-?[\d.]+)\s+(-?[\d.]+)/i, m => { view.angle = [parseFloat(m[1]), parseFloat(m[2])]; });
+        eat(/\bpan\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/i, m => { view.pan = [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])]; });
+        eat(/\bzoom\s+(-?[\d.]+)/i,  m => { view.zoom  = parseFloat(m[1]); });
+        eat(/\bspin\s+(-?[\d.]+)/i,  m => { view.spin  = parseFloat(m[1]); });
+        eat(/\bdecon\s+(-?[\d.]+)/i, m => { view.decon = parseFloat(m[1]); });
+        eat(/\bres\s+(-?[\d.]+)/i,   m => { view.res   = parseFloat(m[1]); });
+        eat(/\bwidth\s+(-?[\d.]+)/i, m => { view.width = parseFloat(m[1]); });
+        eat(/\bmode\s+(ascii|wireframe|solid)\b/i,     m => { view.mode   = m[1].toLowerCase(); });
+        eat(/\blines\s+(edges|all|hidden)\b/i,         m => { view.lines  = m[1].toLowerCase(); });
+        eat(/\bchars\s+([A-Za-z]+)/i,                   m => { view.chars  = m[1]; });
+        eat(/\binvert\s+(on|off)\b/i,                  m => { view.invert = m[1].toLowerCase() === 'on'; });
+        eat(/\bedges\s+(on|off)\b/i,                   m => { view.edges  = m[1].toLowerCase() === 'on'; });
+        if (view.decon !== undefined && (view.decon < 0 || view.decon > 100)) {
+            err(`${where}: "${raw.trim()}" — decon is a percentage, expected 0-100`);
+        }
+        const hasView = Object.keys(view).length > 0;
+
         if (geo.at && geo.at.some(v => v < -50 || v > 150)) {
             err(`${where}: "${raw.trim()}" — at x y are percentages of the screen, expected roughly 0-100`);
         }
@@ -374,6 +398,19 @@ if (!fs.existsSync(landingFile)) {
 
         const parts = line.trim().split(/\s+/).filter(Boolean);
         if (!parts.length) continue;
+        if (hasView && parts[1] !== 'model') {
+            err(`${where}: "${raw.trim()}" — a saved view belongs on a "model" line`);
+        }
+        // Anything left over is a key that did not parse — almost always a bad
+        // value, e.g. `mode cartoon`. Without this it falls through and is read
+        // as a filename, which reports a baffling error about models.
+        const maxTokens = (parts[1] === 'image' || parts[1] === 'model') ? 3 : 2;
+        if (!SOLO_KINDS.includes(parts[0]) && parts.length > maxTokens) {
+            err(`${where}: "${raw.trim()}" — did not understand "${parts.slice(maxTokens).join(' ')}"` +
+                ` (mode: ascii|wireframe|solid, lines: edges|all|hidden, invert/edges: on|off,` +
+                ` angle/pan/zoom/spin/decon/res/width take numbers)`);
+            continue;
+        }
 
         // ── stands alone: text | menu | about | cv | contact ──────────────
         if (SOLO_KINDS.includes(parts[0])) {
@@ -425,7 +462,7 @@ if (!fs.existsSync(landingFile)) {
                 }
             }
             const src = (p.models ? p.models[which].src : p.model);
-            windows.push({ project: pid, kind, src, ...(which ? { which } : {}), ...geo });
+            windows.push({ project: pid, kind, src, ...(which ? { which } : {}), ...geo, ...(hasView ? { view } : {}) });
 
         } else {
             // gallery | slides | box — nothing to name, the project has one each
@@ -568,6 +605,7 @@ if (LANDING) {
         bits.push(`kind: ${q(w.kind)}`);
         if (w.src) bits.push(`src: ${q(w.src)}`);
         if (w.which) bits.push(`which: ${w.which}`);
+        if (w.view) bits.push(`view: ${JSON.stringify(w.view)}`);
         if (w.at) bits.push(`at: [${w.at.join(', ')}]`);
         if (w.size) bits.push(`size: [${w.size.join(', ')}]`);
         out.push(`        { ${bits.join(', ')} },`);

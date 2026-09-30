@@ -173,6 +173,41 @@ windows:
 open a gallery, a slideshow, About, whatever the composition needs, arrange it
 all, and it comes out in the block.
 
+### A model opens the way you shaped it
+
+Orbit, zoom, switch to Wire, drag the Deconstruct slider — then press Copy, and
+how the model looks is written onto its line beside `at`/`size`:
+
+```
+  101-gates  model Detail.glb   at 20 3 size 45 90  angle 120 -25 zoom 4.1 spin 0 chars Blocky decon 65
+```
+
+| key | |
+|---|---|
+| `angle <y> <x>` | the camera direction, in degrees |
+| `zoom <n>` | distance from the model |
+| `pan <x> <y> <z>` | only written if you panned off centre |
+| `spin <n>` | idle rotation speed |
+| `mode ascii\|wireframe\|solid` | |
+| `chars <name>` | ascii character set — Parts, Standard, Detailed, Blocky … |
+| `res <n>` | ascii resolution |
+| `invert on\|off` | only written if you toggled it by hand |
+| `lines edges\|all\|hidden`, `width <n>` | wireframe |
+| `edges on` | solid |
+| `decon <n>` | Deconstruct position, 0-100 |
+
+Only settings that differ from the viewer's own defaults are written, so lines
+stay short. A saved view belongs on a `model` line; anywhere else is an error.
+
+**`spin` is the one that matters.** Auto-rotation is on by default, so a model
+drifts off whatever angle you set within seconds. `spin 0` makes it hold still;
+leave a small number for a slow turn.
+
+**`invert` is deliberately not written unless you toggle it.** Left alone it
+follows the window's background — light backgrounds invert, dark ones do not.
+Freezing today's answer into the file would flood the viewer with solid
+characters if that project were later given a dark background.
+
 `at x y` and `size w h` are **percentages of the screen**, so a composition
 holds its proportions on any display. `text` is the landing's own text window
 and takes no project or filename.
