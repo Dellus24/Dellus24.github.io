@@ -119,10 +119,22 @@ windows:
 The text shown in the landing's own window.
 ```
 
-`model` opens that project's own `.glb` (the one marked `*` if it has several)
-and takes no filename. `image` takes a file from that project's `gallery/`; a
-`thumbs/` prefix loads the 400px derivative, which is 5-20 KB against 500-800 KB
-for the full-size original. Unknown projects and missing files are build errors.
+**Every window kind the site has can go on the landing:**
+
+| line | what appears |
+|---|---|
+| `<project> image <file>` | one picture from that project's `gallery/`; a `thumbs/` prefix loads the 400px derivative (5-20 KB against 500-800 KB) |
+| `<project> model [file]` | the 3D viewer. Name a `.glb` only if that project has more than one |
+| `<project> gallery` | that project's whole thumbnail grid |
+| `<project> slides` | that project's slideshow |
+| `<project> box` | that project's text box, as it opens normally |
+| `about` / `cv` / `contact` | the static panels |
+| `text` | the landing's own text, from below the `---` |
+| `menu` | the site menu itself |
+
+Unknown projects, missing files, a `gallery` on a project with no gallery, a
+`slides` on a project with no slides, and the same window listed twice are all
+build errors.
 
 **Weight is the constraint.** The site's initial load is ~404 KB; models on disk
 run from 14 KB to 3.0 MB. Three large models plus three full-size images would
@@ -147,10 +159,19 @@ the `windows:` block in `content/landing.txt`:
 
 ```
 windows:
-  text                                      at 75.3 62.4 size 23.3 35.4
-  re-possessing-industrial  model           at 20.1 6.5  size 37 89.3
-  get-lost  image thumbs/03.webp            at 59 3.1    size 14.9 96
+  menu                                      at 1.8 3.1   size 16.4 66.2
+  re-possessing-industrial  model           at 18.7 3.1  size 25 45
+  get-lost  image thumbs/03.webp            at 45 3.1    size 12 45
+  get-lost  gallery                         at 58 3.1    size 20 45
+  stor-e-age  slides                        at 79 3.1    size 19 45
+  for-now-house  box                        at 18.7 50   size 25 46
+  about                                     at 66 50     size 16 46
+  text                                      at 83 50     size 15 46
 ```
+
+**Copy captures whatever is on screen**, not just what the landing opened — so
+open a gallery, a slideshow, About, whatever the composition needs, arrange it
+all, and it comes out in the block.
 
 `at x y` and `size w h` are **percentages of the screen**, so a composition
 holds its proportions on any display. `text` is the landing's own text window
@@ -163,6 +184,8 @@ Two things worth knowing:
   composition never renders half-placed.
 - **An authored size wins over an image's own dimensions.** Without one, an
   image window sizes itself to the picture; with one, it does what you said.
+- **Nothing goes narrower than 260px**, whatever you ask for — `.win-frame`
+  carries that as a floor.
 
 The `−` button on the left **folds the bar to a single strip** so it stops
 covering the canvas you are composing. Copy and Refresh stay on it while folded,

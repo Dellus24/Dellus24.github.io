@@ -35,7 +35,10 @@ const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit', 'windows'];
 // single-line keys are handled individually further down, like `credit`.
 const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const LINE_STYLES = ['solid', 'double', 'dashed'];
-const LANDING_KINDS = ['image', 'model'];
+// Landing window kinds. The first group belongs to a project and is written
+// `<project-id> <kind> [file]`; the second stands alone on its own line.
+const PROJECT_KINDS = ['image', 'model', 'gallery', 'slides', 'box'];
+const SOLO_KINDS = ['text', 'menu', 'about', 'cv', 'contact'];
 
 // Numeric-aware sort: a plain string sort puts '100.webp' before '99.webp'.
 const natCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -333,8 +336,16 @@ if (!fs.existsSync(landingFile)) {
     // A window line is `<project> <kind> [file]`, optionally followed by a
     // position and size in PERCENT of the viewport:
     //
-    //     get-lost  image  thumbs/03.webp   at 62 4  size 34 40
-    //     text                              at 62 48 size 34 46
+    //     get-lost   image  thumbs/03.webp   at 62 4  size 34 40
+    //     get-lost   gallery                 at 4 4   size 30 40
+    //     stor-e-age slides                  at 36 4  size 30 40
+    //     about                              at 62 48 size 34 46
+    //     text                               at 4 48  size 30 40
+    //
+    // A project line is `<project-id> <kind> [file]` where kind is one of
+    // image | model | gallery | slides | box. `about`, `cv`, `contact`, `text`
+    // and `menu` stand alone. Every one of them is a window the site already
+    // knows how to open — the landing opens them through the same factories.
     //
     // Percent rather than pixels so a composition holds on any screen. These
     // numbers are not meant to be typed by hand — open the site with ?layout,
@@ -344,7 +355,8 @@ if (!fs.existsSync(landingFile)) {
     // may appear once. Geometry is all-or-nothing: unless EVERY window carries
     // both `at` and `size`, the landing falls back to auto-tiling, so a
     // half-finished composition never renders half-placed.
-    let seenText = false;
+    const seenSolo = new Set();
+    const seenPair = new Set();
     for (const raw of blocks.windows || []) {
         let line = raw;
         const geo = {};
@@ -361,37 +373,70 @@ if (!fs.existsSync(landingFile)) {
         }
 
         const parts = line.trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) continue;
 
-        if (parts[0] === 'text') {
-            if (parts.length > 1) err(`${where}: "${raw.trim()}" — a text line takes no project or filename`);
-            if (seenText) err(`${where}: more than one "text" line — the landing has one text window`);
-            seenText = true;
-            windows.push({ kind: 'text', ...geo });
+        // ── stands alone: text | menu | about | cv | contact ──────────────
+        if (SOLO_KINDS.includes(parts[0])) {
+            const kind = parts[0];
+            if (parts.length > 1) err(`${where}: "${raw.trim()}" — "${kind}" takes no project or filename`);
+            if (seenSolo.has(kind)) err(`${where}: "${kind}" is listed twice — it is one window`);
+            seenSolo.add(kind);
+            windows.push({ kind, ...geo });
             continue;
         }
 
+        // ── belongs to a project ──────────────────────────────────────────
         const [pid, kind, file] = parts;
         const p = byId.get(pid);
         if (!p) {
-            err(`${where}: "${pid}" is not a project (present: ${[...byId.keys()].join(', ')})`);
+            err(`${where}: "${pid}" is not a project or a window kind ` +
+                `(projects: ${[...byId.keys()].join(', ')}; kinds: ${SOLO_KINDS.join(', ')})`);
             continue;
         }
-        if (!LANDING_KINDS.includes(kind)) {
-            err(`${where}: "${pid} ${kind ?? ''}" — kind must be one of ${LANDING_KINDS.join(' | ')}`);
+        if (!PROJECT_KINDS.includes(kind)) {
+            err(`${where}: "${pid} ${kind ?? ''}" — kind must be one of ${PROJECT_KINDS.join(' | ')}`);
             continue;
         }
-        if (kind === 'model') {
-            if (file) err(`${where}: "${pid} model" takes no filename — it opens the project's own model`);
-            if (!p.model) { err(`${where}: "${pid}" has no .glb in models/`); continue; }
-            windows.push({ project: pid, kind, src: p.model, ...geo });
-        } else {
+        // One project can show several images; everything else is one window
+        // per project, because they share an openWins key and the second would
+        // silently do nothing.
+        if (kind !== 'image') {
+            const tag = `${pid}/${kind}`;
+            if (seenPair.has(tag)) { err(`${where}: "${pid} ${kind}" is listed twice — it is one window`); continue; }
+            seenPair.add(tag);
+        }
+
+        if (kind === 'image') {
             if (!file) { err(`${where}: "${pid} image" needs a filename from that project's gallery/`); continue; }
             const rel = path.join('assets/projects', pid, 'gallery', file);
-            if (!fs.existsSync(path.join(REPO, rel))) {
-                err(`${where}: "${file}" is not in ${pid}/gallery/`);
-                continue;
-            }
+            if (!fs.existsSync(path.join(REPO, rel))) { err(`${where}: "${file}" is not in ${pid}/gallery/`); continue; }
             windows.push({ project: pid, kind, src: rel.replace(/\\/g, '/'), ...geo });
+
+        } else if (kind === 'model') {
+            if (!p.model) { err(`${where}: "${pid}" has no .glb in models/`); continue; }
+            let which = 0;
+            if (file) {
+                const list = p.models || [{ src: p.model }];
+                which = list.findIndex(m => m.src.endsWith('/' + file));
+                if (which === -1) {
+                    err(`${where}: "${pid} model ${file}" — not one of that project's models ` +
+                        `(${list.map(m => m.src.split('/').pop()).join(', ')})`);
+                    continue;
+                }
+            }
+            const src = (p.models ? p.models[which].src : p.model);
+            windows.push({ project: pid, kind, src, ...(which ? { which } : {}), ...geo });
+
+        } else {
+            // gallery | slides | box — nothing to name, the project has one each
+            if (file) err(`${where}: "${pid} ${kind}" takes no filename`);
+            if (kind === 'gallery' && !(p.images && p.images.length)) {
+                err(`${where}: "${pid}" has no gallery: block, so it has no gallery window`); continue;
+            }
+            if (kind === 'slides' && !(p.slides && p.slides.length)) {
+                err(`${where}: "${pid}" has no files in slides/`); continue;
+            }
+            windows.push({ project: pid, kind, ...geo });
         }
     }
 
@@ -522,6 +567,7 @@ if (LANDING) {
         if (w.project) bits.push(`project: ${q(w.project)}`);
         bits.push(`kind: ${q(w.kind)}`);
         if (w.src) bits.push(`src: ${q(w.src)}`);
+        if (w.which) bits.push(`which: ${w.which}`);
         if (w.at) bits.push(`at: [${w.at.join(', ')}]`);
         if (w.size) bits.push(`size: [${w.size.join(', ')}]`);
         out.push(`        { ${bits.join(', ')} },`);

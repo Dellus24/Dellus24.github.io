@@ -1065,7 +1065,7 @@
             wins[wins.length - 1].focus?.();
         }
 
-        function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180, bodyDrag = false, collapsible = false, projectId = null }) {
+        function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180, bodyDrag = false, collapsible = false, projectId = null, kind = null }) {
             const { x, y } = nextSpawn(w, h);
             const ws = document.getElementById('workspace');
 
@@ -1101,6 +1101,10 @@
 
             ws.appendChild(frame);
             if (key) openWins[key] = frame;
+            // What KIND of window this is. Stamped once here so the landing and
+            // the ?layout composer can read it off the DOM instead of sniffing
+            // for marker elements.
+            if (kind) frame.dataset.winKind = kind;
             // Which project this window belongs to. The openWins key encodes it
             // too, but only as a dictionary key — and the 3D keys carry an
             // open-ended `-<n>` suffix for multi-model projects. Stamping the
@@ -1278,6 +1282,7 @@
                 el.style.cssText = `left:${x}px;top:${y}px;z-index:${++topZ};width:640px;height:440px;`;
                 openWins[`slides-${project.id}`] = el;
                 el.dataset.projectId = project.id;
+                el.dataset.winKind = 'slides';
 
                 // Alt text is positional rather than descriptive: these are
                 // 145-slide project sequences with no per-slide captions
@@ -1503,7 +1508,7 @@
             focusOrCreate(`info-${project.id}`, () => {
                 // No type tag: the window title is the project name, and an
                 // "Info" tag beside it said nothing the title did not.
-                const frame = makeFrame({ title: project.title, w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true, projectId: project.id });
+                const frame = makeFrame({ title: project.title, w: 360, h: 340, key: `info-${project.id}`, bodyDrag: true, projectId: project.id, kind: 'box' });
                 const body = frame.querySelector('.win-body');
                 body.className += ' info-body';
 
@@ -1877,7 +1882,7 @@
 
         function openGallery(project) {
             focusOrCreate(`gallery-${project.id}`, () => {
-                const frame = makeFrame({ title: project.title + ' — Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}`, projectId: project.id });
+                const frame = makeFrame({ title: project.title + ' — Gallery', tag: 'Gallery', w: 500, h: 400, minW: 300, key: `gallery-${project.id}`, projectId: project.id, kind: 'gallery' });
                 const body = frame.querySelector('.win-body');
                 body.className += ' gallery-body';
 
@@ -1958,6 +1963,8 @@
             if (opener && opener !== document.body) el._opener = opener;
             if (key) openWins[key] = el;
             if (projectId) el.dataset.projectId = projectId;
+            el.dataset.winKind = 'image';
+            el.dataset.src = src;
 
             el.innerHTML = `
                 <img draggable="false" src="${src}" alt="${altText}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;">
@@ -2055,7 +2062,7 @@
             if (!content) return;
             focusOrCreate(`text-${key}`, () => {
                 const tagLabel = key === 'cv' ? 'CV' : key[0].toUpperCase() + key.slice(1);
-                const frame = makeFrame({ title: content.title, tag: tagLabel, w: 420, h: 460, key: `text-${key}`, bodyDrag: true });
+                const frame = makeFrame({ title: content.title, tag: tagLabel, w: 420, h: 460, key: `text-${key}`, bodyDrag: true, kind: key });
                 const body = frame.querySelector('.win-body');
                 body.className += ' text-body';
                 body.innerHTML = `<pre class="text-content">${content.body}</pre>`;
@@ -2254,7 +2261,7 @@
 
         function openTheme() {
             focusOrCreate('theme', () => {
-                const frame = makeFrame({ title: 'Theme', w: 220, h: 380, minW: 180, minH: 200, key: 'theme', collapsible: true });
+                const frame = makeFrame({ title: 'Theme', w: 220, h: 380, minW: 180, minH: 200, key: 'theme', collapsible: true, kind: 'theme' });
                 const body = frame.querySelector('.win-body');
                 body.className += ' theme-body';
 
@@ -2574,7 +2581,8 @@
             const key   = list ? `3d-${project.id}-${which}` : `3d-${project.id}`;
             const label = entry ? entry.label : '3D';
             focusOrCreate(key, async () => {
-                const frame = makeFrame({ title: project.title + ' — ' + label, tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key, projectId: project.id });
+                const frame = makeFrame({ title: project.title + ' — ' + label, tag: '3D', w: 560, h: 450, minW: 300, minH: 220, key, projectId: project.id, kind: 'model' });
+                if (which) frame.dataset.modelIndex = String(which);
                 const body = frame.querySelector('.win-body');
                 Object.assign(body.style, { padding: '0', overflow: 'hidden', position: 'relative' });
 
@@ -3290,6 +3298,7 @@
                 `;
             }).join('');
 
+            frame.dataset.winKind = 'menu';
             frame.setAttribute('role', 'navigation');
             frame.setAttribute('aria-label', 'Site menu');
             frame.innerHTML = `
@@ -3538,22 +3547,54 @@
             if (document.getElementById('layout-tool')) return;
 
             const pct = (v, total) => Math.round(v / total * 1000) / 10;   // percent, one decimal
+
+            // Serialises WHAT IS ON SCREEN, not just what the landing opened.
+            // Anything opened by hand while composing — a project box, a
+            // gallery, a slideshow, About — is part of the composition and has
+            // to come out in the block, or half of an arrangement vanishes
+            // silently on copy (which is exactly what happened, Nir 2026-09-30).
+            //
+            // Order: whatever the landing authored keeps its authored order;
+            // windows added by hand follow, ordered by how they sit on screen,
+            // so the block reads roughly left-to-right.
+            const SOLO = ['text', 'menu', 'about', 'cv', 'contact'];
             const block = () => {
-                const rows = [...document.querySelectorAll('[data-landing]')]
-                    .sort((a, b) => (+a.dataset.landingIdx) - (+b.dataset.landingIdx))
-                    .map(el => {
-                        const r = el.getBoundingClientRect();
-                        const geo = `at ${pct(r.left, innerWidth)} ${pct(r.top, innerHeight)}` +
-                                    ` size ${pct(r.width, innerWidth)} ${pct(r.height, innerHeight)}`;
-                        if (el.dataset.landing === 'text') return `  text${' '.repeat(38)}${geo}`;
-                        // Only an image line carries a filename, and it is the
-                        // path relative to that project's gallery/ — a model
-                        // line names no file at all.
-                        const file = el.dataset.landing === 'image' && el.dataset.landingSrc
-                            ? ' ' + el.dataset.landingSrc.split('/gallery/')[1] : '';
-                        const head = `  ${el.dataset.projectId}  ${el.dataset.landing}${file}`;
-                        return head + ' '.repeat(Math.max(2, 42 - head.length)) + geo;
-                    });
+                const wins = [...document.querySelectorAll('.win-frame, .img-float, .slide-float')]
+                    .filter(el => !el.classList.contains('closing'))
+                    .filter(el => el.dataset.winKind && el.dataset.winKind !== 'theme');
+
+                wins.sort((a, c) => {
+                    const ai = a.dataset.landingIdx, ci = c.dataset.landingIdx;
+                    if (ai !== undefined && ci !== undefined) return (+ai) - (+ci);
+                    if (ai !== undefined) return -1;
+                    if (ci !== undefined) return 1;
+                    const ar = a.getBoundingClientRect(), cr = c.getBoundingClientRect();
+                    return (ar.left - cr.left) || (ar.top - cr.top);
+                });
+
+                const rows = wins.map(el => {
+                    const r = el.getBoundingClientRect();
+                    const geo = `at ${pct(r.left, innerWidth)} ${pct(r.top, innerHeight)}` +
+                                ` size ${pct(r.width, innerWidth)} ${pct(r.height, innerHeight)}`;
+                    const kind = el.dataset.winKind;
+                    let head;
+                    if (SOLO.includes(kind)) {
+                        head = `  ${kind}`;
+                    } else {
+                        const pid = el.dataset.projectId || '?';
+                        let file = '';
+                        if (kind === 'image') {
+                            const src = el.dataset.src || el.dataset.landingSrc || '';
+                            file = src.includes('/gallery/') ? ' ' + src.split('/gallery/')[1] : '';
+                        } else if (kind === 'model' && el.dataset.modelIndex) {
+                            const proj = PROJECTS.find(x => x.id === pid);
+                            const m = proj && proj.models && proj.models[+el.dataset.modelIndex];
+                            if (m) file = ' ' + m.src.split('/').pop();
+                        }
+                        head = `  ${pid}  ${kind}${file}`;
+                    }
+                    return head + ' '.repeat(Math.max(2, 46 - head.length)) + geo;
+                });
                 return 'windows:\n' + rows.join('\n');
             };
 
@@ -3603,32 +3644,55 @@
             document.addEventListener('pointerup', () => setTimeout(refresh, 60));
         }
 
+        // Every landing entry resolves to a window the site ALREADY knows how
+        // to open, and to the openWins key that window registers under. Keys,
+        // not DOM searching: they are deterministic, and they are what makes a
+        // multi-model project's `3d-<id>-<n>` unambiguous.
+        function landingSpec(w, i) {
+            if (w.kind === 'text') return { key: 'landing-text' };
+            if (w.kind === 'menu') return { el: menuFrame };
+            if (['about', 'cv', 'contact'].includes(w.kind)) {
+                return { key: `text-${w.kind}`, open: () => openText(w.kind) };
+            }
+            const project = PROJECTS.find(p => p.id === w.project);
+            if (!project) return null;
+            const which = w.which || 0;
+            switch (w.kind) {
+                case 'image':
+                    return { project, key: `landing-img-${i}`, open: () => openImage({
+                        src: w.src, key: `landing-img-${i}`, projectId: project.id,
+                        fallbackLabel: `${project.title} — from the gallery` }) };
+                case 'model':
+                    return { project,
+                             key: (project.models && project.models.length > 1) ? `3d-${project.id}-${which}` : `3d-${project.id}`,
+                             open: () => open3D(project, which) };
+                case 'gallery': return { project, key: `gallery-${project.id}`, open: () => openGallery(project) };
+                case 'slides':  return { project, key: `slides-${project.id}`,  open: () => openSlideshow(project) };
+                case 'box':     return { project, key: `info-${project.id}`,    open: () => openInfo(project) };
+            }
+            return null;
+        }
+
         function openLanding() {
             if (typeof LANDING === 'undefined' || !LANDING) { menuFrame._toggleCollapse(); return; }
             restoreUserTheme();     // the landing's own pair, unless the visitor has chosen
 
-            // The text window. Plain makeFrame — it belongs to no project, so it
-            // carries no colour and no hatch.
-            const tf = makeFrame({ title: LANDING.title, w: 380, h: 200, minH: 120, key: 'landing-text', bodyDrag: true });
+            // The landing's own text window. Built here rather than through a
+            // factory because it belongs to no project — no colour, no hatch.
+            const tf = makeFrame({ title: LANDING.title, w: 380, h: 200, minH: 120, key: 'landing-text', bodyDrag: true, kind: 'text' });
+            // Marked as part of the landing whether or not the composition
+            // positions it. closeLanding() finds windows by [data-landing], so
+            // without this the text window survives every navigation.
             tf.dataset.landing = 'text';
-            const textEntry = LANDING.windows.find(w => w.kind === 'text');
-            tf.dataset.landingIdx = String(LANDING.windows.indexOf(textEntry));
-            placeLanding(tf, textEntry);
             const tb = tf.querySelector('.win-body');
             tb.className += ' info-body';
             tb.innerHTML = `<div class="info-desc">${descHTML(LANDING.text)}</div>`;
 
-            // open3D awaits the GLTF loader, so its window does not exist yet
-            // when this returns. Each entry dresses itself once its window
-            // appears, and the canvas is only laid out when the last one has —
-            // tiling earlier arranges a half-built landing.
             // Geometry is all-or-nothing: a composition is either fully authored
             // (every window carries at + size) or fully auto-tiled. A mixture
-            // would leave some windows placed and some landing wherever, which
-            // reads as a bug rather than as a layout.
-            const placed = LANDING.windows.length > 0 &&
-                           LANDING.windows.every(w => w.at && w.size);
-            let pending = LANDING.windows.filter(w => w.kind !== 'text').length;
+            // would leave some placed and some wherever, which reads as a bug.
+            const placed = LANDING.windows.length > 0 && LANDING.windows.every(w => w.at && w.size);
+            let pending = 1;                       // released after the loop
             const finish = () => {
                 if (!placed) requestAnimationFrame(() => orderWindows());
                 requestAnimationFrame(initLayoutTool);
@@ -3636,42 +3700,38 @@
             const settle = () => { if (--pending <= 0) finish(); };
 
             LANDING.windows.forEach((w, i) => {
-                if (w.kind === 'text') return;              // already built above
-                const project = PROJECTS.find(p => p.id === w.project);
-                if (!project) { settle(); return; }
-                if (w.kind === 'model') {
-                    open3D(project);
-                } else {
-                    openImage({ src: w.src, key: `landing-img-${i}`, projectId: project.id,
-                                fallbackLabel: `${project.title} — from the gallery` });
-                }
+                const spec = landingSpec(w, i);
+                if (!spec) return;
+                pending++;
+                if (spec.open) spec.open();
+
+                // open3D awaits the GLTF loader, so its window does not exist
+                // yet when open() returns. Wait for the key to appear.
                 let tries = 0;
                 const dress = () => {
-                    const wins = projectWindows(project.id).filter(el => !el.dataset.landing);
-                    if (!wins.length) {
+                    const el = spec.el || openWins[spec.key];
+                    if (!el) {
                         if (++tries < 180) requestAnimationFrame(dress);
-                        else settle();                       // gave up; don't strand the layout
+                        else settle();                  // gave up; don't strand the layout
                         return;
                     }
-                    wins.forEach(el => {
-                        el.dataset.landing = w.kind;
-                        // INK ONLY on the landing (Nir, 2026-09-29). Every window
-                        // here shares the landing's background; what differs per
-                        // project is the ink — the border, the title, the ASCII.
-                        // The background only shifts once you enter a project and
-                        // that project owns the page.
-                        tintFrame(el, inkOf(project), null);
-                        attachHatch(el, project);
-                        el.dataset.landingIdx = String(i);
-                        if (w.src) el.dataset.landingSrc = w.src;
-                        placeLanding(el, w);
-                    });
-                    // openImage resizes the window to the image's natural size
-                    // on load — which lands AFTER the tiler would have run and
-                    // snaps the window back to its own width while keeping the
-                    // tiled position, pushing it off a narrow screen. So an
-                    // image entry is not "settled" until its image is in.
-                    const img = w.kind === 'image' && wins[0].querySelector('img');
+                    el.dataset.landing = w.kind;
+                    el.dataset.landingIdx = String(i);
+                    if (w.src) el.dataset.landingSrc = w.src;
+                    // INK ONLY on the landing (Nir, 2026-09-29). Every window here
+                    // shares the landing's background; what differs per project is
+                    // the ink — the border, the title, the ASCII. The background
+                    // shifts only once a project is entered and owns the page.
+                    if (spec.project) {
+                        tintFrame(el, inkOf(spec.project), null);
+                        attachHatch(el, spec.project);
+                    }
+                    placeLanding(el, w);
+
+                    // openImage resizes to the image's natural size on load,
+                    // which lands AFTER any placement and would snap the window
+                    // back. So an image is not "settled" until its image is in.
+                    const img = w.kind === 'image' && el.querySelector('img');
                     if (img && !img.complete) {
                         img.addEventListener('load',  settle, { once: true });
                         img.addEventListener('error', settle, { once: true });
@@ -3682,7 +3742,7 @@
                 dress();
             });
 
-            if (pending <= 0) finish();   // a landing with no project windows
+            settle();               // release the initial hold
         }
 
         // ── STRUCTURED DATA (SEO-06) ──────────────────────────────────────

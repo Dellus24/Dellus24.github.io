@@ -5,31 +5,42 @@ title: Nir Dellus
 color: #000000
 background: #ffffff
 
-# ── PLACEHOLDER — Nir's to choose ──────────────────────────────────────────
-# Which windows greet a visitor is an editorial call. These three were picked
-# on WEIGHT alone, to keep the front door cheap while the system was built:
+# ── THE LANDING ────────────────────────────────────────────────────────────
+# Which windows greet a visitor, and where they sit. Compose it by hand, or —
+# far easier — open the site with ?layout on the end of the URL, drag and
+# resize until it looks right, press Copy, and paste over the block below.
 #
-#     silo.glb            105 KB   (the smallest model on the site)
-#     two gallery thumbs   ~5-20 KB each
-#     ────────────────────────────
-#     total               ~140 KB  on top of a 404 KB initial load
+# EVERY WINDOW KIND THE SITE HAS CAN GO HERE:
 #
-# Swap them for whatever should actually represent the work. The numbers to
-# weigh it against, measured 2026-09-29:
+#   <project>  image <file>   one picture from that project's gallery/
+#                             a thumbs/ prefix loads the 400px derivative
+#   <project>  model [file]   the 3D viewer; name a .glb only if that project
+#                             has more than one
+#   <project>  gallery        that project's whole thumbnail grid
+#   <project>  slides         that project's slideshow
+#   <project>  box            that project's text box, as it opens normally
+#   about | cv | contact      the static panels
+#   text                      this file's own text, below the ---
+#   menu                      the site menu itself
+#
+# Optionally followed by  at <x> <y>  size <w> <h>  — all PERCENTAGES of the
+# screen, so a composition holds on any display. Geometry is ALL-OR-NOTHING:
+# unless every line carries both, the numbers are ignored and the landing
+# auto-tiles instead. A window will not go narrower than 260px whatever you
+# ask for — .win-frame has that as a floor.
+#
+# WEIGHT IS THE CONSTRAINT. The initial load is ~404 KB. Measured 2026-09-29:
 #
 #     Floor Detail.glb     14 KB      gallery thumb       5-20 KB
 #     silo.glb            105 KB      gallery full-size  500-800 KB
-#     spring.glb          651 KB
+#     spring.glb          651 KB      a slideshow preloads ~1.7 MB
 #     Detail.glb          1.1 MB
 #     Cabine.glb          1.4 MB
 #     Pavilion Model.glb  3.0 MB
 #
-# A `thumbs/` prefix loads the 400px derivative; without it you get the
-# full-size image. Three big models plus three full-size images would be
-# 4-6 MB — ten times the current front door.
-#
-# Each window is:  <project-id>  image  <file from that project's gallery/>
-#              or: <project-id>  model
+# The three below were picked on weight alone (~140 KB) while the system was
+# being built. They are placeholders — what the landing should actually show
+# is yours.
 windows:
   re-possessing-industrial  model
   get-lost                  image  thumbs/03.webp
