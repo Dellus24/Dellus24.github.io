@@ -2887,9 +2887,14 @@
                 const r1 = n => Math.round(n * 10) / 10;
                 const r3 = n => Math.round(n * 1000) / 1000;
 
+                // Auto-spin adds to tRotY forever, so a model left turning for a
+                // while reports thousands of degrees. Mathematically the same
+                // angle, but unreadable in an authored file — wrap it.
+                const wrap = d => { d = ((d % 360) + 360) % 360; return r1(d > 180 ? d - 360 : d); };
+
                 frame._viewState = () => {
                     const v = {
-                        angle: [r1(orbit.tRotY * DEG), r1(orbit.tRotX * DEG)],
+                        angle: [wrap(orbit.tRotY * DEG), r1(orbit.tRotX * DEG)],
                         zoom:  r1(orbit.radius),
                         spin:  r3(orbit.autoSpeed),
                         mode,
@@ -3061,11 +3066,18 @@
                     body.querySelector('.wire-settings').style.display  = m === 'wireframe' ? '' : 'none';
                     body.querySelector('.solid-settings').style.display = m === 'solid'     ? '' : 'none';
                     if (modelGroup) {
-                        if (m === 'ascii') { resetMeshes(); applyAsciiScheme(); }
+                        if (m === 'ascii') resetMeshes();
                         else if (m === 'wireframe') applyWire();
                         else applySolid();
                     }
-                    if (!modelGroup) applyAsciiScheme();
+                    // ALWAYS, in every mode. applyAsciiScheme owns scene.background
+                    // and the renderer clear colour, and the per-part ascii pass
+                    // sets both to BLACK. Leaving it out of the wireframe and solid
+                    // paths meant any model carrying a deconstruction — which
+                    // auto-selects the Parts charset — turned its canvas black the
+                    // moment you switched it to Wire or Solid. It computes `parts`
+                    // from the current mode, so calling it here is correct in all three.
+                    applyAsciiScheme();
                     canvasCont.style.display = m === 'ascii' ? 'none'  : 'block';
                     asciiCont.style.display  = m === 'ascii' ? 'flex'   : 'none';
                 }
