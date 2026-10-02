@@ -177,6 +177,7 @@
         .slide-float {
             position: absolute; overflow: hidden;
             background: var(--bg); border: 1px solid var(--border-strong);
+            color: var(--fg);          /* see .win-frame */
             box-shadow: 0 4px 24px rgba(0,0,0,0.18);
             user-select: none; transition: box-shadow 0.15s;
             cursor: grab;
@@ -221,6 +222,13 @@
             position: absolute;
             border: 1px solid var(--border-strong);
             background: var(--bg);
+            /* Explicit, so the whole window inherits the tint. A window can
+               carry its own --fg (landing windows, and projects opened
+               alongside), but `color` is inherited from <body>, which
+               resolved var(--fg) at the ROOT. Without this the border took
+               the project's colour and every piece of text in the window
+               stayed black. (Nir, 2026-10-02) */
+            color: var(--fg);
             display: flex; flex-direction: column;
             min-width: 260px; min-height: 180px;
         }
@@ -774,6 +782,7 @@
             position: absolute;
             cursor: move;
             user-select: none;
+            color: var(--fg);          /* see .win-frame */
         }
         .img-float-chrome {
             position: absolute; inset: 0;
