@@ -357,8 +357,18 @@ const LANDING = {
 
 Every window here belongs to a project. Rest on one to open it, or use the menu — each project brings its own colour with it.`,
     windows: [
-        { project: 're-possessing-industrial', kind: 'model', src: 'assets/projects/re-possessing-industrial/models/silo.glb' },
-        { project: 'get-lost', kind: 'image', src: 'assets/projects/get-lost/gallery/thumbs/03.webp' },
-        { project: 'cloud-to-ground', kind: 'image', src: 'assets/projects/cloud-to-ground/gallery/thumbs/iso_gardem_F0.webp' },
+        { kind: 'menu', at: [1.8, 3.8], size: [16.9, 82] },
+        { project: '101-gates', kind: 'image', src: 'assets/projects/101-gates/gallery/01.webp', at: [7.2, 57.6], size: [21.9, 45.2] },
+        { project: 'get-lost', kind: 'image', src: 'assets/projects/get-lost/gallery/03.webp', at: [11.5, 2.7], size: [33.1, 46.4] },
+        { project: '101-gates', kind: 'model', src: 'assets/projects/101-gates/models/spring.glb', view: {"angle":[-109.5,0],"zoom":3.7,"spin":0.005,"res":0.9}, at: [24.6, 49.8], size: [25.8, 56.1] },
+        { project: 'cloud-to-ground', kind: 'image', src: 'assets/projects/cloud-to-ground/gallery/tile_sample.webp', at: [28.6, 24.1], size: [17.6, 37.5] },
+        { project: 'get-lost', kind: 'model', src: 'assets/projects/get-lost/models/Cabine.glb', view: {"angle":[151.1,28.3],"pan":[0,1.2,-0.2],"zoom":12.3,"spin":0.002,"decon":100,"mode":"wireframe"}, at: [42.1, 0], size: [22.9, 75.2] },
+        { project: 're-possessing-industrial', kind: 'slides', at: [46, 70.1], size: [34.8, 44.9] },
+        { project: 'pray-and-play', kind: 'model', src: 'assets/projects/pray-and-play/models/Floor Detail.glb', view: {"angle":[-82.2,36.5],"zoom":2.6,"spin":0.003,"width":2,"mode":"wireframe"}, at: [61.2, 38.4], size: [20.4, 54.2] },
+        { project: 'cloud-to-ground', kind: 'image', src: 'assets/projects/cloud-to-ground/gallery/mold_draft.webp', at: [63.1, 30.1], size: [17.2, 29.8] },
+        { project: 'cloud-to-ground', kind: 'image', src: 'assets/projects/cloud-to-ground/gallery/mold_01.webp', at: [64.8, 1.2], size: [13.1, 38.1] },
+        { project: 'for-now-house', kind: 'image', src: 'assets/projects/for-now-house/gallery/Code_modol_2x5.webp', at: [74.5, 0], size: [29.3, 35.8] },
+        { project: 'for-now-house', kind: 'image', src: 'assets/projects/for-now-house/gallery/Cross_Detail.webp', at: [77.8, 33.4], size: [24, 38.4] },
+        { project: 're-possessing-industrial', kind: 'model', src: 'assets/projects/re-possessing-industrial/models/silo.glb', view: {"angle":[-66.5,26.4],"zoom":4.9,"spin":0,"mode":"wireframe"}, at: [78.4, 50.4], size: [23.3, 52.1] },
     ],
 };
