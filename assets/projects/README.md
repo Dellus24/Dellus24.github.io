@@ -73,6 +73,7 @@ description. A line starting with `#` is a comment.
 | `color` | no | the project's ink, e.g. `color: #b3261e`. See below |
 | `background` | no | the surface behind the ink, e.g. `background: #fbeeed` |
 | `line` | no | `solid` (default), `double` or `dashed`. Parsed and published, but **nothing renders it yet** — reserved |
+| `view:` | no | how this project's 3D model opens from the menu. See below |
 | `model` | no | **only needed if `models/` holds more than one `.glb`.** Otherwise the single `.glb` is found automatically, with its real casing |
 | `gallery:` | no | block list, one file per line, see below |
 | `slides:` | no | block list — **you almost never want this.** Omit it and every file in `slides/` is used, in numeric order |
@@ -105,6 +106,42 @@ A visitor can override either colour from the Theme window's *Colour project*
 row; that override lives in their browser and never touches these files. Their
 own *Ink colour* choice is borrowed while a project is open and handed back
 untouched afterwards.
+
+### `view:` — how a project's model opens
+
+A model opens **front-on and still**. Two things can change that, and they
+stack:
+
+1. **A camera in the `.glb`.** The viewer opens on the **first** camera you
+   placed in Blender — the same one that appears as the first *Views* button.
+   Nothing to author; view data lives in the model, where it belongs. Only
+   `Cabine.glb` carries cameras today; the other five models have none.
+2. **A `view:` in `project.txt`**, applied *on top* of that camera. It can say
+   anything the camera cannot — mode, character set, deconstruct, spin — and an
+   `angle`/`zoom` here overrides the camera, which is also how a model with no
+   camera gets an opening shot.
+
+One line, or a block:
+
+```
+view: angle -40 22 zoom 4.1 mode wireframe
+
+view:
+  angle -40 22  zoom 4.1  spin 0
+  mode wireframe  chars Parts  decon 30
+```
+
+Same keys as a landing `model` line — the table under *Composing the landing*
+lists them all.
+
+**Models hold still now.** Idle rotation used to be on, which meant any angle
+you authored drifted away within seconds. Write `spin 0.003` to turn it back on
+for one project.
+
+**To produce the line:** open the site with `?layout`, open the project, shape
+the model, then **Settings → Save view** in that 3D window. It prints the
+`view:` line and copies it. Like the landing composer, that button exists only
+with `?layout` in the URL.
 
 ### The landing — `content/landing.txt`
 

@@ -1628,7 +1628,7 @@
         function openProject(project) {
             openInfo(project);
             if (project.images && project.images.length) openGallery(project);
-            if (project.model) open3D(project);
+            if (project.model) open3D(project, 0, project.view || null);
             requestAnimationFrame(() => tileProjectWindows(project));
         }
 
@@ -2418,7 +2418,11 @@
                 this.target = new THREE.Vector3();
                 this.radius = camera.position.length();
                 this.rotX = 0; this.rotY = 0; this.tRotX = 0; this.tRotY = 0;
-                this.autoSpeed = 0.003; this.isOrbit = false; this.isPan = false;
+                // A model HOLDS STILL by default (Nir, 2026-10-02). It used to
+                // idle-rotate, which meant any angle authored for it drifted away
+                // within seconds unless `spin 0` was written beside it. Opt back
+                // in per project or per landing window with `spin <n>`.
+                this.autoSpeed = 0; this.isOrbit = false; this.isPan = false;
                 this.pX = 0; this.pY = 0;
 
                 this._ac = new AbortController();
@@ -2657,7 +2661,7 @@
                             <button class="mode-btn active" data-mode="ascii">Ascii</button>
                             <button class="mode-btn" data-mode="wireframe">Wire</button>
                             <button class="mode-btn" data-mode="solid">Solid</button>
-                            <div class="speed-inline"><span class="speed-inline-label">Speed</span><input type="range" class="ctrl-slider speed-slider" min="0" max="0.015" step="0.001" value="0.003"></div>
+                            <div class="speed-inline"><span class="speed-inline-label">Speed</span><input type="range" class="ctrl-slider speed-slider" min="0" max="0.015" step="0.001" value="0"></div>
                         </div>
                         <button class="settings-toggle-btn">Settings <span class="settings-arrow">&#9652;</span></button>
                     </div>
@@ -2826,8 +2830,13 @@
                         // assembly. A model carrying no deconstruction was not
                         // authored that way, so it keeps the shading ramp.
                         selectCharset(mixer && partCount >= 2 ? 'Parts' : 'Standard');
-                        // After setup, so the Deconstruct slider and the charset
-                        // it chooses are both real by the time they are overridden.
+                        // Order matters. The .glb's own camera first - that is the
+                        // authored opening shot - then anything written in
+                        // project.txt or on a landing line applies on top, so an
+                        // authored `angle`/`zoom` can override the camera and a
+                        // model with no camera still has somewhere to start.
+                        if (firstAuthoredView) applyView(firstAuthoredView);
+                        // applyView zeroes the spin; honour an authored one after.
                         if (savedView) frame._applyViewState(savedView);
                     }).catch(err => {
                         console.error('3D load failed:', err);
@@ -2874,6 +2883,8 @@
                 // AFTER normalizeModel, so their world transforms have already been
                 // through the same fit as the geometry and need no mapping; only the
                 // orthographic magnification has to be scaled by hand.
+                let firstAuthoredView = null;      // the .glb's own opening shot
+
                 function setupViews(gltf) {
                     const cams = (gltf.cameras || []).filter(c => c.isCamera);
                     if (!cams.length) return;
@@ -2891,11 +2902,17 @@
                         // GLTFLoader sanitises names (spaces to underscores); the
                         // original is kept in userData.name, so prefer that.
                         const label = (src.userData && src.userData.name) || src.name || `View ${i + 1}`;
-                        addViewButton(label.replace(/_/g, ' '), {
+                        const spec = {
                             pos, target, dist,
                             fov: src.isPerspectiveCamera ? src.fov : null,
                             orthoHalfH: src.isOrthographicCamera ? Math.abs(src.top - src.bottom) / 2 * k : null,
-                        });
+                        };
+                        // The FIRST camera in the file is where the model opens.
+                        // Nir's rule is that view data lives in the .glb, so a
+                        // camera placed in Blender is the authored opening shot -
+                        // it just used to sit there as a button nobody pressed.
+                        if (i === 0) firstAuthoredView = spec;
+                        addViewButton(label.replace(/_/g, ' '), spec);
                     });
                     viewsRow.style.display = '';
                     modelPanel.style.display = '';
@@ -3198,6 +3215,40 @@
                     };
                     deconTween = requestAnimationFrame(step);
                 });
+                // Save view: prints the `view:` line for this project's
+                // project.txt. Behind ?layout like the landing composer, so a
+                // visitor never sees it.
+                if (new URLSearchParams(location.search).has('layout')) {
+                    const row = document.createElement('div');
+                    row.className = 'setting-row';
+                    row.innerHTML = '<button class="ctrl-toggle save-view-btn" type="button">Save view</button>' +
+                                    '<input class="save-view-out" readonly spellcheck="false" ' +
+                                    'style="flex:1;margin-left:6px;min-width:0;font:inherit;background:none;' +
+                                    'border:1px solid var(--border-soft);color:var(--fg);padding:2px 4px;">';
+                    modelPanel.appendChild(row);
+                    modelPanel.style.display = '';
+                    const out = row.querySelector('.save-view-out');
+                    row.querySelector('.save-view-btn').addEventListener('click', async () => {
+                        const v = frame._viewState();
+                        const bits = [];
+                        if (v.angle && (v.angle[0] || v.angle[1])) bits.push(`angle ${v.angle[0]} ${v.angle[1]}`);
+                        if (v.pan) bits.push(`pan ${v.pan.join(' ')}`);
+                        bits.push(`zoom ${v.zoom}`);
+                        if (v.spin) bits.push(`spin ${v.spin}`);
+                        if (v.mode !== 'ascii') bits.push(`mode ${v.mode}`);
+                        if (v.chars && v.chars !== 'Standard') bits.push(`chars ${v.chars}`);
+                        if (v.res !== undefined && v.res !== 0.4) bits.push(`res ${v.res}`);
+                        if (v.invert !== undefined) bits.push(`invert ${v.invert ? 'on' : 'off'}`);
+                        if (v.lines && v.lines !== 'hidden') bits.push(`lines ${v.lines}`);
+                        if (v.width !== undefined && v.width !== 1) bits.push(`width ${v.width}`);
+                        if (v.edges) bits.push('edges on');
+                        if (v.decon) bits.push(`decon ${v.decon}`);
+                        out.value = 'view: ' + bits.join(' ');
+                        out.select();
+                        try { await navigator.clipboard.writeText(out.value); } catch { /* select + copy */ }
+                    });
+                }
+
                 const invBtn = body.querySelector('.invert-toggle');
                 function setInvert(v) {
                     ascii.invert = v;

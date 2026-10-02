@@ -29,7 +29,7 @@ const warn = (m) => warnings.push(m);
 const HEAD_KEYS = ['title', 'year', 'category', 'location', 'participants', 'type'];
 const CATEGORIES = ['academic', 'employment'];
 const STATIC_KEYS = ['about', 'cv', 'contact'];   // hard-coded in the menu markup
-const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit', 'windows'];
+const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit', 'windows', 'view'];
 
 // HEAD_KEYS above are REQUIRED — every one is checked for presence. Optional
 // single-line keys are handled individually further down, like `credit`.
@@ -39,6 +39,31 @@ const LINE_STYLES = ['solid', 'double', 'dashed'];
 // `<project-id> <kind> [file]`; the second stands alone on its own line.
 const PROJECT_KINDS = ['image', 'model', 'gallery', 'slides', 'box'];
 const SOLO_KINDS = ['text', 'menu', 'about', 'cv', 'contact'];
+
+// A saved 3D view. The same keys wherever one is written: on a project (how
+// its model opens from the menu) or on a landing `model` line (how it opens
+// there). Returns [view, leftovers] so the caller can name what did not parse.
+function parseView(text) {
+    const v = {};
+    let rest = ' ' + text + ' ';
+    const eat = (re, fn) => { const m = rest.match(re); if (m) { fn(m); rest = rest.replace(m[0], ' '); } };
+    eat(/\bangle\s+(-?[\d.]+)\s+(-?[\d.]+)/i, m => { v.angle = [parseFloat(m[1]), parseFloat(m[2])]; });
+    eat(/\bpan\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/i, m => { v.pan = [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])]; });
+    eat(/\bzoom\s+(-?[\d.]+)/i,  m => { v.zoom  = parseFloat(m[1]); });
+    eat(/\bspin\s+(-?[\d.]+)/i,  m => { v.spin  = parseFloat(m[1]); });
+    eat(/\bdecon\s+(-?[\d.]+)/i, m => { v.decon = parseFloat(m[1]); });
+    eat(/\bres\s+(-?[\d.]+)/i,   m => { v.res   = parseFloat(m[1]); });
+    eat(/\bwidth\s+(-?[\d.]+)/i, m => { v.width = parseFloat(m[1]); });
+    eat(/\bmode\s+(ascii|wireframe|solid)\b/i, m => { v.mode   = m[1].toLowerCase(); });
+    eat(/\blines\s+(edges|all|hidden)\b/i,     m => { v.lines  = m[1].toLowerCase(); });
+    eat(/\bchars\s+([A-Za-z]+)/i,               m => { v.chars  = m[1]; });
+    eat(/\binvert\s+(on|off)\b/i,               m => { v.invert = m[1].toLowerCase() === 'on'; });
+    eat(/\bedges\s+(on|off)\b/i,                m => { v.edges  = m[1].toLowerCase() === 'on'; });
+    return [v, rest.trim().split(/\s+/).filter(Boolean)];
+}
+const VIEW_KEYS = /\b(angle|pan|zoom|spin|decon|res|width|mode|lines|chars|invert|edges)\b/i;
+const VIEW_HELP = 'mode: ascii|wireframe|solid, lines: edges|all|hidden, invert/edges: on|off, ' +
+                  'angle/pan/zoom/spin/decon/res/width take numbers';
 
 // Numeric-aware sort: a plain string sort puts '100.webp' before '99.webp'.
 const natCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -170,6 +195,31 @@ for (const id of fs.readdirSync(projectsDir).sort(natCmp)) {
             rec[k] = head[k].toLowerCase();
         }
     }
+    // view: how this project's model opens FROM THE MENU. One line or a block:
+    //
+    //     view: mode wireframe chars Parts decon 30
+    //     view:
+    //       angle -40 22  zoom 4.1  spin 0
+    //       mode wireframe  chars Parts
+    //
+    // The CAMERA comes from the .glb when the model carries one - Nir's rule
+    // that view data lives in the model. Anything written here applies on top,
+    // so angle/zoom here override an authored camera, and give a model with no
+    // camera somewhere to start.
+    const viewText = blocks.view ? blocks.view.join(' ') : (head.view || '');
+    if (viewText) {
+        const [v, leftovers] = parseView(viewText);
+        if (leftovers.length) {
+            err(`${where}: view - did not understand "${leftovers.join(' ')}" (${VIEW_HELP})`);
+        } else if (v.decon !== undefined && (v.decon < 0 || v.decon > 100)) {
+            err(`${where}: view - decon is a percentage, expected 0-100`);
+        } else if (!Object.keys(v).length) {
+            warn(`${where}: view: is empty`);
+        } else {
+            rec.view = v;
+        }
+    }
+
     if (head.line) {
         if (!LINE_STYLES.includes(head.line)) {
             err(`${where}: line "${head.line}" must be one of ${LINE_STYLES.join(' | ')}`);
@@ -365,29 +415,18 @@ if (!fs.existsSync(landingFile)) {
         const mSz = line.match(/\bsize\s+(-?[\d.]+)\s+(-?[\d.]+)/i);
         if (mSz) { geo.size = [parseFloat(mSz[1]), parseFloat(mSz[2])]; line = line.replace(mSz[0], ' '); }
 
-        // ── a saved 3D view, for a `model` line ───────────────────────────
-        // Written as plain `key value` pairs so the line stays readable, and
-        // only the settings that differ from the viewer's defaults are ever
-        // emitted. `spin` is not optional in practice: auto-rotation is on by
-        // default, so an angle without it drifts away within seconds.
-        const view = {};
-        const eat = (re, fn) => { const m = line.match(re); if (m) { fn(m); line = line.replace(m[0], ' '); } };
-        eat(/\bangle\s+(-?[\d.]+)\s+(-?[\d.]+)/i, m => { view.angle = [parseFloat(m[1]), parseFloat(m[2])]; });
-        eat(/\bpan\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/i, m => { view.pan = [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])]; });
-        eat(/\bzoom\s+(-?[\d.]+)/i,  m => { view.zoom  = parseFloat(m[1]); });
-        eat(/\bspin\s+(-?[\d.]+)/i,  m => { view.spin  = parseFloat(m[1]); });
-        eat(/\bdecon\s+(-?[\d.]+)/i, m => { view.decon = parseFloat(m[1]); });
-        eat(/\bres\s+(-?[\d.]+)/i,   m => { view.res   = parseFloat(m[1]); });
-        eat(/\bwidth\s+(-?[\d.]+)/i, m => { view.width = parseFloat(m[1]); });
-        eat(/\bmode\s+(ascii|wireframe|solid)\b/i,     m => { view.mode   = m[1].toLowerCase(); });
-        eat(/\blines\s+(edges|all|hidden)\b/i,         m => { view.lines  = m[1].toLowerCase(); });
-        eat(/\bchars\s+([A-Za-z]+)/i,                   m => { view.chars  = m[1]; });
-        eat(/\binvert\s+(on|off)\b/i,                  m => { view.invert = m[1].toLowerCase() === 'on'; });
-        eat(/\bedges\s+(on|off)\b/i,                   m => { view.edges  = m[1].toLowerCase() === 'on'; });
-        if (view.decon !== undefined && (view.decon < 0 || view.decon > 100)) {
-            err(`${where}: "${raw.trim()}" — decon is a percentage, expected 0-100`);
+        // A saved 3D view, for a `model` line - same keys as a project's own
+        // `view:` block. See parseView.
+        let view = {}, hasView = false;
+        {
+            const mv = line.match(VIEW_KEYS);
+            if (mv) {
+                const tail = line.slice(mv.index);
+                const [v, left] = parseView(tail);
+                view = v; hasView = Object.keys(v).length > 0;
+                line = line.slice(0, mv.index) + ' ' + left.join(' ');
+            }
         }
-        const hasView = Object.keys(view).length > 0;
 
         if (geo.at && geo.at.some(v => v < -50 || v > 150)) {
             err(`${where}: "${raw.trim()}" — at x y are percentages of the screen, expected roughly 0-100`);
@@ -406,9 +445,8 @@ if (!fs.existsSync(landingFile)) {
         // as a filename, which reports a baffling error about models.
         const maxTokens = ['image', 'model', 'slides'].includes(parts[1]) ? 3 : 2;
         if (!SOLO_KINDS.includes(parts[0]) && parts.length > maxTokens) {
-            err(`${where}: "${raw.trim()}" — did not understand "${parts.slice(maxTokens).join(' ')}"` +
-                ` (mode: ascii|wireframe|solid, lines: edges|all|hidden, invert/edges: on|off,` +
-                ` angle/pan/zoom/spin/decon/res/width take numbers)`);
+            err(`${where}: "${raw.trim()}" — did not understand ` +
+                `"${parts.slice(maxTokens).join(' ')}" (${VIEW_HELP})`);
             continue;
         }
 
@@ -561,6 +599,7 @@ for (const p of projects) {
     if (p.color) out.push(`        color:        ${q(p.color)},`);
     if (p.background) out.push(`        background:   ${q(p.background)},`);
     if (p.line) out.push(`        line:         ${q(p.line)},`);
+    if (p.view) out.push(`        view:         ${JSON.stringify(p.view)},`);
     if (p.model) out.push(`        model:        ${q(p.model)},`);
     if (p.models) {
         out.push('        models:       [');
