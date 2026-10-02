@@ -126,7 +126,7 @@ The text shown in the landing's own window.
 | `<project> image <file>` | one picture from that project's `gallery/`; a `thumbs/` prefix loads the 400px derivative (5-20 KB against 500-800 KB) |
 | `<project> model [file]` | the 3D viewer. Name a `.glb` only if that project has more than one |
 | `<project> gallery` | that project's whole thumbnail grid |
-| `<project> slides` | that project's slideshow |
+| `<project> slides [file]` | that project's slideshow. Name a slide to open on it, e.g. `slides 37.webp`. A number works too, but the filename survives slides being inserted or removed |
 | `<project> box` | that project's text box, as it opens normally |
 | `about` / `cv` / `contact` | the static panels |
 | `text` | the landing's own text, from below the `---` |
@@ -195,6 +195,11 @@ how the model looks is written onto its line beside `at`/`size`:
 | `lines edges\|all\|hidden`, `width <n>` | wireframe |
 | `edges on` | solid |
 | `decon <n>` | Deconstruct position, 0-100 |
+
+**An image window's frame follows its picture.** You set the width by
+dragging; the height comes from the image, so the border hugs it rather than
+boxing it with empty padding. The authored `size` height is therefore
+recorded but not honoured for images — the picture decides it.
 
 Only settings that differ from the viewer's own defaults are written, so lines
 stay short. A saved view belongs on a `model` line; anywhere else is an error.

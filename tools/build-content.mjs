@@ -404,7 +404,7 @@ if (!fs.existsSync(landingFile)) {
         // Anything left over is a key that did not parse — almost always a bad
         // value, e.g. `mode cartoon`. Without this it falls through and is read
         // as a filename, which reports a baffling error about models.
-        const maxTokens = (parts[1] === 'image' || parts[1] === 'model') ? 3 : 2;
+        const maxTokens = ['image', 'model', 'slides'].includes(parts[1]) ? 3 : 2;
         if (!SOLO_KINDS.includes(parts[0]) && parts.length > maxTokens) {
             err(`${where}: "${raw.trim()}" — did not understand "${parts.slice(maxTokens).join(' ')}"` +
                 ` (mode: ascii|wireframe|solid, lines: edges|all|hidden, invert/edges: on|off,` +
@@ -466,7 +466,20 @@ if (!fs.existsSync(landingFile)) {
 
         } else {
             // gallery | slides | box — nothing to name, the project has one each
-            if (file) err(`${where}: "${pid} ${kind}" takes no filename`);
+            if (file && kind !== 'slides') err(`${where}: "${pid} ${kind}" takes no filename`);
+            if (kind === 'slides' && file) {
+                // `slides <file>` opens on that slide. A number is accepted too,
+                // but the filename survives slides being inserted or removed.
+                const names = (p.slides || []).map(sp => sp.split('/').pop());
+                let at = /^\d+$/.test(file) ? parseInt(file, 10) - 1 : names.indexOf(file);
+                if (at < 0 || at >= names.length) {
+                    err(`${where}: "${pid} slides ${file}" — not a slide in ${pid}/slides/ ` +
+                        `(${names.length} slides, first is ${names[0]})`);
+                    continue;
+                }
+                windows.push({ project: pid, kind, ...(at ? { slide: at } : {}), ...geo });
+                continue;
+            }
             if (kind === 'gallery' && !(p.images && p.images.length)) {
                 err(`${where}: "${pid}" has no gallery: block, so it has no gallery window`); continue;
             }
@@ -605,6 +618,7 @@ if (LANDING) {
         bits.push(`kind: ${q(w.kind)}`);
         if (w.src) bits.push(`src: ${q(w.src)}`);
         if (w.which) bits.push(`which: ${w.which}`);
+        if (w.slide) bits.push(`slide: ${w.slide}`);
         if (w.view) bits.push(`view: ${JSON.stringify(w.view)}`);
         if (w.at) bits.push(`at: [${w.at.join(', ')}]`);
         if (w.size) bits.push(`size: [${w.size.join(', ')}]`);

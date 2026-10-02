@@ -17,7 +17,9 @@ background: #ffffff
 #   <project>  model [file]   the 3D viewer; name a .glb only if that project
 #                             has more than one
 #   <project>  gallery        that project's whole thumbnail grid
-#   <project>  slides         that project's slideshow
+#   <project>  slides [file] that project's slideshow. Name a slide to open
+#                           on it (e.g. `slides 37.webp`); a number works too,
+#                           but the filename survives slides being inserted
 #   <project>  box            that project's text box, as it opens normally
 #   about | cv | contact      the static panels
 #   text                      this file's own text, below the ---

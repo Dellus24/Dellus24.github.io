@@ -1270,12 +1270,15 @@
 
         // ג"€ג"€ INFO WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
         // ── SLIDESHOW WINDOW ──────────────────────────────────────────────────────
-        function openSlideshow(project) {
+        function openSlideshow(project, startAt = 0) {
             focusOrCreate(`slides-${project.id}`, () => {
                 const ws = document.getElementById('workspace');
                 const { x, y } = nextSpawn(640, 440);
                 const slides = project.slides;
-                let idx = 0;
+                // Which slide is showing. Was a private counter, so the ?layout
+                // composer could not see it and a landing slideshow always
+                // reopened on slide 1 however it had been left (Nir, 2026-10-02).
+                let idx = Math.max(0, Math.min(startAt | 0, slides.length - 1));
 
                 const el = document.createElement('div');
                 el.className = 'slide-float spawning';
@@ -1283,6 +1286,10 @@
                 openWins[`slides-${project.id}`] = el;
                 el.dataset.projectId = project.id;
                 el.dataset.winKind = 'slides';
+                el._slideState = () => ({
+                    index: idx,
+                    file: String(slides[idx].src || slides[idx]).split('/').pop(),
+                });
 
                 // Alt text is positional rather than descriptive: these are
                 // 145-slide project sequences with no per-slide captions
@@ -1298,7 +1305,7 @@
                 el.tabIndex = -1;
 
                 el.innerHTML = `
-                    <img class="slide-img" draggable="false" decoding="async" src="${slides[0].src || slides[0]}" alt="${slideAlt(0)}">
+                    <img class="slide-img" draggable="false" decoding="async" src="${slides[idx].src || slides[idx]}" alt="${slideAlt(idx)}">
                     <div class="slide-nav slide-nav-prev" role="button" tabindex="0" aria-label="Previous slide"><span class="slide-chevron" aria-hidden="true">&lt;</span></div>
                     <div class="slide-nav slide-nav-next" role="button" tabindex="0" aria-label="Next slide"><span class="slide-chevron" aria-hidden="true">&gt;</span></div>
                     <div class="slide-bar">
@@ -1944,6 +1951,12 @@
             announce(alt);          // the window is reused, so nothing else signals the change
         }
 
+        // The picture's own proportions, or a sane 4:3 until it has loaded.
+        const aspectOf = (el) => {
+            const im = el.querySelector('img');
+            return (im && im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3;
+        };
+
         function openImage({ src, label = '', key, fallbackLabel = '', projectId = null }) {
             const ws = document.getElementById('workspace');
             const { x, y } = nextSpawn(220, 220);
@@ -2044,8 +2057,15 @@
                     el.style.left = Math.max(0, e.clientX + ws.scrollLeft - ox) + 'px';
                     el.style.top  = Math.max(0, e.clientY + ws.scrollTop - oy) + 'px';
                 } else if (resizing) {
-                    el.style.width  = Math.max(120, rw + e.clientX - ox) + 'px';
-                    el.style.height = Math.max(80,  rh + e.clientY - oy) + 'px';
+                    // The frame follows the picture's shape (Nir, 2026-10-02).
+                    // Before this the picture was fitted INSIDE whatever box was
+                    // dragged and letterboxed, while the border was drawn around
+                    // the box - so every image window carried 12-29% of empty
+                    // padding that still overlapped its neighbours. Width leads,
+                    // height follows.
+                    const w = Math.max(120, rw + e.clientX - ox);
+                    el.style.width  = w + 'px';
+                    el.style.height = Math.max(80, Math.round(w / aspectOf(el))) + 'px';
                 }
             }, docSig);
             const endImgDrag = () => {
@@ -3552,8 +3572,12 @@
         // entry through open3D, exactly as a project's own windows do. The only
         // additions are the project's colour painted onto the frame, and the
         // hatch that offers the way in.
+        // The menu carries data-landing when the composition places it, but it
+        // is the one window that must never close — it is how you navigate.
+        // It survived only because it has no _close; say so instead.
         function landingWindows() {
-            return [...document.querySelectorAll('[data-landing]')].filter(el => !el.classList.contains('closing'));
+            return [...document.querySelectorAll('[data-landing]')]
+                .filter(el => !el.classList.contains('closing') && el.dataset.landing !== 'menu');
         }
         function closeLanding() {
             const wins = landingWindows();
@@ -3620,12 +3644,29 @@
             if (!entry || !entry.at || !entry.size) return;
             const [x, y] = entry.at, [w, h] = entry.size;
             el.dataset.sizeLocked = '1';
+            const px = (v, total) => (v / 100 * total);
             Object.assign(el.style, {
-                left:   (x / 100 * window.innerWidth)  + 'px',
-                top:    (y / 100 * window.innerHeight) + 'px',
-                width:  (w / 100 * window.innerWidth)  + 'px',
-                height: (h / 100 * window.innerHeight) + 'px',
+                left:   px(x, window.innerWidth)  + 'px',
+                top:    px(y, window.innerHeight) + 'px',
+                width:  px(w, window.innerWidth)  + 'px',
+                height: px(h, window.innerHeight) + 'px',
             });
+
+            // An image frame takes the authored WIDTH and derives its height
+            // from the picture, so the border hugs the image instead of boxing
+            // it with padding. The picture may not have loaded yet, so do it
+            // again when it has.
+            if (el.classList.contains('img-float')) {
+                const fit = () => {
+                    const wpx = px(w, window.innerWidth);
+                    el.style.width  = wpx + 'px';
+                    el.style.height = Math.max(80, Math.round(wpx / aspectOf(el))) + 'px';
+                    el.dispatchEvent(new CustomEvent('win-resize'));
+                };
+                const im = el.querySelector('img');
+                if (im && !im.complete) im.addEventListener('load', fit, { once: true });
+                fit();
+            }
             el.dispatchEvent(new CustomEvent('win-resize'));
         }
 
@@ -3686,6 +3727,13 @@
                             const proj = PROJECTS.find(x => x.id === pid);
                             const m = proj && proj.models && proj.models[+el.dataset.modelIndex];
                             if (m) file = ' ' + m.src.split('/').pop();
+                        }
+                        if (kind === 'slides' && el._slideState) {
+                            // By FILENAME, not number: slides are scanned from the
+                            // folder, so inserting one renumbers everything after
+                            // it while the filename stays true.
+                            const st = el._slideState();
+                            if (st.index > 0) file = ' ' + st.file;
                         }
                         head = `  ${pid}  ${kind}${file}`;
                     }
@@ -3783,7 +3831,7 @@
                              key: (project.models && project.models.length > 1) ? `3d-${project.id}-${which}` : `3d-${project.id}`,
                              open: () => open3D(project, which, w.view || null) };
                 case 'gallery': return { project, key: `gallery-${project.id}`, open: () => openGallery(project) };
-                case 'slides':  return { project, key: `slides-${project.id}`,  open: () => openSlideshow(project) };
+                case 'slides':  return { project, key: `slides-${project.id}`,  open: () => openSlideshow(project, w.slide || 0) };
                 case 'box':     return { project, key: `info-${project.id}`,    open: () => openInfo(project) };
             }
             return null;
