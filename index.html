@@ -1074,6 +1074,51 @@
             wins[wins.length - 1].focus?.();
         }
 
+        // Resize (8 directions). Shared, because the menu is the one window
+        // NOT built by makeFrame — it has its own titlebar (Home + collapse,
+        // no close) and its own drag — and it still has to resize like every
+        // other window. One implementation, two callers; a copy would drift.
+        const RESIZE_EDGES = ['n','s','e','w','nw','ne','sw','se']
+            .map(d => `<div class="win-resize-edge" data-dir="${d}"></div>`).join('');
+
+        function attachResize(frame, { minW = 260, minH = 180, docSig = undefined } = {}) {
+            let resizing = false, resizeDir = '', rsx = 0, rsy = 0, rsw = 0, rsh = 0, rsl = 0, rst = 0;
+            frame.querySelectorAll('.win-resize-edge').forEach(handle => {
+                handle.addEventListener('pointerdown', e => {
+                    if (!e.isPrimary) return;
+                    resizeDir = handle.dataset.dir;
+                    resizing = true; rsx = e.clientX; rsy = e.clientY;
+                    rsw = frame.offsetWidth; rsh = frame.offsetHeight;
+                    rsl = frame.offsetLeft;  rst = frame.offsetTop;
+                    const cursors = { n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize', nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize' };
+                    document.body.style.cursor = cursors[resizeDir] || 'default';
+                    document.body.classList.add('resizing'); e.preventDefault(); e.stopPropagation();
+                });
+            });
+            document.addEventListener('pointermove', e => {
+                if (!resizing || !e.isPrimary) return;
+                const dx = e.clientX - rsx, dy = e.clientY - rsy;
+                if (resizeDir.includes('e')) frame.style.width  = Math.max(minW, rsw + dx) + 'px';
+                if (resizeDir.includes('s')) frame.style.height = Math.max(minH, rsh + dy) + 'px';
+                if (resizeDir.includes('w')) {
+                    const nw = Math.max(minW, rsw - dx);
+                    frame.style.width = nw + 'px';
+                    frame.style.left  = (rsl + rsw - nw) + 'px';
+                }
+                if (resizeDir.includes('n')) {
+                    const nh = Math.max(minH, rsh - dy);
+                    frame.style.height = nh + 'px';
+                    frame.style.top    = (rst + rsh - nh) + 'px';
+                }
+                frame.dispatchEvent(new CustomEvent('win-resize'));
+            }, docSig);
+            const endFrameResize = () => {
+                if (resizing) { resizing = false; document.body.style.cursor = ''; document.body.classList.remove('resizing'); }
+            };
+            document.addEventListener('pointerup', endFrameResize, docSig);
+            document.addEventListener('pointercancel', endFrameResize, docSig);
+        }
+
         function makeFrame({ title, tag = '', w, h, key, minW = 260, minH = 180, bodyDrag = false, collapsible = false, projectId = null, kind = null }) {
             const { x, y } = nextSpawn(w, h);
             const ws = document.getElementById('workspace');
@@ -1098,14 +1143,7 @@
                 </div>
                 <div class="win-body"></div>
                 <div class="cscroll-track"><div class="cscroll-thumb"></div></div>
-                <div class="win-resize-edge" data-dir="n"></div>
-                <div class="win-resize-edge" data-dir="s"></div>
-                <div class="win-resize-edge" data-dir="e"></div>
-                <div class="win-resize-edge" data-dir="w"></div>
-                <div class="win-resize-edge" data-dir="nw"></div>
-                <div class="win-resize-edge" data-dir="ne"></div>
-                <div class="win-resize-edge" data-dir="sw"></div>
-                <div class="win-resize-edge" data-dir="se"></div>
+                ${RESIZE_EDGES}
             `;
 
             ws.appendChild(frame);
@@ -1205,42 +1243,7 @@
             document.addEventListener('pointerup', endFrameDrag, docSig);
             document.addEventListener('pointercancel', endFrameDrag, docSig);
 
-            // Resize (8 directions)
-            let resizing = false, resizeDir = '', rsx = 0, rsy = 0, rsw = 0, rsh = 0, rsl = 0, rst = 0;
-            frame.querySelectorAll('.win-resize-edge').forEach(handle => {
-                handle.addEventListener('pointerdown', e => {
-                    if (!e.isPrimary) return;
-                    resizeDir = handle.dataset.dir;
-                    resizing = true; rsx = e.clientX; rsy = e.clientY;
-                    rsw = frame.offsetWidth; rsh = frame.offsetHeight;
-                    rsl = frame.offsetLeft;  rst = frame.offsetTop;
-                    const cursors = { n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize', nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize' };
-                    document.body.style.cursor = cursors[resizeDir] || 'default';
-                    document.body.classList.add('resizing'); e.preventDefault(); e.stopPropagation();
-                });
-            });
-            document.addEventListener('pointermove', e => {
-                if (!resizing || !e.isPrimary) return;
-                const dx = e.clientX - rsx, dy = e.clientY - rsy;
-                if (resizeDir.includes('e')) frame.style.width  = Math.max(minW, rsw + dx) + 'px';
-                if (resizeDir.includes('s')) frame.style.height = Math.max(minH, rsh + dy) + 'px';
-                if (resizeDir.includes('w')) {
-                    const nw = Math.max(minW, rsw - dx);
-                    frame.style.width = nw + 'px';
-                    frame.style.left  = (rsl + rsw - nw) + 'px';
-                }
-                if (resizeDir.includes('n')) {
-                    const nh = Math.max(minH, rsh - dy);
-                    frame.style.height = nh + 'px';
-                    frame.style.top    = (rst + rsh - nh) + 'px';
-                }
-                frame.dispatchEvent(new CustomEvent('win-resize'));
-            }, docSig);
-            const endFrameResize = () => {
-                if (resizing) { resizing = false; document.body.style.cursor = ''; document.body.classList.remove('resizing'); }
-            };
-            document.addEventListener('pointerup', endFrameResize, docSig);
-            document.addEventListener('pointercancel', endFrameResize, docSig);
+            attachResize(frame, { minW, minH, docSig });
 
             // Custom scrollbar. Tracks .win-body by default, but a window whose
             // body does not itself scroll can point it at the element that does
@@ -1747,10 +1750,19 @@
             const vw = window.innerWidth, vh = window.innerHeight;
             const gap = 10, topY = 28, leftX = 28;
 
-            // Reserve the pinned left column (menu + theme)
+            // Start a fixed `gap` past the menu's RIGHT EDGE, read live. Not
+            // `leftX + menuWidth`: that assumed the menu still sat at its spawn
+            // x, so a menu the landing placed elsewhere — or that the visitor
+            // dragged or resized — had the project block laid straight over it.
+            // The distance from the menu is what is fixed; where the menu is
+            // and how big it is are not. (Nir, 2026-10-10)
             const menuEl   = document.getElementById('menu-body-inner')?.closest('.win-frame');
-            const leftColW = (menuEl ? menuEl.offsetWidth : 228) + gap;
-            const areaX    = leftX + leftColW;
+            const menuR    = menuEl ? menuEl.offsetLeft + menuEl.offsetWidth : leftX + 228;
+            // ...unless the menu has been dragged so far right that nothing
+            // fits beside it (260 is .win-frame's min-width). Then start from
+            // the left margin and let the obstacle scan below walk around it.
+            const beside   = menuR + gap;
+            const areaX    = (vw - beside - gap >= 260) ? beside : leftX;
             const availW   = vw - areaX - gap;
             const availH   = vh - topY  - gap;
 
@@ -1863,8 +1875,12 @@
             // Drop the block in the first free spot: to the RIGHT of an earlier
             // project if it fits there, otherwise BELOW it. Not strict — just
             // uses the screen instead of always stacking straight down.
+            // The menu counts as an obstacle now. With areaX already a gap past
+            // its right edge this changes nothing in the usual case — the scan
+            // starts exactly on the boundary and clears it — but it is what
+            // keeps a menu that is anywhere else from being landed on.
             const obstacles = [...ws.querySelectorAll('.win-frame, .slide-float, .img-float')]
-                .filter(f => f !== menuEl && f !== themeFrame && !mine.has(f))
+                .filter(f => f !== themeFrame && !mine.has(f))
                 .map(f => ({ x: f.offsetLeft, y: f.offsetTop, w: f.offsetWidth, h: f.offsetHeight }));
             const maxBottom = obstacles.reduce((y, o) => Math.max(y, o.y + o.h), topY);
             const hits = (x, y) => obstacles.some(o =>
@@ -3509,10 +3525,18 @@
                         <span class="proj-name" data-action="arrange" style="cursor:pointer;" role="button" tabindex="0" aria-label="Arrange open windows">Arrange</span>
                     </div>
                 </div>
+                ${RESIZE_EDGES}
             `;
 
             ws.appendChild(frame);
             frame.addEventListener('pointerdown', () => frame.style.zIndex = ++topZ);
+
+            // The menu resizes like any other window. No AbortController: it is
+            // the one window with no _close — it is how you navigate, so it
+            // never goes away and its listeners never need tearing down.
+            // minH is low because .menu-body scrolls; the menu is long and a
+            // visitor should be able to shorten it to whatever fits.
+            attachResize(frame, { minW: 260, minH: 120 });
 
             // Per-category collapse
             frame.querySelectorAll('.menu-cat-toggle').forEach(toggle => {
@@ -3533,11 +3557,17 @@
             });
 
             // Window collapse
-            let collapsed = false;
+            let collapsed = false, openHeight = '';
             const body = frame.querySelector('#menu-body-inner');
             const toggleBtn = frame.querySelector('.menu-collapse');
             function toggleCollapse() {
                 collapsed = !collapsed;
+                // The frame carries an explicit height once the landing places
+                // it or the visitor resizes it, so hiding the body alone would
+                // leave a tall empty box. Drop the height while collapsed and
+                // hand back exactly the one that was there.
+                if (collapsed) { openHeight = frame.style.height; frame.style.height = ''; }
+                else frame.style.height = openHeight;
                 body.style.display = collapsed ? 'none' : '';
                 toggleBtn.textContent = collapsed ? '+' : String.fromCharCode(8722);
                 toggleBtn.setAttribute('aria-expanded', String(!collapsed));
