@@ -11,6 +11,8 @@ order: 60
 # Together they are what the whole page wears while this project is open.
 color: #ffffff
 background: #000000
+# how it reads on the landing, where it is one window among many
+landing-color: #c4c4c4
 credit: Guided by Matan Gal and Omri Levy.
 
 ---

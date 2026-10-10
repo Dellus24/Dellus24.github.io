@@ -72,6 +72,7 @@ description. A line starting with `#` is a comment.
 | `hidden` | no | `hidden: yes` drops the project from the site entirely, files and all. Nothing is deleted — remove the line to bring it back |
 | `color` | no | the project's ink, e.g. `color: #b3261e`. See below |
 | `background` | no | the surface behind the ink, e.g. `background: #fbeeed` |
+| `landing-color` | no | the ink this project wears when it is **one of many** — on the landing, in the menu, opened alongside. Defaults to `color` |
 | `line` | no | `solid` (default), `double` or `dashed`. Parsed and published, but **nothing renders it yet** — reserved |
 | `view:` | no | how this project's 3D model opens from the menu. See below |
 | `model` | no | **only needed if `models/` holds more than one `.glb`.** Otherwise the single `.glb` is found automatically, with its real casing |
@@ -98,9 +99,22 @@ background: #fbeeed     the surface behind it
   The background only shifts once you go into a project and that project owns
   the page.
 
+**`landing-color:` is the ink for when a project is one of many.** On the
+landing all windows share one background, so an ink that works inside the
+project can vanish there — Pray & Play is white on black, which is correct in
+the project and invisible on the white landing. `landing-color` is how a project
+reads in both places; it also drives the menu row. It falls back to `color`, so
+most projects never need it.
+
+```
+color:         #ffffff     owns the page: white on black
+background:    #000000
+landing-color: #c4c4c4     one of many: a grey that shows on white
+```
+
 `#rgb` or `#rrggbb`. A bad value is a build **error**, so it can never reach the
-live site. Both keys are optional; whatever a project does not set stays as the
-page already was, so colours can be added one project at a time.
+live site. All three keys are optional; whatever a project does not set stays as
+the page already was, so colours can be added one project at a time.
 
 A visitor can override either colour from the Theme window's *Colour project*
 row; that override lives in their browser and never touches these files. Their

@@ -1690,7 +1690,7 @@
             openProject(project);
             // Ink only, same reason as the landing: the page background belongs
             // to whichever project owns the page, not to one opened beside it.
-            const paint = () => projectWindows(project.id).forEach(el => tintFrame(el, inkOf(project), null));
+            const paint = () => projectWindows(project.id).forEach(el => tintFrame(el, markInkOf(project), null));
             paint();
             requestAnimationFrame(paint);      // catch windows built on the next frame
             announce(`${project.title} opened alongside`);
@@ -2126,6 +2126,15 @@
             if (!project) return null;
             return lsGet(projectColorKey(project.id, 'background')) || project.background || null;
         }
+        // The ink a project wears when it is ONE OF MANY rather than owning the
+        // page: on the landing, in the menu, and when opened alongside. Falls
+        // back to its own ink. Pray & Play is white on black, which is right
+        // inside the project and invisible on the white landing — `landing-color`
+        // is how a project can read in both places (Nir, 2026-10-10).
+        function markInkOf(project) {
+            if (!project) return null;
+            return lsGet(projectColorKey(project.id, 'landing')) || project.landingColor || inkOf(project);
+        }
         // Kept as the one-call form used all over the window code.
         const colorOf = inkOf;
 
@@ -2186,12 +2195,13 @@
         // the site tint if it is the active one, its own windows, and its menu
         // row's --sig.
         function repaintProject(project) {
-            const ink = inkOf(project), bg = bgOf(project);
+            const ink = inkOf(project), bg = bgOf(project), mark = markInkOf(project);
             const row = document.querySelector(`.proj-row[data-id="${project.id}"]`);
-            if (row) { if (ink) row.style.setProperty('--sig', ink); else row.style.removeProperty('--sig'); }
+            if (row) { if (mark) row.style.setProperty('--sig', mark); else row.style.removeProperty('--sig'); }
             if (activeProject && activeProject.id === project.id) tintSite(project);
             projectWindows(project.id).forEach(el => {
-                if (el.dataset.landing || !activeProject || activeProject.id !== project.id) tintFrame(el, ink, bg);
+                if (el.dataset.landing) tintFrame(el, mark, null);
+                else if (!activeProject || activeProject.id !== project.id) tintFrame(el, mark, bg);
             });
         }
 
@@ -3463,7 +3473,7 @@
                     </div>
                     <div class="cat-proj-list" data-cat-list="${cat.id}" id="cat-list-${cat.id}" role="group" aria-label="${cat.label} projects">
                         ${projs.map(p => `
-                            <div class="proj-row" data-id="${p.id}" style="padding-left:8px;${inkOf(p) ? `--sig:${inkOf(p)};` : ''}"
+                            <div class="proj-row" data-id="${p.id}" style="padding-left:8px;${markInkOf(p) ? `--sig:${markInkOf(p)};` : ''}"
                                  role="button" tabindex="0"
                                  aria-label="Open ${p.title}. Shift+Enter to open it alongside what is already here.">
                                 <span class="proj-name">${p.title}</span>
@@ -3640,6 +3650,7 @@
                 .filter(el => !el.classList.contains('closing') && el.dataset.landing !== 'menu');
         }
         function closeLanding() {
+            hatchGroups.clear();      // rebuilt by the next openLanding
             const wins = landingWindows();
             wins.forEach(el => el._close && el._close());
             return wins.length;
@@ -3649,6 +3660,17 @@
         // Live FIRST, invitation second (Nir, 2026-09-29): the overlay is
         // pointer-events:none until it actually appears, and any movement or
         // press restarts the timer, so orbiting a model never summons it.
+        // Every landing window of one project hatches TOGETHER (Nir, 2026-10-10)
+        // — resting on one image lights the others beside it, so it reads that
+        // they belong to the same work rather than being unrelated pictures.
+        // One group per project; the window under the pointer drives the timer,
+        // and the whole group answers.
+        const hatchGroups = new Map();          // projectId -> { members:Set, leaveTimer }
+        function hatchGroup(id) {
+            if (!hatchGroups.has(id)) hatchGroups.set(id, { members: new Set(), leaveTimer: null, inside: 0 });
+            return hatchGroups.get(id);
+        }
+
         function attachHatch(el, project) {
             const host = el.querySelector('.win-body') || el;
             if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
@@ -3663,27 +3685,59 @@
             host.appendChild(ov);
 
             let timer = null, shown = false, suppressed = false;
-            const show = () => { if (shown || suppressed) return; shown = true; ov.classList.add('shown'); };
-            const hide = () => { shown = false; ov.classList.remove('shown'); };
-            const arm  = () => {
+            const me = {
+                show: () => { if (shown || suppressed) return; shown = true; ov.classList.add('shown'); },
+                hide: () => { shown = false; ov.classList.remove('shown'); },
+                suppress: v => { suppressed = v; },
+                isShown: () => shown,
+            };
+            const group = hatchGroup(project.id);
+            group.members.add(me);
+            const each = fn => group.members.forEach(fn);
+
+            const showAll = () => each(m => m.show());
+            const hideAll = () => each(m => m.hide());
+            const arm = () => {
                 if (shown || suppressed) return;
                 clearTimeout(timer);
-                timer = setTimeout(show, 900);
+                timer = setTimeout(showAll, 900);
             };
             const disarm = () => clearTimeout(timer);
 
-            host.addEventListener('pointerenter', () => { setMenuHot(project.id, true); arm(); });
+            // Moving between two windows of the same project must not make the
+            // group flicker, so a leave is deferred and only acted on once the
+            // pointer is outside EVERY window of the group. `inside` counts that
+            // — a bare timer could not tell "moved to a sibling" from "left".
+            host.addEventListener('pointerenter', () => {
+                group.inside++;
+                clearTimeout(group.leaveTimer);
+                setMenuHot(project.id, true);
+                arm();
+            });
             host.addEventListener('pointermove', arm);
             host.addEventListener('pointerdown', arm);
             host.addEventListener('pointerleave', () => {
-                setMenuHot(project.id, false);
-                disarm(); hide(); suppressed = false;   // leaving clears the refusal
+                group.inside = Math.max(0, group.inside - 1);
+                disarm();
+                clearTimeout(group.leaveTimer);
+                group.leaveTimer = setTimeout(() => {
+                    if (group.inside > 0) return;      // still on a sibling
+                    setMenuHot(project.id, false);
+                    hideAll();
+                    each(m => m.suppress(false));      // leaving clears the refusal
+                }, 90);
             });
 
             ov.querySelector('.win-hatch-go').addEventListener('click', () => goToProject(project));
-            // The clear "no" Nir asked for. Suppressed until the pointer leaves
-            // and comes back, so it cannot immediately nag again.
-            const cancel = () => { disarm(); hide(); suppressed = true; };
+            // The clear "no" Nir asked for, and it answers for the whole group:
+            // saying no to one of a project's windows says no to all of them.
+            // Suppressed until the pointer leaves and comes back.
+            const cancel = () => {
+                disarm();
+                clearTimeout(group.leaveTimer);
+                hideAll();
+                each(m => m.suppress(true));
+            };
             ov.querySelector('.win-hatch-stay').addEventListener('click', cancel);
             // Escape must cancel the HATCH, not close the window. makeFrame
             // registers its own Escape→close on the frame at creation, and a
@@ -3947,7 +4001,7 @@
                     // the ink — the border, the title, the ASCII. The background
                     // shifts only once a project is entered and owns the page.
                     if (spec.project) {
-                        tintFrame(el, inkOf(spec.project), null);
+                        tintFrame(el, markInkOf(spec.project), null);
                         attachHatch(el, spec.project);
                     }
                     placeLanding(el, w);

@@ -187,6 +187,7 @@ In summary, the planning proposes an almost complete preservation of the existin
         credit:       `Guided by Matan Gal and Omri Levy.`,
         color:        '#ffffff',
         background:   '#000000',
+        landingColor: '#c4c4c4',
         model:        'assets/projects/pray-and-play/models/Floor Detail.glb',
         slides:       sl('assets/projects/pray-and-play/slides/', [
             '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',

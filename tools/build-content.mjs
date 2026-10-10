@@ -187,12 +187,17 @@ for (const id of fs.readdirSync(projectsDir).sort(natCmp)) {
     //
     //    `line` is parsed and published but nothing renders it yet — reserved
     //    so the format does not have to change when it is wanted.
-    for (const k of ['color', 'background']) {
+    // color/background own the page while this project is open. `landing-color`
+    // is the ink it wears when it is ONE OF MANY instead - on the landing, in
+    // the menu, and when opened alongside another project. Pray & Play is white
+    // on black, which is right inside the project and invisible on the white
+    // landing; this is how a project reads in both places (Nir, 2026-10-10).
+    for (const [k, field] of [['color', 'color'], ['background', 'background'], ['landing-color', 'landingColor']]) {
         if (!head[k]) continue;
         if (!HEX.test(head[k])) {
             err(`${where}: ${k} "${head[k]}" must be a hex colour like #b3261e or #b31`);
         } else {
-            rec[k] = head[k].toLowerCase();
+            rec[field] = head[k].toLowerCase();
         }
     }
     // view: how this project's model opens FROM THE MENU. One line or a block:
@@ -598,6 +603,7 @@ for (const p of projects) {
     if (p.credit) out.push(`        credit:       ${tpl(p.credit)},`);
     if (p.color) out.push(`        color:        ${q(p.color)},`);
     if (p.background) out.push(`        background:   ${q(p.background)},`);
+    if (p.landingColor) out.push(`        landingColor: ${q(p.landingColor)},`);
     if (p.line) out.push(`        line:         ${q(p.line)},`);
     if (p.view) out.push(`        view:         ${JSON.stringify(p.view)},`);
     if (p.model) out.push(`        model:        ${q(p.model)},`);
