@@ -964,6 +964,60 @@
             }
         }
 
+
+        /* ── PHONE GATE (2026-10-10) ──────────────────────────────────────
+           Every rule below is scoped to html.phone, a class set only by
+           openPhoneGate(). A desktop browser matches none of them, so the
+           approved desktop version (git tag `v2`) renders exactly as it did
+           before this block existed. */
+        html.phone, html.phone body {
+            height: 100%; overflow: hidden;
+            /* Stops pull-to-refresh and rubber-banding fighting a finger that
+               is trying to turn the model. The viewer canvas already sets
+               touch-action: none on itself; this covers the notice and the
+               contact line, which are ordinary page. */
+            overscroll-behavior: none;
+        }
+        html.phone .skip-link { display: none; }
+
+        html.phone .phone-note,
+        html.phone .phone-contact {
+            position: fixed; left: 0; right: 0; z-index: 900;
+            box-sizing: border-box;
+            padding: 14px 18px;
+            background: var(--bg);
+            /* --fg is scoped, and this text does not live inside a tinted
+               frame, so it must take the colour explicitly rather than
+               inherit it from <body>. */
+            color: var(--fg);
+            font-family: var(--font-family);
+            font-variation-settings: var(--font-var);
+        }
+        html.phone .phone-note    { top: 0;    border-bottom: 1px solid var(--border-soft); }
+        html.phone .phone-contact { bottom: 0; border-top:    1px solid var(--border-soft); }
+
+        /* Sized in px, not in --font-scale rem. Window chrome is 0.5rem
+           because it is chrome; this notice is the one thing on the page a
+           visitor is actually meant to read. */
+        html.phone .phone-note p { margin: 0; }
+        html.phone .phone-note .phone-note-main { font-size: 15px; line-height: 1.45; }
+        html.phone .phone-note .phone-note-sub  { font-size: 12px; line-height: 1.45; opacity: 0.5; margin-top: 6px; }
+
+        html.phone .phone-contact {
+            display: flex; justify-content: space-between;
+            align-items: baseline; gap: 12px;
+            font-size: 12px; line-height: 1.4;
+        }
+        html.phone .phone-contact a { color: inherit; }
+
+        /* The viewer IS the page, so its window chrome can only do harm here:
+           the × would empty the screen, and the resize edges and titlebar drag
+           would unpin it from the slot layout() measures. Every VIEWER control
+           — modes, settings, sliders, deconstruct, views — is left alone. */
+        html.phone .win-frame .win-close,
+        html.phone .win-frame .win-resize-edge { display: none; }
+        html.phone .win-titlebar { pointer-events: none; cursor: default; }
+
     </style>
 </head>
 <body>
@@ -4173,16 +4227,123 @@
             }
         }
 
-        const menuFrame = buildMenuWindow();
+        // ── PHONE GATE (2026-10-10) ───────────────────────────────────────
+        // Nir's call: the desktop site is the approved version (git tag `v2`)
+        // and must not change, so a phone is handed a notice and ONE thing to
+        // play with rather than a windowing UI it cannot drive. His words:
+        // "the site does not support a phone format yet ... the model from
+        // get-lost is the only feature."
+        //
+        // WHAT COUNTS AS A PHONE: a coarse PRIMARY pointer, at any size. Nir
+        // chose this over a width test on 2026-10-10 knowing it catches
+        // tablets and touchscreen laptops too. Two overrides, both dev tools
+        // in the spirit of ?layout: ?desktop forces the real site onto any
+        // device, ?phone forces this page onto a desktop so it can be built
+        // and debugged with a mouse.
+        //
+        // Nothing here touches the desktop path: every rule it adds is scoped
+        // to html.phone in the CSS, and every statement is inside the if below.
+        const IS_PHONE = (() => {
+            const q = new URLSearchParams(location.search);
+            if (q.has('desktop')) return false;
+            if (q.has('phone'))   return true;
+            return window.matchMedia('(pointer: coarse)').matches;
+        })();
 
-        // The menu's "open" dimming is derived from the canvas, so it has to be
-        // recomputed whenever a window appears or disappears — including the
-        // 220ms-delayed removal inside closeFrame, and closes triggered by
-        // Escape or by code rather than by the × button.
-        new MutationObserver(syncMenuOpen)
-            .observe(document.getElementById('workspace'), { childList: true });
+        async function openPhoneGate() {
+            document.documentElement.classList.add('phone');
 
-        openLanding();
+            const note = document.createElement('div');
+            note.className = 'phone-note';
+            note.setAttribute('role', 'status');
+            note.innerHTML =
+                '<p class="phone-note-main">Sorry — the site does not support the phone format yet. ' +
+                'Please view it from a desktop.</p>' +
+                '<p class="phone-note-sub">In the meantime, one model from Get Lost. ' +
+                'One finger turns it; two pinch to zoom.</p>';
+            document.body.appendChild(note);
+
+            // Name and address are READ OUT OF THE AUTHORED CONTENT, never
+            // retyped here — content/contact.txt and content/landing.txt stay
+            // the one place they are written. No address in that text means no
+            // link at all, rather than a dead one.
+            const email = ((typeof STATIC !== 'undefined' && STATIC.contact && STATIC.contact.body) || '')
+                .match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+            const who = (typeof LANDING !== 'undefined' && LANDING && LANDING.title) || 'Nir Dellus';
+
+            const contact = document.createElement('div');
+            contact.className = 'phone-contact';
+            // textContent, never innerHTML — this is authored content, same
+            // rule as injectStructuredData.
+            const whoEl = document.createElement('span');
+            whoEl.textContent = who;
+            contact.appendChild(whoEl);
+            if (email) {
+                const a = document.createElement('a');
+                a.href = 'mailto:' + email[0];
+                a.textContent = email[0];
+                contact.appendChild(a);
+            }
+            document.body.appendChild(contact);
+
+            const project = typeof PROJECTS !== 'undefined'
+                ? PROJECTS.find(p => p.id === 'get-lost') : null;
+            if (!project || !project.model) return;
+
+            // The view is the one Nir already composed for this model on the
+            // landing — the only authored view of it that exists, so nothing
+            // is invented here. It follows content/landing.txt: recompose that
+            // window with ?layout and the phone follows it.
+            const landingEntry = ((typeof LANDING !== 'undefined' && LANDING && LANDING.windows) || [])
+                .find(w => w.project === 'get-lost' && w.kind === 'model');
+            await open3D(project, 0, landingEntry ? landingEntry.view : null);
+
+            // Get Lost owns this page, so its window wears the project's own
+            // pair, not the landing's one-of-many mark ink. Without this the
+            // model renders black while the same model on the desktop landing
+            // is green — the viewer reads its colours off its own frame, and
+            // nothing had painted this one. The notice and the contact line
+            // stay neutral on purpose: they are system chrome, not the project.
+            tintFrame(openWins['3d-' + project.id], inkOf(project), bgOf(project));
+
+            // The frame is pinned to the gap between the notice and the contact
+            // line, measured LIVE every time. A phone's browser chrome changes
+            // height as it scrolls and the notice wraps to a different number
+            // of lines in each rotation, so there is no constant to spawn.
+            const layout = () => {
+                const frame = openWins['3d-' + project.id];
+                if (!frame) return;
+                const top    = note.getBoundingClientRect().height;
+                const bottom = contact.getBoundingClientRect().height;
+                Object.assign(frame.style, {
+                    left:   '0px',
+                    top:    top + 'px',
+                    width:  window.innerWidth + 'px',
+                    height: Math.max(160, window.innerHeight - top - bottom) + 'px',
+                });
+                // The viewer resizes its renderer off this event, not off a
+                // ResizeObserver — see resizeVP() inside open3D.
+                frame.dispatchEvent(new Event('win-resize'));
+            };
+            layout();
+            window.addEventListener('resize', layout);
+            window.addEventListener('orientationchange', () => requestAnimationFrame(layout));
+        }
+
+        const menuFrame = IS_PHONE ? null : buildMenuWindow();
+
+        if (IS_PHONE) {
+            openPhoneGate();
+        } else {
+            // The menu's "open" dimming is derived from the canvas, so it has to be
+            // recomputed whenever a window appears or disappears — including the
+            // 220ms-delayed removal inside closeFrame, and closes triggered by
+            // Escape or by code rather than by the × button.
+            new MutationObserver(syncMenuOpen)
+                .observe(document.getElementById('workspace'), { childList: true });
+
+            openLanding();
+        }
 
         document.getElementById('err-banner').style.display = 'none';
 
