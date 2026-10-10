@@ -1748,7 +1748,7 @@
             const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
             const ws = document.getElementById('workspace');
             const vw = window.innerWidth, vh = window.innerHeight;
-            const gap = 10, topY = 28, leftX = 28;
+            const gap = 10, homeY = 28, leftX = 28;
 
             // Start a fixed `gap` past the menu's RIGHT EDGE, read live. Not
             // `leftX + menuWidth`: that assumed the menu still sat at its spawn
@@ -1763,6 +1763,13 @@
             // the left margin and let the obstacle scan below walk around it.
             const beside   = menuR + gap;
             const areaX    = (vw - beside - gap >= 260) ? beside : leftX;
+            // And the block's TOP is the menu's top, so the first row of windows
+            // starts level with it however the menu has been placed or dragged.
+            // Same shape as areaX: if the menu sits so low that nothing fits
+            // beside it (180 is .win-frame's min-height), fall back to the top
+            // margin rather than opening the project off the bottom.
+            const menuT    = menuEl ? menuEl.offsetTop : homeY;
+            const topY     = (vh - menuT - gap >= 180) ? menuT : homeY;
             const availW   = vw - areaX - gap;
             const availH   = vh - topY  - gap;
 
@@ -3580,20 +3587,30 @@
             frame.querySelector('.win-titlebar').addEventListener('dblclick', toggleCollapse);
 
             // Drag
+            // The WHOLE titlebar drags, the Home title included. It used to stop
+            // pointerdown dead so a click on Home could not start a drag — but
+            // the title covers most of the bar, and once the resize edges
+            // arrived they took the top few pixels too, leaving a strip a few
+            // pixels tall as the only place the menu could be picked up.
+            // Nothing is fixed in place (Nir, 2026-10-10), so the drag wins and
+            // Home tells a click from a drag by how far the pointer travelled.
             const tb = frame.querySelector('.win-titlebar');
-            let dragging = false, ox = 0, oy = 0;
+            let dragging = false, ox = 0, oy = 0, dragMoved = false;
             tb.addEventListener('pointerdown', e => {
                 if (!e.isPrimary) return;
                 if (e.target === toggleBtn) return;
-                dragging = true;
+                dragging = true; dragMoved = false;
                 ox = e.clientX - frame.offsetLeft;
                 oy = e.clientY - frame.offsetTop;
                 document.body.classList.add('dragging'); e.preventDefault();
             });
             document.addEventListener('pointermove', e => {
                 if (!dragging || !e.isPrimary) return;
-                frame.style.left = Math.max(0, e.clientX - ox) + 'px';
-                frame.style.top  = Math.max(0, e.clientY - oy) + 'px';
+                const nx = Math.max(0, e.clientX - ox), ny = Math.max(0, e.clientY - oy);
+                // A few pixels of slip while clicking is still a click.
+                if (Math.abs(nx - frame.offsetLeft) + Math.abs(ny - frame.offsetTop) > 3) dragMoved = true;
+                frame.style.left = nx + 'px';
+                frame.style.top  = ny + 'px';
             });
             document.addEventListener('pointerup', () => {
                 if (dragging) { dragging = false; document.body.classList.remove('dragging'); }
@@ -3641,14 +3658,14 @@
             });
 
             // Home. The title sits inside the titlebar, which is also the drag
-            // handle and carries a dblclick-to-collapse — so this has to stop
-            // pointerdown from reaching the drag, or every click would start a
-            // drag instead of going home.
+            // handle and carries a dblclick-to-collapse. It no longer blocks
+            // pointerdown — see the drag above — so instead it declines the
+            // click when that press turned out to be a drag. Keyboard
+            // activation never sets dragMoved, so Enter/Space still go Home.
             const homeEl = frame.querySelector('.menu-home');
             if (homeEl) {
-                homeEl.addEventListener('pointerdown', e => e.stopPropagation());
                 homeEl.addEventListener('dblclick', e => e.stopPropagation());
-                bind(homeEl, e => { if (e) e.stopPropagation(); goHome(); });
+                bind(homeEl, e => { if (e) e.stopPropagation(); if (dragMoved) return; goHome(); });
             }
 
             // Roving arrow-key navigation between menu rows, so a keyboard
@@ -3789,11 +3806,22 @@
             const [x, y] = entry.at, [w, h] = entry.size;
             el.dataset.sizeLocked = '1';
             const px = (v, total) => (v / 100 * total);
+
+            // THE MENU IS THE EXCEPTION: its height comes from its CONTENT, not
+            // from the authored percentage. Its rows are a fixed pixel height
+            // (type is `--font-scale × 16px`, not viewport-relative), so any
+            // percentage of the viewport is right at exactly one window size and
+            // leaves white space under Theme — or clips the list — at every
+            // other. Measured 2026-10-10 against `size 16.9 82`: 145 / 211 /
+            // 506px of white at 1600x1000, 1920x1080, 2560x1440, and 45px
+            // clipped at 1366x768. Position and WIDTH stay authored, so the menu
+            // is still yours to place with ?layout. (Nir, 2026-10-10)
+            const hugsContent = el.dataset.winKind === 'menu';
             Object.assign(el.style, {
                 left:   px(x, window.innerWidth)  + 'px',
                 top:    px(y, window.innerHeight) + 'px',
                 width:  px(w, window.innerWidth)  + 'px',
-                height: px(h, window.innerHeight) + 'px',
+                height: hugsContent ? '' : px(h, window.innerHeight) + 'px',
             });
 
             // An image frame takes the authored WIDTH and derives its height

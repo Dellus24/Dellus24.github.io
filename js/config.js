@@ -359,7 +359,7 @@ const LANDING = {
 
 Every window here belongs to a project. Rest on one to open it, or use the menu — each project brings its own colour with it.`,
     windows: [
-        { kind: 'menu', at: [1.8, 3.8], size: [16.9, 82] },
+        { kind: 'menu', at: [1.8, 2.8], size: [16.9, 82] },
         { project: '101-gates', kind: 'image', src: 'assets/projects/101-gates/gallery/01.webp', at: [7.2, 57.6], size: [21.9, 45.2] },
         { project: 'get-lost', kind: 'image', src: 'assets/projects/get-lost/gallery/03.webp', at: [11.5, 2.7], size: [33.1, 46.4] },
         { project: '101-gates', kind: 'model', src: 'assets/projects/101-gates/models/spring.glb', view: {"angle":[-109.5,0],"zoom":3.7,"spin":0.005,"res":0.9}, at: [24.6, 49.8], size: [25.8, 56.1] },

@@ -52,7 +52,7 @@ background: #ffffff
 # being built. They are placeholders — what the landing should actually show
 # is yours.
 windows:
-  menu                                        at 1.8 3.8 size 16.9 82
+  menu                                        at 1.8 2.8 size 16.9 82
   101-gates  image 01.webp                    at 7.2 57.6 size 21.9 45.2
   get-lost  image 03.webp                     at 11.5 2.7 size 33.1 46.4
   101-gates  model                            at 24.6 49.8 size 25.8 56.1  angle -109.5 0 zoom 3.7 spin 0.005 res 0.9
