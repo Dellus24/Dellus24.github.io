@@ -29,7 +29,7 @@ const warn = (m) => warnings.push(m);
 const HEAD_KEYS = ['title', 'year', 'category', 'location', 'participants', 'type'];
 const CATEGORIES = ['academic', 'employment'];
 const STATIC_KEYS = ['about', 'cv', 'contact'];   // hard-coded in the menu markup
-const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit', 'windows', 'view'];
+const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit', 'windows', 'view', 'phone-windows'];
 
 // HEAD_KEYS above are REQUIRED — every one is checked for presence. Optional
 // single-line keys are handled individually further down, like `credit`.
@@ -386,7 +386,6 @@ if (!fs.existsSync(landingFile)) {
     const where = 'content/landing.txt';
     const { head, blocks, body } = parseTxt(fs.readFileSync(landingFile, 'utf8'), where);
     const byId = new Map(projects.map(p => [p.id, p]));
-    const windows = [];
 
     // A window line is `<project> <kind> [file]`, optionally followed by a
     // position and size in PERCENT of the viewport:
@@ -410,9 +409,19 @@ if (!fs.existsSync(landingFile)) {
     // may appear once. Geometry is all-or-nothing: unless EVERY window carries
     // both `at` and `size`, the landing falls back to auto-tiling, so a
     // half-finished composition never renders half-placed.
+    //
+    // THE SAME PARSER SERVES TWO BLOCKS (2026-10-11). `windows:` is the desktop
+    // landing and its geometry is PERCENT of the viewport, exactly as before.
+    // `phone-windows:` is the phone board, and its geometry is CANVAS PIXELS —
+    // the phone zooms to fit whatever extent the block describes, which is what
+    // lets the menu keep its 260x598 of fixed content instead of being asked to
+    // be 17% of a 390px screen (which is 66px, and impossible).
+    const parseWindowBlock = (lines, { units, where }) => {
+    const PCT = units === 'percent';
+    const windows = [];
     const seenSolo = new Set();
     const seenPair = new Set();
-    for (const raw of blocks.windows || []) {
+    for (const raw of lines) {
         let line = raw;
         const geo = {};
         const mAt = line.match(/\bat\s+(-?[\d.]+)\s+(-?[\d.]+)/i);
@@ -433,11 +442,28 @@ if (!fs.existsSync(landingFile)) {
             }
         }
 
-        if (geo.at && geo.at.some(v => v < -50 || v > 150)) {
-            err(`${where}: "${raw.trim()}" — at x y are percentages of the screen, expected roughly 0-100`);
-        }
-        if (geo.size && geo.size.some(v => v <= 0 || v > 200)) {
-            err(`${where}: "${raw.trim()}" — size w h are percentages of the screen, expected 1-100`);
+        if (PCT) {
+            if (geo.at && geo.at.some(v => v < -50 || v > 150)) {
+                err(`${where}: "${raw.trim()}" — at x y are percentages of the screen, expected roughly 0-100`);
+            }
+            if (geo.size && geo.size.some(v => v <= 0 || v > 200)) {
+                err(`${where}: "${raw.trim()}" — size w h are percentages of the screen, expected 1-100`);
+            }
+        } else {
+            // Canvas pixels. The board can be much larger than any screen —
+            // that is the point — so the only real ceiling is a typo ceiling.
+            if (geo.at && geo.at.some(v => v < -20000 || v > 20000)) {
+                err(`${where}: "${raw.trim()}" — at x y are canvas pixels, expected roughly 0-20000`);
+            }
+            if (geo.size && geo.size.some(v => v <= 0 || v > 20000)) {
+                err(`${where}: "${raw.trim()}" — size w h are canvas pixels, expected 1-20000`);
+            }
+            // .win-frame has a 260px floor in the CSS, so a narrower number is
+            // silently ignored at render time. Say so rather than letting the
+            // board come out different from the block.
+            if (geo.size && geo.size[0] < 260) {
+                warn(`${where}: "${raw.trim()}" — width ${geo.size[0]}px is below the 260px floor .win-frame enforces; it will render 260 wide`);
+            }
         }
 
         const parts = line.trim().split(/\s+/).filter(Boolean);
@@ -533,6 +559,16 @@ if (!fs.existsSync(landingFile)) {
         }
     }
 
+    return windows;
+    };
+
+    const windows = parseWindowBlock(blocks.windows || [], { units: 'percent', where });
+    // The phone board is optional. Without it the phone falls back to the
+    // placeholder, which is deliberate: a half-authored board should never
+    // reach a visitor.
+    const phoneWindows = parseWindowBlock(blocks['phone-windows'] || [],
+        { units: 'px', where: where + ' (phone-windows)' });
+
     if (!windows.length) warn(`${where}: no "windows:" block — the landing will be the text alone`);
     if (!body) warn(`${where}: body is empty — the landing will be the windows alone`);
 
@@ -544,7 +580,8 @@ if (!fs.existsSync(landingFile)) {
         if (!HEX.test(head[k])) err(`${where}: ${k} "${head[k]}" must be a hex colour like #b3261e or #b31`);
         else pair[k] = head[k].toLowerCase();
     }
-    LANDING = { title: head.title || 'Nir Dellus', text: body, windows, ...pair };
+    LANDING = { title: head.title || 'Nir Dellus', text: body, windows, ...pair,
+        ...(phoneWindows.length ? { phoneWindows } : {}) };
 }
 
 // ── Emit ────────────────────────────────────────────────────────────────────
@@ -656,20 +693,28 @@ if (LANDING) {
     if (LANDING.color) out.push(`    color: ${q(LANDING.color)},`);
     if (LANDING.background) out.push(`    background: ${q(LANDING.background)},`);
     out.push(`    text: ${tpl(LANDING.text)},`);
-    out.push('    windows: [');
-    for (const w of LANDING.windows) {
-        const bits = [];
-        if (w.project) bits.push(`project: ${q(w.project)}`);
-        bits.push(`kind: ${q(w.kind)}`);
-        if (w.src) bits.push(`src: ${q(w.src)}`);
-        if (w.which) bits.push(`which: ${w.which}`);
-        if (w.slide) bits.push(`slide: ${w.slide}`);
-        if (w.view) bits.push(`view: ${JSON.stringify(w.view)}`);
-        if (w.at) bits.push(`at: [${w.at.join(', ')}]`);
-        if (w.size) bits.push(`size: [${w.size.join(', ')}]`);
-        out.push(`        { ${bits.join(', ')} },`);
+    const emitWindows = (key, list, note) => {
+        if (note) out.push('    ' + note);
+        out.push(`    ${key}: [`);
+        for (const w of list) {
+            const bits = [];
+            if (w.project) bits.push(`project: ${q(w.project)}`);
+            bits.push(`kind: ${q(w.kind)}`);
+            if (w.src) bits.push(`src: ${q(w.src)}`);
+            if (w.which) bits.push(`which: ${w.which}`);
+            if (w.slide) bits.push(`slide: ${w.slide}`);
+            if (w.view) bits.push(`view: ${JSON.stringify(w.view)}`);
+            if (w.at) bits.push(`at: [${w.at.join(', ')}]`);
+            if (w.size) bits.push(`size: [${w.size.join(', ')}]`);
+            out.push(`        { ${bits.join(', ')} },`);
+        }
+        out.push('    ],');
+    };
+    emitWindows('windows', LANDING.windows);
+    if (LANDING.phoneWindows) {
+        emitWindows('phoneWindows', LANDING.phoneWindows,
+            '// The phone board. at/size are CANVAS PIXELS, not percentages.');
     }
-    out.push('    ],');
     out.push('};');
 } else {
     out.push('const LANDING = null;');

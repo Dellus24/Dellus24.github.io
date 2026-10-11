@@ -66,6 +66,43 @@ windows:
   for-now-house  image Cross_Detail.webp      at 77.8 33.4 size 24 38.4
   re-possessing-industrial  model             at 78.4 50.4 size 23.3 52.1  angle -66.5 26.4 zoom 4.9 spin 0 mode wireframe
 
+# ── THE PHONE BOARD ───────────────────────────────────────────────────────
+# A DRAFT by Claude 2026-10-11, for Nir to correct. The arrangement is yours;
+# this is only something to react to.
+#
+# Same window kinds and the same view keys as above, but `at` and `size` are
+# CANVAS PIXELS, not percentages. The phone zooms out to fit whatever extent
+# this block describes, Miro-style, so nothing has to shrink to fit a 390px
+# screen — which is what makes the menu possible here at all. It holds 260x598
+# of fixed content; asked to be 17% of a phone it would be 66px wide, and it
+# simply cannot be.
+#
+# WEIGHT WAS THE FIRST CONSTRAINT. The desktop landing pulls 8.4 MB. This
+# board is ~1.6 MB, almost all of it Cabine.glb:
+#
+#     Floor Detail.glb      13 KB        gallery THUMB    13-23 KB
+#     silo.glb             104 KB        gallery full    500-800 KB
+#     Cabine.glb          1431 KB
+#
+# Every image here is a `thumbs/` derivative for that reason. Swapping
+# Cabine.glb for a thumb would take the board under 250 KB — your call.
+#
+# WHY THESE: models read best small. They are 1px linework, high contrast, and
+# they move, so each one carries its project colour legibly at a zoom where a
+# photograph is mud. Five projects, five inks — zoomed out the board reads as
+# colour before it reads as content.
+phone-windows:
+  text                                                 at 40 40     size 360 200
+  menu                                                 at 40 280    size 260 598
+  get-lost  model                                      at 440 40    size 420 520   angle 151.1 28.3 pan 0 1.2 -0.2 zoom 12.3 spin 0.002 mode wireframe decon 100
+  cloud-to-ground  image thumbs/tile_sample.webp       at 440 600   size 300 260
+  re-possessing-industrial  model                      at 40 920    size 360 420   angle -66.5 26.4 zoom 4.9 spin 0 mode wireframe
+  for-now-house  image thumbs/Cross_Detail.webp        at 440 900   size 280 280
+  get-lost  image thumbs/03.webp                       at 440 1220  size 300 220
+  pray-and-play  model                                 at 40 1380   size 360 400   angle -82.2 36.5 zoom 2.6 spin 0.003 mode wireframe width 2
+  101-gates  image thumbs/01.webp                      at 440 1480  size 280 220
+
+
 ---
 
 Architecture, research and design.

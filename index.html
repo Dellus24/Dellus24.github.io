@@ -1014,9 +1014,69 @@
            the × would empty the screen, and the resize edges and titlebar drag
            would unpin it from the slot layout() measures. Every VIEWER control
            — modes, settings, sliders, deconstruct, views — is left alone. */
-        html.phone .win-frame .win-close,
-        html.phone .win-frame .win-resize-edge { display: none; }
-        html.phone .win-titlebar { pointer-events: none; cursor: default; }
+        html.phone.placeholder .win-frame .win-close,
+        html.phone.placeholder .win-frame .win-resize-edge { display: none; }
+        html.phone.placeholder .win-titlebar { pointer-events: none; cursor: default; }
+
+        /* ── PHONE BOARD (2026-10-11) ─────────────────────────────────────
+           Miro-style canvas. #board-viewport is the hole you look through: it
+           is the viewport, it clips, and it swallows the browser's own pan and
+           zoom so ours is the only one. #workspace moves INSIDE it, sized to
+           the board and carrying the transform, which is why the clip happens
+           in screen space rather than in the scaled space of the board. */
+        html.phone.board #board-viewport {
+            position: fixed; inset: 0; overflow: hidden;
+            background: var(--bg);
+            touch-action: none;             /* ours is the only pan and zoom */
+            overscroll-behavior: none;
+        }
+        html.phone.board #workspace {
+            position: absolute; left: 0; top: 0;
+            overflow: visible;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+        /* No transition on the transform: a pinch must track the fingers
+           exactly. Programmatic moves (fit, double-tap) tween in JS instead. */
+
+        /* The resize handles sit 3px OUTSIDE each window and are invisible.
+           On a board that is zoomed out they ring every window in a halo that
+           Chrome's touch adjustment happily snaps a nearby finger onto — so a
+           tap on clear canvas beside a window silently became a resize grab
+           and the board would not pan. Measured 2026-10-11: a touch at x=181
+           landed on a .win-resize-edge whose own box ends at x=174.5.
+           A finger cannot aim at 3px anyway, so the board drops them. Windows
+           still MOVE by their titlebar; only edge-resize goes. */
+        html.phone.board .win-resize-edge,
+        html.phone.board .img-float-resize,
+        html.phone.board .slide-resize { pointer-events: none; }
+
+        /* The board's own controls, outside the canvas so they do not scale. */
+        html.phone.board .board-btn {
+            position: fixed; z-index: 950;
+            box-sizing: border-box;
+            min-width: 44px; min-height: 44px;     /* a finger, not a pointer */
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 14px;
+            background: var(--bg); color: var(--fg);
+            border: 1px solid var(--border-strong);
+            font-family: var(--font-family); font-variation-settings: var(--font-var);
+            font-size: 13px; letter-spacing: 0.03em;
+            cursor: pointer; user-select: none;
+        }
+        html.phone.board .board-fit {
+            right: 14px;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        }
+        html.phone.board .board-zoom {
+            left: 14px;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+            font-variant-numeric: tabular-nums;
+            opacity: 0.45; pointer-events: none;
+            /* No border and no fill: with them it reads as a tenth window
+               sitting on the board rather than as a readout over it. */
+            border: none; background: none; min-width: 0; padding: 0;
+        }
 
     </style>
 </head>
@@ -1049,6 +1109,24 @@
         // ================================================================
         let topZ = 50;
         const openWins = {};
+
+        // ── BOARD VIEW (2026-10-11) ───────────────────────────────────────
+        // The phone looks at the workspace through a moving, scaling window:
+        // a point at canvas (cx, cy) shows up on screen at (cx*z + x, cy*z + y).
+        //
+        // DESKTOP NEVER ENTERS THIS. Nir's call 2026-10-11: the desktop keeps
+        // no gestures at all, so boardOn stays false there, viewScale() is the
+        // constant 1, and every expression below is arithmetically the one that
+        // was there before the board existed.
+        const view = { x: 0, y: 0, z: 1 };
+        let boardOn = false;
+        const viewScale = () => (boardOn ? view.z : 1);
+
+        // A pointer event in CANVAS units. On desktop this reduces to
+        // `e.clientX + ws.scrollLeft`, which is exactly what the drag and
+        // resize handlers used to compute inline.
+        const canvasX = (e, ws) => (e.clientX - (boardOn ? view.x : 0)) / viewScale() + ws.scrollLeft;
+        const canvasY = (e, ws) => (e.clientY - (boardOn ? view.y : 0)) / viewScale() + ws.scrollTop;
 
         function nextSpawn(w = 300, h = 250) {
             const sw = window.innerWidth, sh = window.innerHeight;
@@ -1151,7 +1229,10 @@
             });
             document.addEventListener('pointermove', e => {
                 if (!resizing || !e.isPrimary) return;
-                const dx = e.clientX - rsx, dy = e.clientY - rsy;
+                // Screen movement divided by the board zoom, because width and
+                // height are canvas units. viewScale() is 1 on desktop, so this
+                // is the plain subtraction it has always been there.
+                const dx = (e.clientX - rsx) / viewScale(), dy = (e.clientY - rsy) / viewScale();
                 if (resizeDir.includes('e')) frame.style.width  = Math.max(minW, rsw + dx) + 'px';
                 if (resizeDir.includes('s')) frame.style.height = Math.max(minH, rsh + dy) + 'px';
                 if (resizeDir.includes('w')) {
@@ -1280,15 +1361,17 @@
                 // so the body content stays touch-scrollable.
                 if (bodyDrag && e.pointerType !== 'mouse' && !e.target.closest('.win-titlebar')) return;
                 dragging = true;
-                ox = e.clientX + ws.scrollLeft - frame.offsetLeft;
-                oy = e.clientY + ws.scrollTop - frame.offsetTop;
+                // Canvas units, so a drag tracks the finger at any board zoom.
+                // Identical to the old inline arithmetic whenever z is 1.
+                ox = canvasX(e, ws) - frame.offsetLeft;
+                oy = canvasY(e, ws) - frame.offsetTop;
                 if (bodyDrag) frame.style.cursor = 'grabbing';
                 document.body.classList.add('dragging'); e.preventDefault();
             });
             document.addEventListener('pointermove', e => {
                 if (!dragging || !e.isPrimary) return;
-                frame.style.left = Math.max(0, e.clientX + ws.scrollLeft - ox) + 'px';
-                frame.style.top  = Math.max(0, e.clientY + ws.scrollTop - oy) + 'px';
+                frame.style.left = Math.max(0, canvasX(e, ws) - ox) + 'px';
+                frame.style.top  = Math.max(0, canvasY(e, ws) - oy) + 'px';
             }, docSig);
             const endFrameDrag = () => {
                 if (dragging && bodyDrag) frame.style.cursor = '';
@@ -2769,6 +2852,10 @@
                 // preserveDrawingBuffer not needed: the ascii effect samples the
                 // canvas synchronously right after each render call.
                 const renderer = new THREE.WebGLRenderer({ antialias: true });
+                // Pixel ratio 1 is a deliberate cost choice. On the phone board
+                // the frame is also CSS-scaled, so at z > 1 a ratio of 1 renders
+                // fewer pixels than are shown and the model goes soft — the
+                // board raises it on zoom-end through _setBoardScale below.
                 renderer.setPixelRatio(1); renderer.setClearColor(BG, 1);
                 canvasCont.appendChild(renderer.domElement);
 
@@ -3391,6 +3478,14 @@
                     wireEdgeMat.resolution.set(w, h); solidEdgeMat.resolution.set(w, h);
                 }
                 frame.addEventListener('win-resize', resizeVP);
+                // Called by the phone board when the zoom settles. Capped at 2:
+                // past that the extra pixels cost more than they show.
+                frame._setBoardScale = (z) => {
+                    const want = Math.min(2, Math.max(1, z));
+                    if (Math.abs(renderer.getPixelRatio() - want) < 0.01) return;
+                    renderer.setPixelRatio(want);
+                    resizeVP();
+                };
 
                 const onThemeChange = () => {
                     const bg = canvasOf();
@@ -3432,7 +3527,12 @@
                         const z = orthoRefRadius / Math.max(0.0001, orbit.radius);
                         if (Math.abs(orthoCam.zoom - z) > 1e-4) { orthoCam.zoom = z; orthoCam.updateProjectionMatrix(); }
                     }
-                    if (mode === 'ascii') ascii.render(scene, activeCam);
+                    // Off the board's visible region: keep orbiting (cheap, and
+                    // it keeps an authored spin in step) but draw nothing. Only
+                    // the phone board ever sets this; on desktop it is undefined
+                    // and the branch is never taken.
+                    if (frame._offBoard) { /* not visible — skip the draw */ }
+                    else if (mode === 'ascii') ascii.render(scene, activeCam);
                     else renderer.render(scene, activeCam);
                     if (modelGroup) {
                         const ndc = _mc.clone().project(activeCam);
@@ -3896,6 +3996,36 @@
             el.dispatchEvent(new CustomEvent('win-resize'));
         }
 
+        // The phone board's placer. Identical to placeLanding except that the
+        // numbers are CANVAS PIXELS rather than percentages of the viewport —
+        // which is the whole reason the board exists. A percentage asks the
+        // menu to be 17% of a 390px screen, i.e. 66px, and it holds 260px of
+        // content that cannot shrink. In canvas units it is simply 260 wide and
+        // the board zooms out to it.
+        function placeCanvas(el, entry) {
+            if (!entry || !entry.at || !entry.size) return;
+            const [x, y] = entry.at, [w, h] = entry.size;
+            el.dataset.sizeLocked = '1';
+            // Same exception as the desktop landing: the menu's height is its
+            // content's, because its rows are a fixed pixel height.
+            const hugsContent = el.dataset.winKind === 'menu';
+            Object.assign(el.style, {
+                left: x + 'px', top: y + 'px', width: w + 'px',
+                height: hugsContent ? '' : h + 'px',
+            });
+            if (el.classList.contains('img-float')) {
+                const fit = () => {
+                    el.style.width  = w + 'px';
+                    el.style.height = Math.max(80, Math.round(w / aspectOf(el))) + 'px';
+                    el.dispatchEvent(new CustomEvent('win-resize'));
+                };
+                const im = el.querySelector('img');
+                if (im && !im.complete) im.addEventListener('load', fit, { once: true });
+                fit();
+            }
+            el.dispatchEvent(new CustomEvent('win-resize'));
+        }
+
         // ── LAYOUT TOOL — DEVELOPMENT ONLY ────────────────────────────────
         // Off unless the URL carries ?layout, so a visitor can never reach it
         // and nothing about it is built into the page they load. Arrange the
@@ -4063,8 +4193,13 @@
             return null;
         }
 
-        function openLanding() {
+        // The phone board reuses this whole function — same factories, same
+        // tinting, same hatch — and differs only in WHICH list it builds and
+        // HOW the geometry is read. Called with no arguments it is the desktop
+        // landing it has always been (Nir 2026-10-11: desktop must not change).
+        function openLanding(list = null, place = placeLanding) {
             if (typeof LANDING === 'undefined' || !LANDING) { menuFrame._toggleCollapse(); return; }
+            if (!list) list = LANDING.windows;
             restoreUserTheme();     // the landing's own pair, unless the visitor has chosen
 
             // The landing's own text window. Built here rather than through a
@@ -4081,7 +4216,7 @@
             // Geometry is all-or-nothing: a composition is either fully authored
             // (every window carries at + size) or fully auto-tiled. A mixture
             // would leave some placed and some wherever, which reads as a bug.
-            const placed = LANDING.windows.length > 0 && LANDING.windows.every(w => w.at && w.size);
+            const placed = list.length > 0 && list.every(w => w.at && w.size);
             let pending = 1;                       // released after the loop
             const finish = () => {
                 if (!placed) requestAnimationFrame(() => orderWindows());
@@ -4089,7 +4224,7 @@
             };
             const settle = () => { if (--pending <= 0) finish(); };
 
-            LANDING.windows.forEach((w, i) => {
+            list.forEach((w, i) => {
                 const spec = landingSpec(w, i);
                 if (!spec) return;
                 pending++;
@@ -4116,7 +4251,7 @@
                         tintFrame(el, markInkOf(spec.project), null);
                         attachHatch(el, spec.project);
                     }
-                    placeLanding(el, w);
+                    place(el, w);
 
                     // openImage resizes to the image's natural size on load,
                     // which lands AFTER any placement and would snap the window
@@ -4251,7 +4386,7 @@
         })();
 
         async function openPhoneGate() {
-            document.documentElement.classList.add('phone');
+            document.documentElement.classList.add('phone', 'placeholder');
 
             const note = document.createElement('div');
             note.className = 'phone-note';
@@ -4330,9 +4465,261 @@
             window.addEventListener('orientationchange', () => requestAnimationFrame(layout));
         }
 
-        const menuFrame = IS_PHONE ? null : buildMenuWindow();
+        // ── PHONE BOARD (2026-10-11) ──────────────────────────────────────
+        // Nir picked the pannable-canvas shape and named Miro as the reference.
+        // The workspace already kept its windows in canvas coordinates — the
+        // drag handler has always read ws.scrollLeft — so this adds the two
+        // things it lacked: a zoom, and gestures to drive it.
+        //
+        // WHOSE FINGER IS IT (Nir, 2026-10-11): one finger on empty canvas
+        // moves the board; one finger that lands on a window belongs to that
+        // window, so a model still orbits under a single finger. The same rule
+        // decides a pinch — fingers that start on the viewer zoom the MODEL,
+        // fingers that start on the canvas zoom the BOARD. One rule, no
+        // interception, and nothing that worked before stops working.
+        async function openPhoneBoard() {
+            document.documentElement.classList.add('phone', 'board');
+            boardOn = true;
 
-        if (IS_PHONE) {
+            const ws = document.getElementById('workspace');
+            // #board-viewport is the hole you look through; #workspace moves
+            // inside it. The clip has to live on a NON-transformed element or
+            // it would happen in the board's scaled space instead of screen space.
+            const vp = document.createElement('div');
+            vp.id = 'board-viewport';
+            ws.parentNode.insertBefore(vp, ws);
+            vp.appendChild(ws);
+
+            const zoomLabel = document.createElement('div');
+            zoomLabel.className = 'board-btn board-zoom';
+            zoomLabel.textContent = '100%';
+            const fitBtn = document.createElement('button');
+            fitBtn.type = 'button';
+            fitBtn.className = 'board-btn board-fit';
+            fitBtn.textContent = 'Fit';
+            document.body.append(zoomLabel, fitBtn);
+
+            const applyView = () => {
+                ws.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`;
+                zoomLabel.textContent = Math.round(view.z * 100) + '%';
+            };
+
+            // A window is a .win-frame, a .slide-float OR an .img-float — the
+            // same trio tileProjectWindows and the layout tool already use.
+            // Selecting only .win-frame here silently left every image and
+            // slideshow out of the board's extent and out of the cull.
+            const WINS = '.win-frame, .slide-float, .img-float';
+
+            // Live geometry, never a stored constant: the board is whatever the
+            // windows currently occupy, so moving one re-fits correctly.
+            const extent = () => {
+                let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+                for (const f of ws.querySelectorAll(WINS)) {
+                    x0 = Math.min(x0, f.offsetLeft); y0 = Math.min(y0, f.offsetTop);
+                    x1 = Math.max(x1, f.offsetLeft + f.offsetWidth);
+                    y1 = Math.max(y1, f.offsetTop + f.offsetHeight);
+                }
+                return isFinite(x0) ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+            };
+            const fitZoom = () => {
+                const e = extent(); if (!e || !e.w || !e.h) return 1;
+                return Math.min((innerWidth - 32) / e.w, (innerHeight - 32) / e.h);
+            };
+            const clampZ = z => Math.max(fitZoom() * 0.7, Math.min(3, z));
+
+            // What the renderers need told once the view stops moving: which
+            // windows are off-screen (draw nothing) and how sharp to be.
+            const settle = () => {
+                for (const f of ws.querySelectorAll(WINS)) {
+                    const r = f.getBoundingClientRect();
+                    f._offBoard = r.right < -80 || r.bottom < -80
+                               || r.left > innerWidth + 80 || r.top > innerHeight + 80;
+                }
+                for (const f of ws.querySelectorAll('.win-frame[data-win-kind="model"]'))
+                    if (!f._offBoard) f._setBoardScale && f._setBoardScale(view.z);
+            };
+
+            let tweenId = null;
+            const stopTween = () => { if (tweenId) cancelAnimationFrame(tweenId); tweenId = null; };
+            const tweenTo = (z, x, y, ms = 260) => {
+                stopTween();
+                const z0 = view.z, x0 = view.x, y0 = view.y, t0 = performance.now();
+                const step = () => {
+                    const k = Math.min(1, (performance.now() - t0) / ms);
+                    const e = 1 - Math.pow(1 - k, 3);
+                    view.z = z0 + (z - z0) * e;
+                    view.x = x0 + (x - x0) * e;
+                    view.y = y0 + (y - y0) * e;
+                    applyView();
+                    if (k < 1) tweenId = requestAnimationFrame(step);
+                    else { tweenId = null; settle(); }
+                };
+                tweenId = requestAnimationFrame(step);
+            };
+
+            const fit = (animate = true) => {
+                const e = extent(); if (!e) return;
+                const z = fitZoom();
+                const x = (innerWidth  - e.w * z) / 2 - e.x * z;
+                const y = (innerHeight - e.h * z) / 2 - e.y * z;
+                if (animate) tweenTo(z, x, y);
+                else { view.z = z; view.x = x; view.y = y; applyView(); settle(); }
+            };
+            // Zoom about a screen point, keeping the canvas point under it still.
+            const zoomAbout = (z, sx, sy) => {
+                const nz = clampZ(z);
+                const cx = (sx - view.x) / view.z, cy = (sy - view.y) / view.z;
+                tweenTo(nz, sx - cx * nz, sy - cy * nz);
+            };
+            fitBtn.addEventListener('click', () => fit());
+
+            // ── gestures ──────────────────────────────────────────────────
+            const pts = new Map();
+            let panning = false, pinch = null;
+            let lastX = 0, lastY = 0, lastT = 0, vx = 0, vy = 0, glideId = null;
+            const stopGlide = () => { if (glideId) cancelAnimationFrame(glideId); glideId = null; };
+            // WHOSE TOUCH IS IT — decided by GEOMETRY, not by e.target.
+            //
+            // e.target is not trustworthy here. Chrome applies touch
+            // adjustment: it snaps a touch onto a nearby interactive element
+            // rather than the one literally under the finger, which is a kindness
+            // on an ordinary page and a disaster on a board zoomed to 44%, where
+            // the gaps between windows are ~16 screen px. Measured 2026-10-11: a
+            // touch on clear canvas at x=174 was delivered to a window body 0px
+            // away in DOM terms and 8px away on screen, so the board never panned.
+            //
+            // So the board hit-tests itself, against the windows' real on-screen
+            // rects, exactly as a canvas app does. getBoundingClientRect on a
+            // frame is its border box, so the invisible resize halo is excluded.
+            const hitAt = (x, y) => {
+                const inside = r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+                for (const b of document.querySelectorAll('.board-btn'))
+                    if (inside(b.getBoundingClientRect())) return b;
+                let best = null, bz = -Infinity;
+                for (const f of ws.querySelectorAll(WINS)) {
+                    if (!inside(f.getBoundingClientRect())) continue;
+                    const z = parseFloat(getComputedStyle(f).zIndex) || 0;
+                    if (z >= bz) { bz = z; best = f; }     // topmost wins
+                }
+                return best;
+            };
+            const onCanvas = e => !hitAt(e.clientX, e.clientY);
+
+            // CAPTURE phase: this has to run before the window's own handlers,
+            // because when the board claims a touch it must also stop the window
+            // touch adjustment handed it to from acting on it.
+            vp.addEventListener('pointerdown', e => {
+                if (!onCanvas(e)) return;          // this finger belongs to the window
+                e.stopPropagation();
+                pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                stopGlide(); stopTween();
+                if (pts.size === 2) {
+                    const [a, b] = [...pts.values()];
+                    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+                              mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2,
+                              z: view.z, x: view.x, y: view.y };
+                    panning = false;
+                    return;
+                }
+                panning = true;
+                lastX = e.clientX; lastY = e.clientY; lastT = performance.now();
+                vx = vy = 0;
+            }, true);
+
+            window.addEventListener('pointermove', e => {
+                if (!pts.has(e.pointerId)) return;
+                pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (pinch && pts.size >= 2) {
+                    const [a, b] = [...pts.values()];
+                    const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+                    const nz = clampZ(pinch.z * d / pinch.d);
+                    // The canvas point that was under the first midpoint stays
+                    // under the current one, so the gesture zooms AND pans the
+                    // way a board does.
+                    const cx = (pinch.mx - pinch.x) / pinch.z;
+                    const cy = (pinch.my - pinch.y) / pinch.z;
+                    view.z = nz;
+                    view.x = (a.x + b.x) / 2 - cx * nz;
+                    view.y = (a.y + b.y) / 2 - cy * nz;
+                    applyView();
+                    return;
+                }
+                if (!panning) return;
+                const now = performance.now(), dt = Math.max(1, now - lastT);
+                const dx = e.clientX - lastX, dy = e.clientY - lastY;
+                view.x += dx; view.y += dy;
+                vx = dx / dt; vy = dy / dt;
+                lastX = e.clientX; lastY = e.clientY; lastT = now;
+                applyView();
+            });
+
+            // Momentum. A board that stops dead under your finger feels like a
+            // scroll area, not a board.
+            const glide = () => {
+                if (Math.hypot(vx, vy) < 0.08) { settle(); return; }
+                let gx = vx, gy = vy, prev = performance.now();
+                const step = () => {
+                    const now = performance.now(), dt = now - prev; prev = now;
+                    const decay = Math.pow(0.002, dt / 1000);
+                    gx *= decay; gy *= decay;
+                    view.x += gx * dt; view.y += gy * dt;
+                    applyView();
+                    if (Math.hypot(gx, gy) > 0.02) glideId = requestAnimationFrame(step);
+                    else { glideId = null; settle(); }
+                };
+                glideId = requestAnimationFrame(step);
+            };
+
+            let lastTap = 0, ltx = 0, lty = 0;
+            const endPtr = e => {
+                if (!pts.has(e.pointerId)) return;
+                pts.delete(e.pointerId);
+                if (pts.size < 2) pinch = null;
+                if (pts.size) return;
+                if (panning) { panning = false; glide(); } else settle();
+                // Double-tap on empty canvas: in to reading size, or back to fit.
+                const now = performance.now();
+                if (now - lastTap < 320 && Math.hypot(e.clientX - ltx, e.clientY - lty) < 30) {
+                    lastTap = 0;
+                    if (view.z < 0.9) zoomAbout(1, e.clientX, e.clientY); else fit();
+                } else { lastTap = now; ltx = e.clientX; lty = e.clientY; }
+            };
+            window.addEventListener('pointerup', endPtr);
+            window.addEventListener('pointercancel', endPtr);
+
+            // ── build the board ───────────────────────────────────────────
+            const board = (typeof LANDING !== 'undefined' && LANDING && LANDING.phoneWindows) || null;
+            if (!board) {               // nothing authored — fall back, never blank
+                openPhoneGate();
+                return;
+            }
+            openLanding(board, placeCanvas);
+
+            // The windows arrive over several frames (open3D awaits its loader,
+            // images await their decode), so fit once things stop appearing
+            // rather than guessing a delay.
+            let seen = -1, still = 0;
+            const settleFit = () => {
+                const n = ws.querySelectorAll(WINS).length;
+                if (n !== seen) { seen = n; still = 0; } else still++;
+                if (still < 20) return requestAnimationFrame(settleFit);
+                fit(false);
+            };
+            requestAnimationFrame(settleFit);
+            window.addEventListener('resize', () => fit(false));
+            window.addEventListener('orientationchange', () => requestAnimationFrame(() => fit(false)));
+        }
+
+        // ?canvas opts into the board while the placeholder is still what a
+        // visitor gets. It comes down once Nir has approved the board.
+        const PHONE_MODE = !IS_PHONE ? null
+            : (new URLSearchParams(location.search).has('canvas') ? 'board' : 'placeholder');
+
+        const menuFrame = (PHONE_MODE === 'placeholder') ? null : buildMenuWindow();
+
+        if (PHONE_MODE === 'board') {
+            openPhoneBoard();
+        } else if (PHONE_MODE === 'placeholder') {
             openPhoneGate();
         } else {
             // The menu's "open" dimming is derived from the canvas, so it has to be
