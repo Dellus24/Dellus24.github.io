@@ -216,6 +216,7 @@ In summary, the planning proposes an almost complete preservation of the existin
         credit:       `Supported and funded by the Bezalel Research Authority.`,
         color:        '#d2a914',
         background:   '#ffffff',
+        model:        'assets/projects/for-now-house/models/Conector A.glb',
         images:       imgs('assets/projects/for-now-house/gallery/', [
             'CNC_machine.webp', 'Cnc_Example.webp', 'Code_Image.webp', 'Code_modol_1x1.webp',
             'Code_modol_2x5.webp', 'Conect_In_The_Air.webp', 'Connectors-02.webp',

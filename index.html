@@ -1051,6 +1051,105 @@
         html.phone.board .img-float-resize,
         html.phone.board .slide-resize { pointer-events: none; }
 
+        /* ── FINGER-SIZED WINDOW CHROME ON THE BOARD (2026-10-11) ─────────
+           Nir: the bar on top should "work good with finger tips and not be
+           so small", and the viewer should be resizable "on the corners or
+           just normal touch standard". 44px IS that standard — Apple's HIG
+           and Android's guidance both ask for 44-48. Desktop keeps its 24px
+           chrome: every rule here is behind html.phone.board. */
+
+        /* THE GRIP GOES TOP-LEFT, and that is a considered choice.
+           The bottom-right corner is the obvious place and it is the one
+           corner that does not work here: a 3D viewer's control bar and a
+           slideshow's bar both run the full width of the bottom edge, so the
+           grip sat on their end controls. Measured 2026-10-11 at the landing's
+           44% zoom: the grip covered all but 4px of "Settings", and tapping
+           what was left still landed on the grip. Padding the bar clear of it
+           only moved the collision, because the bar's own contents are 33x11px
+           at that zoom and unusable regardless — you zoom in to use controls,
+           the same as on any board.
+           The top-left corner collides with nothing on any window kind: the
+           close button is top-RIGHT, the title text is not interactive, and
+           makeFrame's drag handler already declines a pointerdown that starts
+           on a .win-resize-edge. Images and slideshows keep their existing
+           bottom-right grip, since their bars are at the top or short.
+           The side edges stay off — they sit 3px OUTSIDE the window and were
+           the halo that stole canvas touches. */
+        html.phone.board .win-frame .win-resize-edge[data-dir="nw"],
+        html.phone.board .img-float-resize,
+        html.phone.board .slide-resize {
+            pointer-events: auto;
+            /* COUNTER-SCALED, which is the whole point. A grip sized in canvas
+               pixels shrinks with the board: 44px measured 19px on screen at
+               44% zoom, well under a fingertip. --bzi is 1/zoom, published by
+               applyView, so the grip holds ~44 SCREEN px at any zoom, the way
+               a canvas app keeps its handles constant. Capped so it cannot
+               swallow a small window when zoomed far out. Desktop never sets
+               --bzi and never matches these rules. */
+            width:  min(44px * var(--bzi, 1), 96px);
+            height: min(44px * var(--bzi, 1), 96px);
+            z-index: 30;
+        }
+        html.phone.board .win-frame .win-resize-edge[data-dir="nw"] {
+            top: 0; left: 0; right: auto; bottom: auto;
+        }
+        html.phone.board .img-float-resize,
+        html.phone.board .slide-resize { bottom: 0; right: 0; left: auto; top: auto; }
+
+        /* A grip you can see, or nobody will know it is there: two strokes in
+           the corner, in the ink the window is already wearing. */
+        html.phone.board .win-frame .win-resize-edge[data-dir="nw"]::after,
+        html.phone.board .img-float-resize::after,
+        html.phone.board .slide-resize::after {
+            content: ''; position: absolute; opacity: 0.4;
+            width:  min(13px * var(--bzi, 1), 28px);
+            height: min(13px * var(--bzi, 1), 28px);
+        }
+        html.phone.board .win-frame .win-resize-edge[data-dir="nw"]::after {
+            left: min(5px * var(--bzi, 1), 11px); top: min(5px * var(--bzi, 1), 11px);
+            border-left: min(2px * var(--bzi, 1), 4px) solid var(--fg);
+            border-top:  min(2px * var(--bzi, 1), 4px) solid var(--fg);
+        }
+        html.phone.board .img-float-resize::after,
+        html.phone.board .slide-resize::after {
+            right: min(5px * var(--bzi, 1), 11px); bottom: min(5px * var(--bzi, 1), 11px);
+            border-right:  min(2px * var(--bzi, 1), 4px) solid var(--fg);
+            border-bottom: min(2px * var(--bzi, 1), 4px) solid var(--fg);
+        }
+        /* The title starts after the grip rather than under it. */
+        html.phone.board .win-titlebar { padding-left: min(50px * var(--bzi, 1), 104px); }
+
+        /* The bar on top of a window, at a size a finger can find. */
+        html.phone.board .win-titlebar {
+            height: 44px; min-height: 44px;
+            border-bottom-color: var(--border-soft);
+        }
+        html.phone.board .win-title {
+            font-size: 13px; opacity: 0.75; letter-spacing: 0.02em;
+        }
+        html.phone.board .win-type-tag { display: none; }   /* decoration, no room */
+
+        /* An image's and a slideshow's bars REST AT OPACITY 0 and appear on
+           :hover, which on a phone means they are invisible and unreachable —
+           so the only close button those windows have could never be found.
+           On the board they are simply on. */
+        html.phone.board .img-float-bar {
+            height: 44px; opacity: 1; pointer-events: auto;
+        }
+        html.phone.board .img-float-title { font-size: 11px; opacity: 0.6; }
+        html.phone.board .slide-bar { height: 44px; opacity: 1; font-size: 12px; }
+
+        /* Close: a glyph big enough to hit, and visible without a hover. */
+        html.phone.board .win-frame .win-close,
+        html.phone.board .img-float .img-float-close,
+        html.phone.board .slide-float .slide-close {
+            opacity: 0.55;
+            font-size: 19px; line-height: 1;
+            min-width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: flex-end;
+            padding: 0;
+        }
+
         /* The board's own controls, outside the canvas so they do not scale. */
         html.phone.board .board-btn {
             position: fixed; z-index: 950;
@@ -4522,6 +4621,9 @@
 
             const applyView = () => {
                 ws.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`;
+                // 1/zoom, for chrome that must hold its SCREEN size however far
+                // the board is zoomed — the resize grips. See --bzi in the CSS.
+                ws.style.setProperty('--bzi', String(1 / view.z));
                 zoomLabel.textContent = Math.round(view.z * 100) + '%';
             };
 
@@ -4596,7 +4698,7 @@
 
             // ── gestures ──────────────────────────────────────────────────
             const pts = new Map();
-            let panning = false, pinch = null;
+            let panning = false, pinch = null, moved = false;
             let lastX = 0, lastY = 0, lastT = 0, vx = 0, vy = 0, glideId = null;
             const stopGlide = () => { if (glideId) cancelAnimationFrame(glideId); glideId = null; };
             // WHOSE TOUCH IS IT — decided by GEOMETRY, not by e.target.
@@ -4642,7 +4744,7 @@
                     panning = false;
                     return;
                 }
-                panning = true;
+                panning = true; moved = false;
                 lastX = e.clientX; lastY = e.clientY; lastT = performance.now();
                 vx = vy = 0;
             }, true);
@@ -4668,6 +4770,7 @@
                 if (!panning) return;
                 const now = performance.now(), dt = Math.max(1, now - lastT);
                 const dx = e.clientX - lastX, dy = e.clientY - lastY;
+                if (dx || dy) moved = true;
                 view.x += dx; view.y += dy;
                 vx = dx / dt; vy = dy / dt;
                 lastX = e.clientX; lastY = e.clientY; lastT = now;
@@ -4697,10 +4800,30 @@
                 pts.delete(e.pointerId);
                 if (pts.size < 2) pinch = null;
                 if (pts.size) return;
-                if (panning) { panning = false; glide(); } else settle();
+                // Only when the view actually CHANGED. settle() reads every
+                // window's rect and re-sizes the WebGL renderers, and it was
+                // running on every tap: measured 2026-10-11, that pushed two
+                // taps 190ms apart out to 424ms of wall clock and so put every
+                // double-tap outside its own window. A tap that moved nothing
+                // needs no settling.
+                const wasPanning = panning;
+                panning = false;
+                if (wasPanning && moved) glide();
+                else if (!wasPanning) settle();
                 // Double-tap on empty canvas: in to reading size, or back to fit.
-                const now = performance.now();
-                if (now - lastTap < 320 && Math.hypot(e.clientX - ltx, e.clientY - lty) < 30) {
+                //
+                // e.timeStamp, NOT performance.now(). They share an epoch, but
+                // timeStamp is when the touch HAPPENED while performance.now()
+                // here is when this handler got to run — and on this page those
+                // differ, because four rAF render loops keep the main thread
+                // busy. Measured 2026-10-11: two taps dispatched 190ms apart
+                // were seen 424ms apart by the handler clock, so every
+                // double-tap fell outside its own window. The event's own
+                // timestamp is immune to that.
+                const now = e.timeStamp || performance.now();
+                // 400ms: a thumb lifting and landing again is slower than a
+                // mouse, and platform double-tap thresholds sit at 300-500ms.
+                if (now - lastTap < 400 && Math.hypot(e.clientX - ltx, e.clientY - lty) < 30) {
                     lastTap = 0;
                     if (view.z < 0.9) zoomAbout(1, e.clientX, e.clientY); else fit();
                 } else { lastTap = now; ltx = e.clientX; lty = e.clientY; }
