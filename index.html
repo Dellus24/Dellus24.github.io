@@ -1129,15 +1129,26 @@
         }
         html.phone.board .win-type-tag { display: none; }   /* decoration, no room */
 
-        /* An image's and a slideshow's bars REST AT OPACITY 0 and appear on
-           :hover, which on a phone means they are invisible and unreachable —
-           so the only close button those windows have could never be found.
-           On the board they are simply on. */
-        html.phone.board .img-float-bar {
-            height: 44px; opacity: 1; pointer-events: auto;
+        /* An image's and a slideshow's bars are absolutely positioned OVER
+           the picture — the <img> fills the window at inset:0 and the bar sits
+           on top of it. On desktop that is fine: the bar rests at opacity 0 and
+           only appears while hovered. Simply switching it on for touch covered
+           the top of every image permanently. Nir, 2026-10-12: "the more wider
+           tab in the top goes above images.. shouldent work like that."
+           So it follows the pattern the 3D viewer ALREADY uses for touch — a
+           tap reveals it, and it withdraws on its own a few seconds later. At
+           rest the picture is the whole window, which is the point of it. */
+        html.phone.board .img-float-bar,
+        html.phone.board .slide-bar {
+            height: 44px; opacity: 0; pointer-events: none;
+            transition: opacity 0.18s ease;
+        }
+        html.phone.board .img-float.bar-on .img-float-bar,
+        html.phone.board .slide-float.bar-on .slide-bar {
+            opacity: 1; pointer-events: auto;
         }
         html.phone.board .img-float-title { font-size: 11px; opacity: 0.6; }
-        html.phone.board .slide-bar { height: 44px; opacity: 1; font-size: 12px; }
+        html.phone.board .slide-bar { font-size: 12px; }
 
         /* Close: a glyph big enough to hit, and visible without a hover. */
         html.phone.board .win-frame .win-close,
@@ -4830,6 +4841,25 @@
             };
             window.addEventListener('pointerup', endPtr);
             window.addEventListener('pointercancel', endPtr);
+
+            // An image and a slideshow carry their bar OVER their picture, so
+            // it cannot just be on (see the CSS). A tap brings it back for a
+            // few seconds — the same bargain open3D already strikes on touch.
+            // A drag is not a tap: moving a window must not flash its bar.
+            const barT = new WeakMap(), downAt = new WeakMap();
+            ws.addEventListener('pointerdown', e => {
+                const host = e.target.closest('.img-float, .slide-float');
+                if (host) downAt.set(host, [e.clientX, e.clientY]);
+            }, true);
+            ws.addEventListener('pointerup', e => {
+                const host = e.target.closest('.img-float, .slide-float');
+                if (!host) return;
+                const from = downAt.get(host);
+                if (!from || Math.hypot(e.clientX - from[0], e.clientY - from[1]) > 12) return;
+                host.classList.add('bar-on');
+                clearTimeout(barT.get(host));
+                barT.set(host, setTimeout(() => host.classList.remove('bar-on'), 3500));
+            }, true);
 
             // ── build the board ───────────────────────────────────────────
             const board = (typeof LANDING !== 'undefined' && LANDING && LANDING.phoneWindows) || null;
