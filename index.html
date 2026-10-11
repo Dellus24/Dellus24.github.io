@@ -1129,23 +1129,34 @@
         const canvasY = (e, ws) => (e.clientY - (boardOn ? view.y : 0)) / viewScale() + ws.scrollTop;
 
         function nextSpawn(w = 300, h = 250) {
-            const sw = window.innerWidth, sh = window.innerHeight;
+            // On the PHONE BOARD "the screen" is the piece of canvas you are
+            // currently looking at, so a new window appears where you are
+            // rather than at the canvas origin — which is where the landing
+            // and the menu already sit, so every opened image landed on top of
+            // the menu. ox/oy are the canvas coordinates of the viewport's top
+            // left corner. On desktop they are 0 and sw/sh are the viewport,
+            // so every line below is the arithmetic that was always here.
+            const ox = boardOn ? -view.x / view.z : 0;
+            const oy = boardOn ? -view.y / view.z : 0;
+            const sw = boardOn ? window.innerWidth  / view.z : window.innerWidth;
+            const sh = boardOn ? window.innerHeight / view.z : window.innerHeight;
             const pad = 28, step = 32, margin = 10;
             const frames = [...document.querySelectorAll('.win-frame')].map(f => ({
                 x: f.offsetLeft, y: f.offsetTop, w: f.offsetWidth, h: f.offsetHeight
             }));
             function free(x, y) {
-                if (x + w > sw - pad || y + h > sh - pad) return false;
+                if (x + w > ox + sw - pad || y + h > oy + sh - pad) return false;
                 for (const f of frames) {
                     if (x < f.x + f.w + margin && x + w + margin > f.x &&
                         y < f.y + f.h + margin && y + h + margin > f.y) return false;
                 }
                 return true;
             }
-            for (let row = pad; row + h < sh - pad; row += step)
-                for (let col = pad; col + w < sw - pad; col += step)
+            for (let row = oy + pad; row + h < oy + sh - pad; row += step)
+                for (let col = ox + pad; col + w < ox + sw - pad; col += step)
                     if (free(col, row)) return { x: col, y: row };
-            return { x: Math.max(pad, Math.min(sw - w - pad, (sw - w) / 2)), y: Math.max(pad, Math.min(sh - h - pad, (sh - h) / 2)) };
+            return { x: Math.max(ox + pad, Math.min(ox + sw - w - pad, ox + (sw - w) / 2)),
+                     y: Math.max(oy + pad, Math.min(oy + sh - h - pad, oy + (sh - h) / 2)) };
         }
         function focusOrCreate(key, createFn) {
             if (openWins[key]) {
@@ -1884,7 +1895,17 @@
         function tileProjectWindows(project) {
             const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
             const ws = document.getElementById('workspace');
-            const vw = window.innerWidth, vh = window.innerHeight;
+            // On the PHONE BOARD there is open canvas, not a 390px viewport, so
+            // the packer is given a region to work in rather than the screen.
+            // Measured 2026-10-11 without this: every window came out at
+            // .win-frame's 260x180 floor and the 3D model rendered as a speck,
+            // because the packer's own cap (vw * 0.46 = 179px at phone width)
+            // was smaller than its own minimum. 1000 is simply the width at
+            // which that cap stops fighting the 460px floor the 3D hero asks
+            // for -- it is derived from the arithmetic below, not picked.
+            // Desktop reads the real viewport, exactly as it always has.
+            const vw = boardOn ? 1000 : window.innerWidth;
+            const vh = boardOn ? 1500 : window.innerHeight;
             const gap = 10, homeY = 28, leftX = 28;
 
             // Start a fixed `gap` past the menu's RIGHT EDGE, read live. Not
@@ -4695,6 +4716,46 @@
             }
             openLanding(board, placeCanvas);
 
+            // ── FLY TO WHATEVER JUST OPENED (Nir, 2026-10-11) ─────────────
+            // "if i open a new image or a model from a project it needs to zoom
+            // to that area." Without this the board stays where it is and the
+            // new window opens somewhere off the visible region, so tapping a
+            // menu row looks like nothing happened.
+            //
+            // DEBOUNCED, because one tap rarely opens one window: openProject
+            // brings a text box, a gallery and a 3D viewer at once, and flying
+            // to each in turn would be unreadable. The board frames everything
+            // that arrived together, as one group. The delay also lets an image
+            // settle to its natural size — openImage resizes it on load, after
+            // it is already in the DOM.
+            let armed = false;
+            const added = new Set();
+            let addT = null;
+            const flyToAdded = () => {
+                const live = [...added].filter(el => el.isConnected);
+                added.clear();
+                if (!live.length) return;
+                let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+                for (const el of live) {
+                    x0 = Math.min(x0, el.offsetLeft); y0 = Math.min(y0, el.offsetTop);
+                    x1 = Math.max(x1, el.offsetLeft + el.offsetWidth);
+                    y1 = Math.max(y1, el.offsetTop + el.offsetHeight);
+                }
+                const w = x1 - x0, h = y1 - y0;
+                if (!(w > 0 && h > 0)) return;
+                const z = clampZ(Math.min((innerWidth - 32) / w, (innerHeight - 32) / h));
+                tweenTo(z, (innerWidth - w * z) / 2 - x0 * z,
+                           (innerHeight - h * z) / 2 - y0 * z, 420);
+            };
+            new MutationObserver(ms => {
+                if (!armed) return;          // not while the board is building
+                for (const m of ms) for (const n of m.addedNodes)
+                    if (n.nodeType === 1 && n.matches && n.matches(WINS)) added.add(n);
+                if (!added.size) return;
+                clearTimeout(addT);
+                addT = setTimeout(flyToAdded, 320);
+            }).observe(ws, { childList: true });
+
             // The windows arrive over several frames (open3D awaits its loader,
             // images await their decode), so fit once things stop appearing
             // rather than guessing a delay.
@@ -4704,6 +4765,7 @@
                 if (n !== seen) { seen = n; still = 0; } else still++;
                 if (still < 20) return requestAnimationFrame(settleFit);
                 fit(false);
+                armed = true;        // from here on, a new window is a destination
             };
             requestAnimationFrame(settleFit);
             window.addEventListener('resize', () => fit(false));

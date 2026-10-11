@@ -94,14 +94,7 @@ windows:
 phone-windows:
   text                                                 at 40 40     size 360 200
   menu                                                 at 40 280    size 260 598
-  get-lost  model                                      at 440 40    size 420 520   angle 151.1 28.3 pan 0 1.2 -0.2 zoom 12.3 spin 0.002 mode wireframe decon 100
-  cloud-to-ground  image thumbs/tile_sample.webp       at 440 600   size 300 260
-  re-possessing-industrial  model                      at 40 920    size 360 420   angle -66.5 26.4 zoom 4.9 spin 0 mode wireframe
-  for-now-house  image thumbs/Cross_Detail.webp        at 440 900   size 280 280
-  get-lost  image thumbs/03.webp                       at 440 1220  size 300 220
-  pray-and-play  model                                 at 40 1380   size 360 400   angle -82.2 36.5 zoom 2.6 spin 0.003 mode wireframe width 2
-  101-gates  image thumbs/01.webp                      at 440 1480  size 280 220
-
+  get-lost  model                                      at 440 40    size 420 560   angle 151.1 28.3 pan 0 1.2 -0.2 zoom 12.3 spin 0.002 mode wireframe decon 100
 
 ---
 

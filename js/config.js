@@ -377,12 +377,6 @@ Every window here belongs to a project. Rest on one to open it, or use the menu 
     phoneWindows: [
         { kind: 'text', at: [40, 40], size: [360, 200] },
         { kind: 'menu', at: [40, 280], size: [260, 598] },
-        { project: 'get-lost', kind: 'model', src: 'assets/projects/get-lost/models/Cabine.glb', view: {"angle":[151.1,28.3],"pan":[0,1.2,-0.2],"zoom":12.3,"spin":0.002,"decon":100,"mode":"wireframe"}, at: [440, 40], size: [420, 520] },
-        { project: 'cloud-to-ground', kind: 'image', src: 'assets/projects/cloud-to-ground/gallery/thumbs/tile_sample.webp', at: [440, 600], size: [300, 260] },
-        { project: 're-possessing-industrial', kind: 'model', src: 'assets/projects/re-possessing-industrial/models/silo.glb', view: {"angle":[-66.5,26.4],"zoom":4.9,"spin":0,"mode":"wireframe"}, at: [40, 920], size: [360, 420] },
-        { project: 'for-now-house', kind: 'image', src: 'assets/projects/for-now-house/gallery/thumbs/Cross_Detail.webp', at: [440, 900], size: [280, 280] },
-        { project: 'get-lost', kind: 'image', src: 'assets/projects/get-lost/gallery/thumbs/03.webp', at: [440, 1220], size: [300, 220] },
-        { project: 'pray-and-play', kind: 'model', src: 'assets/projects/pray-and-play/models/Floor Detail.glb', view: {"angle":[-82.2,36.5],"zoom":2.6,"spin":0.003,"width":2,"mode":"wireframe"}, at: [40, 1380], size: [360, 400] },
-        { project: '101-gates', kind: 'image', src: 'assets/projects/101-gates/gallery/thumbs/01.webp', at: [440, 1480], size: [280, 220] },
+        { project: 'get-lost', kind: 'model', src: 'assets/projects/get-lost/models/Cabine.glb', view: {"angle":[151.1,28.3],"pan":[0,1.2,-0.2],"zoom":12.3,"spin":0.002,"decon":100,"mode":"wireframe"}, at: [440, 40], size: [420, 560] },
     ],
 };
