@@ -1,59 +1,44 @@
 title: CV — Nir Dellus
+download: assets/cv/CV_Nir_Dellus.pdf
 
 ---
 
-NIR DELLUS — CURRICULUM VITAE
+Architect & Builder
 
+# Education
 
-CONTACT
+2019–2024 | Bezalel Academy of Arts and Design – B.Arch.
+2023 (Fall) | Exchange Studies Aarhus School Of Architecture
+2011–2013 | Ankori High School, Rishon LeZion - High School Diploma
 
-Location       Vienna
-Email          ndellus3@gmail.com
-Date of Birth  24/10/1996
+# Professional experience
 
+2024–2026 | Derman Verbakel Architects - Research & Design
+2025 | "Miksha" group Exhibition at 4tress
+2023–2025 | Teaching Assistant Digital Tools 2d & 3d Year at Bezalel Architecture Department
+2024 | For Now House, Research Group Bezlael Academy
+2022–2023 | Israeli Pavilion at the Venice Architecture Biennale - Research & Protoype
+2022 | Cinema Rex - Stage Design&Build
+2021 | Sabio Levy Architects - Concept development
+2019 | Carpentry - Furniture and set design constructions
+2014–2015 | Volunteer Year, Tarbut (Culture) Movement
 
-PROFESSIONAL EXPERIENCE
+# Software
 
-2024–Present   Derman Verbakel Architects
-               Research & Design
+Autocad, Bricscad
+Rhino, Grasshopper, Blender
+Revit, Archicad
+Adobe Packge
+Microsoft Packge
 
-2023–2025      Bezalel Architecture Department
-               Teaching Assistant — Digital Tools, 2nd & 3rd Year
+# Languages
 
-2022–2023      Israeli Pavilion
-               Venice Architecture Biennale
-               Research & Prototype
+Hebrew - Native
+English - Fluent
+German - B1 actively learning
 
-2021           Sabio Levy Architects
-               Concept Development
+# Contact information
 
-2019           Carpentry
-               Furniture and Set Design Constructions
-
-2014–2015      Volunteer Year, Tarbut (Culture) Movement
-
-
-EDUCATION
-
-2019–2024      Bezalel Academy of Arts and Design
-               B.Arch.
-
-2023 (Fall)    Exchange Studies
-               Aarhus School of Architecture
-
-2011–2013      Ankori High School, Rishon LeZion
-               High School Diploma
-
-
-LANGUAGES
-
-Hebrew         Native
-English        Fluent
-German         A1 — actively learning
-
-
-SOFTWARE
-
-CAD/3D         AutoCAD, BricsCAD, Rhino, Grasshopper,
-               Blender, Revit, ArchiCAD
-Other          Adobe Suite, Microsoft Office
+Vienna.
++43 670 1953 100
+Nir@Dellus.com

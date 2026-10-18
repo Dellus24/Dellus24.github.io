@@ -582,12 +582,33 @@
         /* ג"€ג"€ TEXT WINDOW ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
         .text-body { padding: 20px 22px; overflow-y: auto; }
 
+        /* About / CV. The body arrives as HTML built from the .txt (see
+           staticHTML in tools/build-content.mjs): paragraphs, `# headings` and
+           `left | right` rows. It used to be one <pre> lined up with spaces —
+           columns that drifted in a proportional font, under headings that
+           were typed in capitals. Type now matches the project box. */
         .text-content {
             font-family: var(--font-family);
-            font-size: 0.65rem; letter-spacing: 0.04em;
-            line-height: 1.8; opacity: 0.75;
-            white-space: pre-wrap; word-break: break-word;
+            font-size: 0.62rem; letter-spacing: 0.03em;
+            line-height: 1.7; opacity: 0.75;
+            word-break: break-word;
         }
+        .text-content p { margin: 0 0 0.85em; }
+        .text-content h3 {
+            font-size: 0.8rem; font-weight: 400; letter-spacing: 0.02em;
+            margin: 1.4em 0 0.5em;
+        }
+        .text-content > h3:first-child { margin-top: 0; }
+        .text-rows {
+            display: grid; grid-template-columns: max-content 1fr;
+            column-gap: 1.6em; margin: 0 0 0.85em;
+        }
+        .text-row-l { white-space: nowrap; }
+        .text-actions {
+            margin-top: 14px; padding-top: 10px;
+            border-top: 1px solid var(--border-faint);
+        }
+        .text-actions > .action-btn { margin-left: -11px; text-decoration: none; display: inline-block; }
 
         /* ג"€ג"€ 3D VIEWER INTERNALS ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
         .viewer-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
@@ -1977,7 +1998,7 @@
         }
 
         // Left-click / Enter on a menu row, and the landing's "Go to project".
-        // The old project's windows go; About / CV / Contact and the theme
+        // The old project's windows go; About / CV and the theme
         // editor are not owned by any project, so they survive (Nir's call).
         // The open is DELAYED past the close animation, so it has to be
         // cancellable: clicking a third project before the previous open landed
@@ -1993,6 +2014,7 @@
             tintSite(project);
             syncMenuActive();
             syncProjectColorRow();
+            dockTheme();
             announce(`${project.title} opened`);
 
             // closeFrame removes the element on a 220ms timer, and the tiler
@@ -2019,7 +2041,7 @@
         // "only the old project closes" rule is about switching between
         // projects; Home means "back to the front door", and a project opened
         // alongside by right-click would otherwise be left scattered across the
-        // landing it just reopened. About / CV / Contact and the theme editor
+        // landing it just reopened. About / CV and the theme editor
         // belong to no project and survive, as they do everywhere else.
         function goHome() {
             clearTimeout(pendingOpen);
@@ -2443,7 +2465,19 @@
                 const frame = makeFrame({ title: content.title, tag: tagLabel, w: 420, h: 460, key: `text-${key}`, bodyDrag: true, kind: key });
                 const body = frame.querySelector('.win-body');
                 body.className += ' text-body';
-                body.innerHTML = `<pre class="text-content">${content.body}</pre>`;
+                body.innerHTML = `<div class="text-content">${content.html}</div>`;
+                // `download:` in the .txt — the file itself, offered as-is.
+                if (content.download) {
+                    const bar = document.createElement('div');
+                    bar.className = 'text-actions';
+                    const a = document.createElement('a');
+                    a.className = 'action-btn';
+                    a.href = content.download;
+                    a.setAttribute('download', '');
+                    a.textContent = key === 'cv' ? 'Download CV' : 'Download';
+                    bar.appendChild(a);
+                    body.appendChild(bar);
+                }
             });
         }
 
@@ -2647,6 +2681,25 @@
             window.dispatchEvent(new CustomEvent('theme-change', { detail: { bg: hex } }));
         }
 
+        // The theme editor lives UNDER THE MENU (Nir, 2026-10-18): open at
+        // load, and back in place every time a project opens. It docks to the
+        // menu's LIVE position and width, so a menu the visitor has moved takes
+        // the theme with it. `follow` is the softer call made when the menu
+        // only changes height (a section opening): it moves the theme only if
+        // it is still where it was last docked — once the visitor has dragged
+        // it away, that is their arrangement and a + in the menu leaves it be.
+        function dockTheme({ follow = false } = {}) {
+            const theme = openWins['theme'];
+            const menu  = document.getElementById('menu-body-inner')?.closest('.win-frame');
+            if (!theme || !menu || boardOn) return;
+            const d = theme._dockedAt;
+            if (follow && !(d && theme.offsetLeft === d.x && theme.offsetTop === d.y)) return;
+            const x = menu.offsetLeft, y = menu.offsetTop + menu.offsetHeight + 8;
+            Object.assign(theme.style, { left: x + 'px', top: y + 'px', width: menu.offsetWidth + 'px' });
+            theme._dockedAt = { x: theme.offsetLeft, y: theme.offsetTop };
+            theme.dispatchEvent(new CustomEvent('win-resize'));
+        }
+
         function openTheme() {
             focusOrCreate('theme', () => {
                 const frame = makeFrame({ title: 'Theme', w: 220, h: 380, minW: 180, minH: 200, key: 'theme', collapsible: true, kind: 'theme' });
@@ -2659,8 +2712,6 @@
                 const savedFg     = localStorage.getItem('dellus-fg') || '#000';
                 const savedBg     = localStorage.getItem('dellus-bg') || '#ffffff';
 
-                const isFirstVisit = !localStorage.getItem('dellus-font-scale');
-                if (isFirstVisit) requestAnimationFrame(() => frame._collapse && frame._collapse());
 
                 const lightThemes = THEMES.filter(t => t.fg === '#000');
                 const darkThemes  = THEMES.filter(t => t.fg === '#fff');
@@ -4275,12 +4326,12 @@
                 const projs = PROJECTS.filter(p => p.category === cat.id);
                 return `
                     <div class="proj-row menu-cat-toggle" data-cat="${cat.id}" style="cursor:pointer;margin-top:4px;"
-                         role="button" tabindex="0" aria-expanded="true" aria-controls="cat-list-${cat.id}"
-                         aria-label="${cat.label} projects, collapse section">
+                         role="button" tabindex="0" aria-expanded="false" aria-controls="cat-list-${cat.id}"
+                         aria-label="${cat.label} projects, expand section">
                         <span class="proj-name" style="opacity:0.4;font-size:0.5rem;letter-spacing:0.04em;">${cat.label}</span>
-                        <span class="cat-icon" style="font-size:0.5rem;opacity:0.3;user-select:none;" aria-hidden="true">&#x2212;</span>
+                        <span class="cat-icon" style="font-size:0.5rem;opacity:0.3;user-select:none;" aria-hidden="true">+</span>
                     </div>
-                    <div class="cat-proj-list" data-cat-list="${cat.id}" id="cat-list-${cat.id}" role="group" aria-label="${cat.label} projects">
+                    <div class="cat-proj-list" data-cat-list="${cat.id}" id="cat-list-${cat.id}" role="group" aria-label="${cat.label} projects" style="display:none;">
                         ${projs.map(p => `
                             <div class="proj-row" data-id="${p.id}" style="padding-left:8px;${markInkOf(p) ? `--sig:${markInkOf(p)};` : ''}"
                                  role="button" tabindex="0"
@@ -4310,7 +4361,6 @@
                     <hr class="menu-rule">
                     <div class="proj-row" data-static="about"   role="button" tabindex="0" aria-label="Open About"><span class="proj-name">About</span></div>
                     <div class="proj-row" data-static="cv"      role="button" tabindex="0" aria-label="Open CV"><span class="proj-name">CV</span></div>
-                    <div class="proj-row" data-static="contact" role="button" tabindex="0" aria-label="Open Contact"><span class="proj-name">Contact</span></div>
                     <hr class="menu-rule">
                     <div class="proj-row" style="gap:8px;">
                         <span class="proj-name" data-action="theme"   style="cursor:pointer;" role="button" tabindex="0" aria-label="Open theme editor">Theme</span>
@@ -4336,7 +4386,9 @@
                 const cat = toggle.dataset.cat;
                 const list = frame.querySelector(`[data-cat-list="${cat}"]`);
                 const icon = toggle.querySelector('.cat-icon');
-                let open = true;
+                // Both sections start closed (Nir, 2026-10-18): the visitor
+                // opens Academic or Employment with the +.
+                let open = false;
                 const toggleCat = () => {
                     open = !open;
                     list.style.display = open ? '' : 'none';
@@ -4344,6 +4396,7 @@
                     toggle.setAttribute('aria-expanded', String(open));
                     toggle.setAttribute('aria-label',
                         `${toggle.querySelector('.proj-name').textContent} projects, ${open ? 'collapse' : 'expand'} section`);
+                    dockTheme({ follow: true });
                 };
                 toggle.addEventListener('click', toggleCat);
                 onActivateKey(toggle, toggleCat);
@@ -4365,6 +4418,7 @@
                 toggleBtn.textContent = collapsed ? '+' : String.fromCharCode(8722);
                 toggleBtn.setAttribute('aria-expanded', String(!collapsed));
                 toggleBtn.setAttribute('aria-label', collapsed ? 'Expand menu' : 'Collapse menu');
+                dockTheme({ follow: true });
             }
             frame._toggleCollapse = toggleCollapse;
             frame._collapsed = () => collapsed;
@@ -4682,7 +4736,7 @@
             // Order: whatever the landing authored keeps its authored order;
             // windows added by hand follow, ordered by how they sit on screen,
             // so the block reads roughly left-to-right.
-            const SOLO = ['text', 'menu', 'about', 'cv', 'contact'];
+            const SOLO = ['text', 'menu', 'about', 'cv'];
             const block = () => {
                 const wins = [...document.querySelectorAll('.win-frame, .img-float, .slide-float')]
                     .filter(el => !el.classList.contains('closing'))
@@ -4803,7 +4857,7 @@
         function landingSpec(w, i) {
             if (w.kind === 'text') return { key: 'landing-text' };
             if (w.kind === 'menu') return { el: menuFrame };
-            if (['about', 'cv', 'contact'].includes(w.kind)) {
+            if (['about', 'cv'].includes(w.kind)) {
                 return { key: `text-${w.kind}`, open: () => openText(w.kind) };
             }
             const project = PROJECTS.find(p => p.id === w.project);
@@ -4857,6 +4911,7 @@
             let pending = 1;                       // released after the loop
             const finish = () => {
                 if (!placed) requestAnimationFrame(() => orderWindows());
+                if (place === placeLanding) requestAnimationFrame(() => dockTheme());
                 requestAnimationFrame(initLayoutTool);
             };
             const settle = () => { if (--pending <= 0) finish(); };
@@ -5039,10 +5094,10 @@
             document.body.appendChild(note);
 
             // Name and address are READ OUT OF THE AUTHORED CONTENT, never
-            // retyped here — content/contact.txt and content/landing.txt stay
+            // retyped here — content/about.txt and content/landing.txt stay
             // the one place they are written. No address in that text means no
             // link at all, rather than a dead one.
-            const email = ((typeof STATIC !== 'undefined' && STATIC.contact && STATIC.contact.body) || '')
+            const email = ((typeof STATIC !== 'undefined' && STATIC.about && STATIC.about.body) || '')
                 .match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
             const who = (typeof LANDING !== 'undefined' && LANDING && LANDING.title) || 'Nir Dellus';
 
@@ -5454,6 +5509,9 @@
                 .observe(document.getElementById('workspace'), { childList: true });
 
             openLanding();
+            // Theme opens with the site, docked under the menu (2026-10-18).
+            openTheme();
+            dockTheme();
         }
 
         document.getElementById('err-banner').style.display = 'none';

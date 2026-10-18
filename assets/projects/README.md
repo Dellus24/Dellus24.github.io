@@ -6,8 +6,16 @@ Each project's content lives in a plain text file inside its own folder:
 
 ```
 assets/projects/<project-id>/project.txt
-content/about.txt   content/cv.txt   content/contact.txt
+content/about.txt   content/cv.txt
 ```
+
+About and the CV are written in three kinds of line, after the `---`:
+`# Heading` (written exactly as it should read — no capitals for emphasis),
+`left | right` for a row (a year and an entry; the left column lines up on
+its own), and plain text, where consecutive lines stay one paragraph. A
+`download: <path>` line in the header adds a download button for that file —
+the CV offers `assets/cv/CV_Nir_Dellus.pdf`, which is the PDF itself, not a
+print of the page. Replace that file to update the download.
 
 `js/config.js` is built from those by `tools/build-content.mjs`. It is still
 what the live site loads, it is still committed, but it is **output**. Anything
@@ -180,7 +188,7 @@ The text shown in the landing's own window.
 | `<project> slides [file]` | that project's slideshow. Name a slide to open on it, e.g. `slides 37.webp`. A number works too, but the filename survives slides being inserted or removed |
 | `<project> box` | that project's text box, as it opens normally |
 | `<project> build` | the flat-pack window: the project's parts nested on sheets and stacked, assembling into the frame. Reads the project's `build/` folder (see below). Only `for-now-house` has one |
-| `about` / `cv` / `contact` | the static panels |
+| `about` / `cv` | the static panels (contact details live in About) |
 | `text` | the landing's own text, from below the `---`. **Opens only when listed** |
 | `menu` | the site menu itself |
 

@@ -23,7 +23,7 @@ background: #ffffff
 #   <project>  box            that project's text box, as it opens normally
 #   <project>  build          the flat-pack window (For Now House): its parts come
 #                             from the project's build/ folder, exported from Grasshopper
-#   about | cv | contact      the static panels
+#   about | cv                the static panels
 #   text                      this file's own text, below the ---
 #   menu                      the site menu itself
 #

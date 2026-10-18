@@ -7,7 +7,7 @@
 //
 // SOURCES (the things you edit):
 //   assets/projects/<id>/project.txt   one per project
-//   content/{about,cv,contact}.txt     the static panels
+//   content/{about,cv}.txt             the static panels
 //
 // OUTPUT (generated — never hand-edit):
 //   js/config.js
@@ -28,7 +28,7 @@ const warn = (m) => warnings.push(m);
 
 const HEAD_KEYS = ['title', 'year', 'category', 'location', 'participants', 'type'];
 const CATEGORIES = ['academic', 'employment'];
-const STATIC_KEYS = ['about', 'cv', 'contact'];   // hard-coded in the menu markup
+const STATIC_KEYS = ['about', 'cv'];   // hard-coded in the menu markup
 const BLOCK_KEYS = ['gallery', 'slides', 'models', 'credit', 'windows', 'view', 'phone-windows'];
 
 // HEAD_KEYS above are REQUIRED — every one is checked for presence. Optional
@@ -38,7 +38,7 @@ const LINE_STYLES = ['solid', 'double', 'dashed'];
 // Landing window kinds. The first group belongs to a project and is written
 // `<project-id> <kind> [file]`; the second stands alone on its own line.
 const PROJECT_KINDS = ['image', 'model', 'gallery', 'slides', 'box', 'build'];
-const SOLO_KINDS = ['text', 'menu', 'about', 'cv', 'contact'];
+const SOLO_KINDS = ['text', 'menu', 'about', 'cv'];
 
 // A saved 3D view. The same keys wherever one is written: on a project (how
 // its model opens from the menu) or on a landing `model` line (how it opens
@@ -355,7 +355,51 @@ for (const key of STATIC_KEYS) {
     const { head, body } = parseTxt(fs.readFileSync(file, 'utf8'), `content/${key}.txt`);
     if (!head.title) err(`content/${key}.txt: missing "title"`);
     if (!body) warn(`content/${key}.txt: body is empty`);
-    STATIC[key] = { title: head.title, body };
+    STATIC[key] = { title: head.title, body, html: staticHTML(body) };
+    // `download:` — a file the panel offers as-is (the CV's PDF). Checked on
+    // disk with its exact case, same reason as gallery files: Pages 404s a
+    // path whose case only Windows forgives.
+    if (head.download) {
+        const rel = head.download.replace(/^\/+/, '');
+        const dir = path.join(REPO, path.dirname(rel));
+        if (!listFiles(dir).includes(path.basename(rel)))
+            err(`content/${key}.txt: download file not found (check its case): ${rel}`);
+        STATIC[key].download = rel;
+    }
+}
+
+// A static panel's body, as HTML. Three kinds of line, nothing else:
+//   # Heading            a section heading, written as it should read
+//   left | right         a row — the year/label column, then the entry
+//   anything else        text; consecutive lines stay one paragraph, as broken
+// A blank line ends a paragraph or a run of rows. Everything is escaped, so
+// `&` and quotes in the text are safe.
+function staticHTML(text) {
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const out = [];
+    let para = [], rows = [];
+    const flush = () => {
+        if (para.length) out.push(`<p>${para.map(esc).join('<br>')}</p>`);
+        if (rows.length) out.push(`<div class="text-rows">${rows.map(([l, r]) =>
+            `<span class="text-row-l">${esc(l)}</span><span class="text-row-r">${esc(r)}</span>`).join('')}</div>`);
+        para = []; rows = [];
+    };
+    for (const raw of text.split('\n')) {
+        const line = raw.trim();
+        if (!line) { flush(); continue; }
+        const h = line.match(/^#\s+(.*)$/);
+        if (h) { flush(); out.push(`<h3>${esc(h[1])}</h3>`); continue; }
+        const bar = line.indexOf(' | ');
+        if (bar > 0) {
+            if (para.length) flush();
+            rows.push([line.slice(0, bar).trim(), line.slice(bar + 3).trim()]);
+            continue;
+        }
+        if (rows.length) flush();
+        para.push(line);
+    }
+    flush();
+    return out.join('');
 }
 
 // ── Landing ─────────────────────────────────────────────────────────────────
@@ -397,7 +441,7 @@ if (!fs.existsSync(landingFile)) {
     //     text                               at 4 48  size 30 40
     //
     // A project line is `<project-id> <kind> [file]` where kind is one of
-    // image | model | gallery | slides | box | build. `about`, `cv`, `contact`, `text`
+    // image | model | gallery | slides | box | build. `about`, `cv`, `text`
     // and `menu` stand alone. Every one of them is a window the site already
     // knows how to open — the landing opens them through the same factories.
     //
@@ -481,7 +525,7 @@ if (!fs.existsSync(landingFile)) {
             continue;
         }
 
-        // ── stands alone: text | menu | about | cv | contact ──────────────
+        // ── stands alone: text | menu | about | cv ──────────────
         if (SOLO_KINDS.includes(parts[0])) {
             const kind = parts[0];
             if (parts.length > 1) err(`${where}: "${raw.trim()}" — "${kind}" takes no project or filename`);
@@ -611,7 +655,7 @@ out.push('// GENERATED FILE — DO NOT EDIT BY HAND.');
 out.push('//');
 out.push('// Every value here comes from the .txt content sources:');
 out.push('//   assets/projects/<id>/project.txt   one per project');
-out.push('//   content/{about,cv,contact}.txt     the static panels');
+out.push('//   content/{about,cv}.txt             the static panels');
 out.push('//');
 out.push('// Edit those, then regenerate:   node tools/build-content.mjs');
 out.push('// Hand edits to this file are overwritten by the next build.');
@@ -675,7 +719,7 @@ for (const p of projects) {
 out.push('];');
 out.push('');
 out.push('// ============================================================================');
-out.push('// STATIC PAGES — About / CV / Contact');
+out.push('// STATIC PAGES — About / CV');
 out.push('// ============================================================================');
 out.push('');
 out.push('const STATIC = {');
@@ -684,6 +728,8 @@ for (const key of STATIC_KEYS) {
     out.push(`    ${key}: {`);
     out.push(`        title: ${q(STATIC[key].title)},`);
     out.push(`        body: ${tpl(STATIC[key].body)},`);
+    out.push(`        html: ${tpl(STATIC[key].html)},`);
+    if (STATIC[key].download) out.push(`        download: ${q(STATIC[key].download)},`);
     out.push('    },');
 }
 out.push('};');
