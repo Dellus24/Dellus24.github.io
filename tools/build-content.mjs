@@ -37,7 +37,7 @@ const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const LINE_STYLES = ['solid', 'double', 'dashed'];
 // Landing window kinds. The first group belongs to a project and is written
 // `<project-id> <kind> [file]`; the second stands alone on its own line.
-const PROJECT_KINDS = ['image', 'model', 'gallery', 'slides', 'box'];
+const PROJECT_KINDS = ['image', 'model', 'gallery', 'slides', 'box', 'build'];
 const SOLO_KINDS = ['text', 'menu', 'about', 'cv', 'contact'];
 
 // A saved 3D view. The same keys wherever one is written: on a project (how
@@ -397,7 +397,7 @@ if (!fs.existsSync(landingFile)) {
     //     text                               at 4 48  size 30 40
     //
     // A project line is `<project-id> <kind> [file]` where kind is one of
-    // image | model | gallery | slides | box. `about`, `cv`, `contact`, `text`
+    // image | model | gallery | slides | box | build. `about`, `cv`, `contact`, `text`
     // and `menu` stand alone. Every one of them is a window the site already
     // knows how to open — the landing opens them through the same factories.
     //
@@ -534,7 +534,7 @@ if (!fs.existsSync(landingFile)) {
             windows.push({ project: pid, kind, src, ...(which ? { which } : {}), ...geo, ...(hasView ? { view } : {}) });
 
         } else {
-            // gallery | slides | box — nothing to name, the project has one each
+            // gallery | slides | box | build — nothing to name, the project has one each
             if (file && kind !== 'slides') err(`${where}: "${pid} ${kind}" takes no filename`);
             if (kind === 'slides' && file) {
                 // `slides <file>` opens on that slide. A number is accepted too,
@@ -554,6 +554,11 @@ if (!fs.existsSync(landingFile)) {
             }
             if (kind === 'slides' && !(p.slides && p.slides.length)) {
                 err(`${where}: "${pid}" has no files in slides/`); continue;
+            }
+            // The flat-pack window reads build/<X>x<Y>.json, exported from the
+            // project's Grasshopper file by _local/tools/export-build-toy.cs.
+            if (kind === 'build' && !fs.existsSync(path.join(REPO, 'assets/projects', pid, 'build', '1x1.json'))) {
+                err(`${where}: "${pid}" has no build/ data — export it from Grasshopper first`); continue;
             }
             windows.push({ project: pid, kind, ...geo });
         }

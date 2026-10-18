@@ -750,6 +750,64 @@
         .mode-btn:hover { opacity: 0.55; }
         .mode-btn.active { opacity: 1; font-weight: bold; }
 
+        /* Build window — the landing (Nir, 2026-10-18). The drawing takes the
+           whole window; the controls and the counts float down its left side,
+           one row under the other, and drags in the gaps between them still
+           reach the drawing. */
+        .build-canvas { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+        .build-canvas canvas { width: 100% !important; height: 100% !important; display: block; }
+        .build-side {
+            position: absolute; top: 18px; left: 20px; z-index: 21;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+            pointer-events: none;
+            outline: 1px solid transparent; outline-offset: 8px;
+        }
+        /* "Change parameters" points here: while it is hovered, the panel's
+           outline blinks. */
+        .build-side.build-flag { animation: buildflag 0.8s steps(1) infinite; }
+        @keyframes buildflag { 0% { outline-color: var(--fg); } 50% { outline-color: transparent; } }
+        .build-side > * { pointer-events: auto; }
+        .build-row { display: flex; align-items: center; gap: 5px; }
+        .build-side .setting-label { width: auto; }
+        .build-side .ctrl-slider { width: 110px; }
+        .build-val { font-size: 0.55rem; min-width: 1.4em; text-align: center; }
+        .build-width-val { font-size: 0.42rem; opacity: 0.5; min-width: 2.6em; }
+        .build-counts {
+            display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+            font-size: 0.45rem; letter-spacing: 0.03em; opacity: 0.6; margin-top: 4px;
+        }
+        /* The invitations, under the drawing at the size of the menu's text:
+           "Change parameters" (hover it and the panel blinks) above a turning
+           sign that says the drawing can be moved. The + steppers pulse too.
+           Each goes away for good once what it points at has been used. */
+        .build-hint {
+            position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            pointer-events: none; z-index: 15;
+        }
+        .build-ask, .build-turn {
+            font-family: var(--font-family); font-size: 0.7rem; letter-spacing: 0.03em;
+            color: var(--fg); opacity: 0; transition: opacity 0.6s;
+            white-space: nowrap; user-select: none;
+        }
+        .build-ask {
+            background: none; border: none; padding: 2px 6px; cursor: default;
+            text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+        }
+        .build-ask.visible { opacity: 0.6; pointer-events: auto; }
+        .build-ask.visible:hover, .build-ask.visible:focus-visible { opacity: 1; }
+        .build-turn { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .build-turn.visible { opacity: 0.55; }
+        .build-turn-icon { font-size: 1.1rem; display: inline-block; animation: buildturn 2.4s ease-in-out infinite; }
+        @keyframes buildturn { 0%, 100% { transform: rotate(-30deg); } 50% { transform: rotate(30deg); } }
+        .build-blink { animation: buildblink 1.2s ease-in-out infinite; }
+        @keyframes buildblink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; border-color: var(--fg); } }
+        @media (prefers-reduced-motion: reduce) {
+            .build-turn-icon, .build-blink, .build-side.build-flag { animation: none; }
+            .build-blink { opacity: 1; border-color: var(--fg); }
+            .build-side.build-flag { outline-color: var(--fg); }
+        }
+
         /* The one control that is always visible, so it carries normal weight and
            full opacity rather than the bar's faded treatment. */
         .settings-toggle-btn {
@@ -3674,6 +3732,441 @@
         }
 
         // ================================================================
+        // BUILD WINDOW  — the landing (Nir, 2026-10-18)
+        // ================================================================
+        // The For Now House flat pack: plywood connectors nested on sheets and
+        // the long parts stacked by length at one end of the slider, the
+        // assembled frame at the other. Opened by a `for-now-house build` line
+        // in content/landing.txt, like every other landing window.
+        //
+        // GRASSHOPPER DECIDES WHAT THE HOUSE IS. Every part comes from Nir's
+        // Conector v2.gh, exported once per size by
+        // _local/tools/export-build-toy.cs into for-now-house/build/<X>x<Y>.json
+        // — outlines with their slots, and where each part sits. This window
+        // only lays those parts out flat, nests the connectors onto sheets,
+        // stacks the rest, and moves each part between the two poses. Nothing
+        // here encodes the design: edit the .gh, re-run the export, and the
+        // site follows. Data is in GH units (cm, Z up).
+        const BUILD_DIR = 'assets/projects/for-now-house/build/';
+        const BUILD_MAX = { x: 10, y: 3 };
+        const SHEET = { w: 244, h: 122 };       // a plywood sheet, cm
+        const buildCache = new Map();
+        function loadBuild(x, y) {
+            const k = `${x}x${y}`;
+            if (!buildCache.has(k)) buildCache.set(k, fetch(BUILD_DIR + k + '.json').then(r => {
+                if (!r.ok) throw new Error(`build data ${k}: HTTP ${r.status}`);
+                return r.json();
+            }).catch(e => { buildCache.delete(k); throw e; }));
+            return buildCache.get(k);
+        }
+
+        // One exported shape -> its edges, its triangles, and how it lies flat.
+        // `w` is the normal of its largest face and `u` the longest edge of that
+        // face, so lying flat means w points up and u runs along X.
+        function prepBuildShape(t) {
+            const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+            const segs = [], tris = [], seen = new Set();
+            for (const face of t.faces) {
+                for (const loop of face) for (let i = 0; i < loop.length; i++) {
+                    const a = loop[i], b = loop[(i + 1) % loop.length];
+                    for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], a[k]); max[k] = Math.max(max[k], a[k]); }
+                    const ka = a.join(','), kb = b.join(',');
+                    const key = ka < kb ? ka + '|' + kb : kb + '|' + ka;   // shared by two faces
+                    if (seen.has(key)) continue;
+                    seen.add(key); segs.push(...a, ...b);
+                }
+                // Triangulate in the plane's two dominant axes (Newell normal).
+                const o = face[0]; let nx = 0, ny = 0, nz = 0;
+                for (let i = 0; i < o.length; i++) {
+                    const a = o[i], b = o[(i + 1) % o.length];
+                    nx += (a[1] - b[1]) * (a[2] + b[2]); ny += (a[2] - b[2]) * (a[0] + b[0]); nz += (a[0] - b[0]) * (a[1] + b[1]);
+                }
+                const ax = Math.abs(nx), ay = Math.abs(ny), az = Math.abs(nz);
+                const [i0, i1] = (az >= ax && az >= ay) ? [0, 1] : (ax >= ay ? [1, 2] : [0, 2]);
+                const to2 = loop => loop.map(p => new THREE.Vector2(p[i0], p[i1]));
+                const pts = face.flat();
+                for (const tri of THREE.ShapeUtils.triangulateShape(to2(face[0]), face.slice(1).map(to2)))
+                    for (const v of tri) tris.push(...pts[v]);
+            }
+            const c = min.map((v, k) => (v + max[k]) / 2);
+            const centre = arr => { const out = new Float32Array(arr.length); for (let i = 0; i < arr.length; i++) out[i] = arr[i] - c[i % 3]; return out; };
+            const w = new THREE.Vector3(...t.w).normalize();
+            const v = new THREE.Vector3().crossVectors(w, new THREE.Vector3(...t.u)).normalize();
+            const u = new THREE.Vector3().crossVectors(v, w);
+            const qFlat = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(u, v, w).transpose());
+            // Footprint once lying flat.
+            const segsC = centre(segs), p = new THREE.Vector3(), lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+            for (let i = 0; i < segsC.length; i += 3) {
+                p.set(segsC[i], segsC[i + 1], segsC[i + 2]).applyQuaternion(qFlat);
+                p.toArray().forEach((x, k) => { lo[k] = Math.min(lo[k], x); hi[k] = Math.max(hi[k], x); });
+            }
+            const ext = hi.map((x, k) => x - lo[k]);
+            const ply = Math.abs(ext[2] - 1.6) < 0.05;            // 1.6 thick = plywood
+            return { c, segs: segsC, tris: centre(tris), qFlat, ex: ext[0], ey: ext[1], ez: ext[2],
+                     // Only the CONNECTORS are cut from sheets (Nir, 2026-10-18).
+                     // The long plywood strips read as beams, so they go to the
+                     // stacks with the timber.
+                     connector: ply && Math.max(ext[0], ext[1]) <= 40 };
+        }
+
+        // Where every part rests at the flat end of the slider (GH units).
+        // Connectors are nested onto 244x122 sheets in front of the building
+        // (first fit, tallest first, 1cm between cuts); every long part —
+        // beams, pillars, rafters, the plywood strips — is stacked by length
+        // behind it, ten to a layer.
+        function layoutBuildFlat(data, shapes) {
+            const [W, D] = data.size, kerf = 1, sheetGap = 30;
+            const flat = new Array(data.parts.length), sheets = [];
+            const shapeOf = i => shapes[data.parts[i][1]];
+            const cut = [], long = [];
+            data.parts.forEach((_, i) => (shapeOf(i).connector ? cut : long).push(i));
+            const fit = (sh, w, h) => {
+                for (const row of sh.rows) if (h <= row.h && row.x + w <= SHEET.w) { const at = { x: row.x, y: row.y }; row.x += w; return at; }
+                if (sh.top + h > SHEET.h) return null;
+                sh.rows.push({ y: sh.top, h, x: w }); sh.top += h;
+                return { x: 0, y: sh.top - h };
+            };
+            cut.sort((a, b) => shapeOf(b).ey - shapeOf(a).ey || shapeOf(b).ex - shapeOf(a).ex);
+            const cols = Math.max(2, Math.floor((W + sheetGap) / (SHEET.w + sheetGap)));
+            const placed = [];
+            for (const i of cut) {
+                const s = shapeOf(i), w = s.ex + kerf, h = s.ey + kerf;
+                let at = null, n = 0;
+                for (; n < sheets.length && !at; n++) at = fit(sheets[n], w, h);
+                if (!at) { sheets.push({ rows: [], top: 0 }); n = sheets.length; at = fit(sheets[n - 1], w, h); }
+                placed.push([i, n - 1, at]);
+            }
+            sheets.forEach((sh, n) => {
+                sh.x = (n % cols) * (SHEET.w + sheetGap);
+                sh.y = -150 - (Math.floor(n / cols) + 1) * SHEET.h - Math.floor(n / cols) * sheetGap;
+            });
+            for (const [i, n, at] of placed) {
+                const s = shapeOf(i), sh = sheets[n];
+                flat[i] = new THREE.Vector3(sh.x + at.x + kerf / 2 + s.ex / 2, sh.y + at.y + kerf / 2 + s.ey / 2, s.ez / 2);
+            }
+            // One bundle per length, section and material, longest first.
+            const bundles = new Map();
+            for (const i of long) {
+                const s = shapeOf(i), k = `${Math.round(s.ex)}x${Math.round(s.ey)}x${s.ez.toFixed(1)}`;
+                if (!bundles.has(k)) bundles.set(k, []);
+                bundles.get(k).push(i);
+            }
+            const perLayer = 10, rowLimit = Math.max(W, 700);
+            let bx = 0, by = D + 150, rowDepth = 0;
+            const lengths = new Map();
+            for (const list of [...bundles.values()].sort((a, b) => shapeOf(b[0]).ex - shapeOf(a[0]).ex)) {
+                const s = shapeOf(list[0]);
+                if (bx > 0 && bx + s.ex > rowLimit) { bx = 0; by += rowDepth + 60; rowDepth = 0; }
+                list.forEach((i, j) => {
+                    const layer = Math.floor(j / perLayer), k = j % perLayer;
+                    flat[i] = new THREE.Vector3(bx + s.ex / 2, by + k * (s.ey + 1) + s.ey / 2, layer * (s.ez + 0.2) + s.ez / 2);
+                });
+                rowDepth = Math.max(rowDepth, Math.min(list.length, perLayer) * (s.ey + 1));
+                const l = Math.round(s.ex); lengths.set(l, (lengths.get(l) || 0) + list.length);
+                bx += s.ex + 40;
+            }
+            return { flat, sheets, connectorCount: cut.length, longCount: long.length,
+                     lengths: [...lengths].sort((a, b) => b[0] - a[0]) };
+        }
+
+        function openBuildToy() {
+            const key = 'build-toy';
+            const project = PROJECTS.find(p => p.id === 'for-now-house');
+            focusOrCreate(key, () => {
+                const w = Math.max(520, Math.min(1100, innerWidth - 360));
+                const h = Math.max(380, Math.min(720, innerHeight - 60));
+                const frame = makeFrame({ title: 'For Now House — flat pack', tag: '3D', w, h, minW: 420, minH: 300, key, projectId: project ? project.id : null, kind: 'build' });
+                if (project) tintFrame(frame, markInkOf(project), null);
+                const body = frame.querySelector('.win-body');
+                Object.assign(body.style, { padding: '0', overflow: 'hidden', position: 'relative' });
+                const stepper = (axis, label, more, fewer) => `
+                        <div class="build-row"><span class="setting-label">${label}</span><button class="charset-option" data-axis="${axis}" data-step="-1" aria-label="${fewer}">&#x2212;</button><span class="build-val" data-axis="${axis}">1</span><button class="charset-option" data-axis="${axis}" data-step="1" aria-label="${more}">+</button></div>`;
+                body.innerHTML = `
+                    <div class="build-canvas" role="img" aria-label="Interactive 3D drawing of the For Now House frame: its plywood connectors nested on sheets and its beams and pillars stacked, moving into the assembled frame. Drag to orbit."></div>
+                    <button class="focus-btn" aria-label="Reset the view to the whole flat pack"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
+                    <div class="build-hint">
+                        <button type="button" class="build-ask" tabindex="-1" aria-label="Change parameters: the controls are on the left">Change parameters</button>
+                        <div class="build-turn" aria-hidden="true"><span class="build-turn-icon">&#x21BB;</span><span>Drag to turn · scroll to zoom</span></div>
+                    </div>
+                    <div class="build-side">
+                        ${stepper('x', 'Length', 'More modules along the length', 'Fewer modules along the length')}
+                        ${stepper('y', 'Width', 'More modules across the width', 'Fewer modules across the width')}
+                        <div class="build-row"><button class="setting-label label-btn build-play">Assemble</button><input type="range" class="ctrl-slider build-slider" min="0" max="100" step="0.1" value="0" aria-label="From flat pack to assembled frame"></div>
+                        <div class="build-row"><span class="setting-label">Lines</span><input type="range" class="ctrl-slider build-width" min="1" max="6" step="0.5" value="1" aria-label="Line thickness"><span class="build-width-val">1px</span></div>
+                        <div class="build-counts" aria-live="polite"><div>Loading…</div></div>
+                        ${project ? '<button class="setting-label label-btn build-go">Go to For Now House</button>' : ''}
+                    </div>`;
+                const canvasCont = body.querySelector('.build-canvas');
+                const slider = body.querySelector('.build-slider');
+                const playBtn = body.querySelector('.build-play');
+                const countsEl = body.querySelector('.build-counts');
+                const focusBtn = body.querySelector('.focus-btn');
+                const askEl = body.querySelector('.build-ask');
+                const turnEl = body.querySelector('.build-turn');
+                const sideEl = body.querySelector('.build-side');
+                const goBtn = body.querySelector('.build-go');
+                if (goBtn) goBtn.addEventListener('click', () => goToProject(project));
+
+                const inkOfFrame = () => getComputedStyle(frame).getPropertyValue('--fg').trim() || '#000';
+                const bgOfFrame  = () => getComputedStyle(frame).getPropertyValue('--bg').trim() || '#ffffff';
+                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setPixelRatio(1);
+                canvasCont.appendChild(renderer.domElement);
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(bgOfFrame());
+                const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 2000);
+                camera.position.set(3, 2.5, 3);
+                const orbit = new SimpleOrbit(camera, canvasCont);
+                // GH is Z up in cm; the scene is Y up in metres.
+                const world = new THREE.Group();
+                world.rotation.x = -Math.PI / 2; world.scale.setScalar(0.01);
+                scene.add(world);
+
+                // Hidden-line drawing, the same as the viewer's Wire > Hidden:
+                // ink edges over a fill painted in the window's background. The
+                // edges are the viewer's screen-space lines, so their thickness
+                // is a setting rather than the 1px plain lines are stuck at.
+                const lineMat  = new LineMaterial({ color: inkOfFrame(), linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(1, 1) });
+                const sheetMat = new LineMaterial({ color: inkOfFrame(), linewidth: 1, worldUnits: false, transparent: true, opacity: 1, resolution: new THREE.Vector2(1, 1) });
+                const fillMat  = new THREE.MeshBasicMaterial({ color: bgOfFrame(), side: THREE.DoubleSide,
+                    polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+                let lines = null, lineArr = null, fills = null, sheetLines = null, built = null;
+
+                // Each part travels over a quarter of the slider, lowest first,
+                // so the frame goes up the way it would be built.
+                const SPAN = 0.25;
+                const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+                const ID = new THREE.Quaternion(), q = new THREE.Quaternion(), m = new THREE.Matrix4();
+                let T = 0;
+
+                function poseAll() {
+                    if (!built) return;
+                    const { parts, shapes, flat, home, delay, segAt, triAt } = built;
+                    const fp = fills.geometry.attributes.position.array;
+                    for (let i = 0; i < parts.length; i++) {
+                        const s = ease((T - delay[i]) / SPAN), sh = shapes[parts[i][1]];
+                        q.slerpQuaternions(sh.qFlat, ID, s); m.makeRotationFromQuaternion(q);
+                        const e = m.elements, F = flat[i], A = home[i];
+                        const lift = (40 + 0.25 * F.distanceTo(A)) * Math.sin(Math.PI * s);
+                        const px = F.x + (A.x - F.x) * s, py = F.y + (A.y - F.y) * s, pz = F.z + (A.z - F.z) * s + lift;
+                        const put = (src, dst, at) => {
+                            for (let j = 0; j < src.length; j += 3) {
+                                const x = src[j], y = src[j + 1], z = src[j + 2];
+                                dst[at + j]     = e[0] * x + e[4] * y + e[8]  * z + px;
+                                dst[at + j + 1] = e[1] * x + e[5] * y + e[9]  * z + py;
+                                dst[at + j + 2] = e[2] * x + e[6] * y + e[10] * z + pz;
+                            }
+                        };
+                        put(sh.segs, lineArr, segAt[i]); put(sh.tris, fp, triAt[i]);
+                    }
+                    // LineSegmentsGeometry keeps the array it was given as one
+                    // interleaved start/end buffer, laid out exactly like segs.
+                    lines.geometry.attributes.instanceStart.data.needsUpdate = true;
+                    fills.geometry.attributes.position.needsUpdate = true;
+                    sheetMat.opacity = Math.max(0, 1 - T * 3);
+                    sheetLines.visible = sheetMat.opacity > 0;
+                    playBtn.textContent = T > 0.5 ? 'Take apart' : 'Assemble';
+                }
+
+                function build(data) {
+                    const shapes = data.templates.map(prepBuildShape);
+                    const { parts } = data;
+                    const lay = layoutBuildFlat(data, shapes);
+                    const home = parts.map(p => { const c = shapes[p[1]].c; return new THREE.Vector3(p[2] + c[0], p[3] + c[1], p[4] + c[2]); });
+                    const order = parts.map((_, i) => i).sort((a, b) => home[a].z - home[b].z || home[a].x - home[b].x);
+                    const delay = new Float32Array(parts.length);
+                    order.forEach((i, r) => { delay[i] = parts.length > 1 ? r / (parts.length - 1) * (1 - SPAN) : 0; });
+                    const segAt = [], triAt = []; let ns = 0, nt = 0;
+                    parts.forEach((p, i) => { segAt[i] = ns; triAt[i] = nt; ns += shapes[p[1]].segs.length; nt += shapes[p[1]].tris.length; });
+                    [lines, fills, sheetLines].forEach(o => { if (o) { world.remove(o); o.geometry.dispose(); } });
+                    lineArr = new Float32Array(ns);
+                    lines = new LineSegments2(new LineSegmentsGeometry().setPositions(lineArr), lineMat);
+                    const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nt), 3));
+                    fills = new THREE.Mesh(fg, fillMat);
+                    const sp = [];
+                    for (const s of lay.sheets) {
+                        const c = [[s.x, s.y], [s.x + SHEET.w, s.y], [s.x + SHEET.w, s.y + SHEET.h], [s.x, s.y + SHEET.h]];
+                        c.forEach((a, k) => { const b = c[(k + 1) % 4]; sp.push(a[0], a[1], 0, b[0], b[1], 0); });
+                    }
+                    sheetLines = new LineSegments2(new LineSegmentsGeometry().setPositions(sp), sheetMat);
+                    lines.frustumCulled = fills.frustumCulled = sheetLines.frustumCulled = false;
+                    world.add(fills, lines, sheetLines);
+                    built = { parts, shapes, flat: lay.flat, home, delay, segAt, triAt };
+                    const n = lay.sheets.length;
+                    countsEl.innerHTML = `<div>${n} sheet${n === 1 ? '' : 's'} of plywood</div>` +
+                        `<div>${lay.connectorCount} connectors</div>` +
+                        `<div>${lay.longCount} beams and pillars</div>`;
+                    countsEl.title = 'Beams and pillars by length: ' + lay.lengths.map(([l, c]) => `${c} × ${l} cm`).join(', ');
+                    poseAll();
+                    return lay;
+                }
+
+                // Frame the camera on both poses at once, so nothing leaves the
+                // window as the slider moves. Kept, so Orient on model can come
+                // back to it.
+                let fit = null, view = null;
+                function fitView() {
+                    if (!view) return;
+                    const { data, lay } = view;
+                    const box = new THREE.Box3();
+                    box.expandByPoint(new THREE.Vector3(0, 0, 0)).expandByPoint(new THREE.Vector3(...data.size));
+                    for (const s of lay.sheets) box.expandByPoint(new THREE.Vector3(s.x, s.y, 0)).expandByPoint(new THREE.Vector3(s.x + SHEET.w, s.y + SHEET.h, 0));
+                    for (const f of lay.flat) box.expandByPoint(f);
+                    const s = box.getBoundingSphere(new THREE.Sphere());
+                    // Back off until the sphere fits the narrower of the two fields of view.
+                    const vfov = THREE.MathUtils.degToRad(camera.fov);
+                    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+                    fit = { target: new THREE.Vector3(s.center.x * 0.01, s.center.z * 0.01, -s.center.y * 0.01),
+                            radius: s.radius * 0.01 / Math.sin(Math.min(vfov, hfov) / 2) * 1.02 };
+                    orbit.target.copy(fit.target); orbit.radius = fit.radius;
+                }
+                // Until the visitor moves the view, every resize re-frames it —
+                // the landing sizes this window after it has opened.
+                let userMoved = false;
+                const moved = () => { userMoved = true; turnEl.classList.remove('visible'); };
+                canvasCont.addEventListener('pointerdown', moved);
+                canvasCont.addEventListener('wheel', moved, { passive: true });
+                focusBtn.addEventListener('click', () => {
+                    if (!fit) return;
+                    orbit.target.copy(fit.target); orbit.radius = fit.radius; orbit.tRotX = 0.55;
+                });
+                const fitCentre = new THREE.Vector3();
+                function syncFocus() {
+                    if (!fit) return;
+                    const ndc = fitCentre.copy(fit.target).project(camera);
+                    const off = Math.abs(ndc.x) > 0.92 || Math.abs(ndc.y) > 0.92 || ndc.z > 1
+                             || orbit.radius > fit.radius * 2.2 || orbit.radius < fit.radius * 0.35;
+                    focusBtn.classList.toggle('visible', off);
+                }
+
+                // The invitations, shown once the first assembly has finished:
+                // the + steppers pulse and "Change parameters" shows until a
+                // stepper is used; the turning sign stays until the drawing is
+                // first dragged or zoomed.
+                const plus = [...body.querySelectorAll('.build-side [data-step="1"]')];
+                let invited = false, paramsUsed = false;
+                function invite() {
+                    if (invited || !alive) return;
+                    invited = true;
+                    if (!paramsUsed) {
+                        plus.forEach(b => { if (!b.disabled) b.classList.add('build-blink'); });
+                        askEl.classList.add('visible'); askEl.tabIndex = 0;
+                    }
+                    if (!userMoved) turnEl.classList.add('visible');
+                }
+                // Hovering (or focusing) "Change parameters" blinks a frame
+                // around the controls. A tap has no hover, so it blinks a while.
+                const flag = on => sideEl.classList.toggle('build-flag', on);
+                let flagT = null;
+                askEl.addEventListener('mouseenter', () => flag(true));
+                askEl.addEventListener('mouseleave', () => flag(false));
+                askEl.addEventListener('focus', () => flag(true));
+                askEl.addEventListener('blur', () => flag(false));
+                askEl.addEventListener('click', () => { flag(true); clearTimeout(flagT); flagT = setTimeout(() => flag(false), 2400); });
+
+                let X = 1, Y = 1, token = 0, firstLoad = true;
+                const steppers = [...body.querySelectorAll('.build-side [data-step]')];
+                function syncSteppers() {
+                    body.querySelector('.build-val[data-axis="x"]').textContent = X;
+                    body.querySelector('.build-val[data-axis="y"]').textContent = Y;
+                    steppers.forEach(b => {
+                        const v = b.dataset.axis === 'x' ? X : Y, lim = BUILD_MAX[b.dataset.axis];
+                        const off = (+b.dataset.step < 0 && v <= 1) || (+b.dataset.step > 0 && v >= lim);
+                        b.disabled = off; b.style.opacity = off ? '0.12' : '';
+                        if (off) b.classList.remove('build-blink');
+                    });
+                }
+                async function show() {
+                    const mine = ++token;
+                    syncSteppers(); countsEl.innerHTML = '<div>Loading…</div>';
+                    let data;
+                    try { data = await loadBuild(X, Y); }
+                    catch (e) { if (mine === token) countsEl.innerHTML = '<div>Could not load this size</div>'; throw e; }
+                    if (mine !== token || !alive) return;
+                    const lay = build(data);
+                    view = { data, lay };
+                    fitView();
+                    if (firstLoad) {
+                        firstLoad = false;
+                        orbit.rotX = orbit.tRotX = 0.55; orbit.rotY = orbit.tRotY = -0.6;
+                        // Opens flat, then assembles once, so the window explains
+                        // itself. Not for visitors who asked for less motion.
+                        if (matchMedia('(prefers-reduced-motion: reduce)').matches) invite();
+                        else setTimeout(() => { if (alive && T === 0) tweenTo(1, invite); }, 700);
+                    }
+                }
+                steppers.forEach(b => b.addEventListener('click', () => {
+                    paramsUsed = true;
+                    plus.forEach(p => p.classList.remove('build-blink'));
+                    askEl.classList.remove('visible'); askEl.tabIndex = -1; clearTimeout(flagT); flag(false);
+                    const k = b.dataset.axis, n = (k === 'x' ? X : Y) + (+b.dataset.step);
+                    if (n < 1 || n > BUILD_MAX[k]) return;
+                    if (k === 'x') X = n; else Y = n;
+                    show();
+                }));
+
+                let tween = null;
+                const stopTween = () => { if (tween) cancelAnimationFrame(tween); tween = null; };
+                function tweenTo(to, done) {
+                    stopTween();
+                    const from = T, t0 = performance.now(), dur = 4500 * Math.abs(to - from);
+                    const step = now => {
+                        const k = dur ? Math.min(1, (now - t0) / dur) : 1;
+                        T = from + (to - from) * k; slider.value = String(T * 100); poseAll();
+                        tween = k < 1 ? requestAnimationFrame(step) : null;
+                        if (k >= 1 && done) done();
+                    };
+                    tween = requestAnimationFrame(step);
+                }
+                slider.addEventListener('input', () => { stopTween(); T = parseFloat(slider.value) / 100; poseAll(); invite(); });
+                playBtn.addEventListener('click', () => tweenTo(T > 0.5 ? 0 : 1));
+                const widthVal = body.querySelector('.build-width-val');
+                body.querySelector('.build-width').addEventListener('input', e => {
+                    const px = parseFloat(e.target.value);
+                    lineMat.linewidth = sheetMat.linewidth = px;
+                    widthVal.textContent = px + 'px';
+                });
+
+                function resize() {
+                    const cw = canvasCont.clientWidth, ch = canvasCont.clientHeight;
+                    if (cw < 1 || ch < 1) return;
+                    camera.aspect = cw / ch; camera.updateProjectionMatrix();
+                    renderer.setSize(cw, ch);
+                    lineMat.resolution.set(cw, ch); sheetMat.resolution.set(cw, ch);
+                    if (!userMoved) fitView();
+                }
+                frame.addEventListener('win-resize', resize);
+                resize();
+
+                const onThemeChange = () => {
+                    const ink = inkOfFrame(), bg = bgOfFrame();
+                    lineMat.color.set(ink); sheetMat.color.set(ink);
+                    fillMat.color.set(bg); scene.background.set(bg);
+                };
+                window.addEventListener('theme-change', onThemeChange);
+                frame.addEventListener('frame-tint', onThemeChange);
+
+                let alive = true;
+                frame.querySelector('.win-close').addEventListener('click', () => {
+                    alive = false; stopTween();
+                    window.removeEventListener('theme-change', onThemeChange);
+                    orbit.dispose();
+                    [lines, fills, sheetLines].forEach(o => o && o.geometry.dispose());
+                    lineMat.dispose(); sheetMat.dispose(); fillMat.dispose();
+                    renderer.dispose();
+                });
+                (function loop() {
+                    if (!alive) return;
+                    requestAnimationFrame(loop);
+                    orbit.update();
+                    syncFocus();
+                    renderer.render(scene, camera);
+                })();
+                show();
+            });
+        }
+
+        // ================================================================
         // MENU WINDOW  (permanent — no close button)
         // ================================================================
         // ================================================================
@@ -4320,6 +4813,7 @@
                 case 'gallery': return { project, key: `gallery-${project.id}`, open: () => openGallery(project) };
                 case 'slides':  return { project, key: `slides-${project.id}`,  open: () => openSlideshow(project, w.slide || 0) };
                 case 'box':     return { project, key: `info-${project.id}`,    open: () => openInfo(project) };
+                case 'build':   return { project, key: 'build-toy',             open: () => openBuildToy() };
             }
             return null;
         }
@@ -4335,14 +4829,18 @@
 
             // The landing's own text window. Built here rather than through a
             // factory because it belongs to no project — no colour, no hatch.
-            const tf = makeFrame({ title: LANDING.title, w: 380, h: 200, minH: 120, key: 'landing-text', bodyDrag: true, kind: 'text' });
-            // Marked as part of the landing whether or not the composition
-            // positions it. closeLanding() finds windows by [data-landing], so
-            // without this the text window survives every navigation.
-            tf.dataset.landing = 'text';
-            const tb = tf.querySelector('.win-body');
-            tb.className += ' info-body';
-            tb.innerHTML = `<div class="info-desc">${descHTML(LANDING.text)}</div>`;
+            // Only when the composition lists `text` (2026-10-18): the build
+            // window is the only window on the desktop landing.
+            if (list.some(w => w.kind === 'text')) {
+                const tf = makeFrame({ title: LANDING.title, w: 380, h: 200, minH: 120, key: 'landing-text', bodyDrag: true, kind: 'text' });
+                // Marked as part of the landing whether or not the composition
+                // positions it. closeLanding() finds windows by [data-landing], so
+                // without this the text window survives every navigation.
+                tf.dataset.landing = 'text';
+                const tb = tf.querySelector('.win-body');
+                tb.className += ' info-body';
+                tb.innerHTML = `<div class="info-desc">${descHTML(LANDING.text)}</div>`;
+            }
 
             // Geometry is all-or-nothing: a composition is either fully authored
             // (every window carries at + size) or fully auto-tiled. A mixture
@@ -4380,7 +4878,10 @@
                     // shifts only once a project is entered and owns the page.
                     if (spec.project) {
                         tintFrame(el, markInkOf(spec.project), null);
-                        attachHatch(el, spec.project);
+                        // Not the build window: it is played with, and an
+                        // overlay arriving under a resting pointer would cover
+                        // it. It carries its own "Go to For Now House" instead.
+                        if (w.kind !== 'build') attachHatch(el, spec.project);
                     }
                     place(el, w);
 
