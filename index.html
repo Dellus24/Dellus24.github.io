@@ -767,14 +767,17 @@
         .build-side.build-flag { animation: buildflag 0.8s steps(1) infinite; }
         @keyframes buildflag { 0% { outline-color: var(--fg); } 50% { outline-color: transparent; } }
         .build-side > * { pointer-events: auto; }
-        .build-row { display: flex; align-items: center; gap: 5px; }
-        .build-side .setting-label { width: auto; }
-        .build-side .ctrl-slider { width: 110px; }
-        .build-val { font-size: 0.55rem; min-width: 1.4em; text-align: center; }
-        .build-width-val { font-size: 0.42rem; opacity: 0.5; min-width: 2.6em; }
+        /* Larger than the viewer's settings (0.42rem), still below the menu's
+           0.65rem: on the landing these controls are the content. */
+        .build-row { display: flex; align-items: center; gap: 6px; }
+        .build-side .setting-label, .build-side .setting-label.label-btn { width: auto; font-size: 0.55rem; }
+        .build-side .charset-option { font-size: 0.55rem; padding: 2px 8px; }
+        .build-side .ctrl-slider { width: 140px; }
+        .build-val { font-size: 0.65rem; min-width: 1.4em; text-align: center; }
+        .build-width-val { font-size: 0.5rem; opacity: 0.5; min-width: 2.6em; }
         .build-counts {
-            display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-            font-size: 0.45rem; letter-spacing: 0.03em; opacity: 0.6; margin-top: 4px;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+            font-size: 0.55rem; letter-spacing: 0.03em; opacity: 0.6; margin-top: 4px;
         }
         /* The invitations, under the drawing at the size of the menu's text:
            "Change parameters" (hover it and the panel blinks) above a turning
@@ -790,10 +793,7 @@
             color: var(--fg); opacity: 0; transition: opacity 0.6s;
             white-space: nowrap; user-select: none;
         }
-        .build-ask {
-            background: none; border: none; padding: 2px 6px; cursor: default;
-            text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
-        }
+        .build-ask { background: none; border: none; padding: 2px 6px; cursor: default; }
         .build-ask.visible { opacity: 0.6; pointer-events: auto; }
         .build-ask.visible:hover, .build-ask.visible:focus-visible { opacity: 1; }
         .build-turn { display: flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -4023,7 +4023,17 @@
                 // Until the visitor moves the view, every resize re-frames it —
                 // the landing sizes this window after it has opened.
                 let userMoved = false;
-                const moved = () => { userMoved = true; turnEl.classList.remove('visible'); };
+                // The two hints are one pair (Nir, 2026-10-18): they arrive
+                // together and leave together, on the first drag or zoom or the
+                // first use of a stepper.
+                let hintsDone = false, flagT = null;
+                const dropHints = () => {
+                    hintsDone = true;
+                    turnEl.classList.remove('visible');
+                    askEl.classList.remove('visible'); askEl.tabIndex = -1;
+                    clearTimeout(flagT); flag(false);
+                };
+                const moved = () => { userMoved = true; dropHints(); };
                 canvasCont.addEventListener('pointerdown', moved);
                 canvasCont.addEventListener('wheel', moved, { passive: true });
                 focusBtn.addEventListener('click', () => {
@@ -4040,24 +4050,22 @@
                 }
 
                 // The invitations, shown once the first assembly has finished:
-                // the + steppers pulse and "Change parameters" shows until a
-                // stepper is used; the turning sign stays until the drawing is
-                // first dragged or zoomed.
+                // the + steppers pulse until one is used; "Change parameters"
+                // and the turning sign show as a pair until dropHints().
                 const plus = [...body.querySelectorAll('.build-side [data-step="1"]')];
                 let invited = false, paramsUsed = false;
                 function invite() {
                     if (invited || !alive) return;
                     invited = true;
-                    if (!paramsUsed) {
-                        plus.forEach(b => { if (!b.disabled) b.classList.add('build-blink'); });
+                    if (!paramsUsed) plus.forEach(b => { if (!b.disabled) b.classList.add('build-blink'); });
+                    if (!hintsDone) {
                         askEl.classList.add('visible'); askEl.tabIndex = 0;
+                        turnEl.classList.add('visible');
                     }
-                    if (!userMoved) turnEl.classList.add('visible');
                 }
                 // Hovering (or focusing) "Change parameters" blinks a frame
                 // around the controls. A tap has no hover, so it blinks a while.
                 const flag = on => sideEl.classList.toggle('build-flag', on);
-                let flagT = null;
                 askEl.addEventListener('mouseenter', () => flag(true));
                 askEl.addEventListener('mouseleave', () => flag(false));
                 askEl.addEventListener('focus', () => flag(true));
@@ -4098,7 +4106,7 @@
                 steppers.forEach(b => b.addEventListener('click', () => {
                     paramsUsed = true;
                     plus.forEach(p => p.classList.remove('build-blink'));
-                    askEl.classList.remove('visible'); askEl.tabIndex = -1; clearTimeout(flagT); flag(false);
+                    dropHints();
                     const k = b.dataset.axis, n = (k === 'x' ? X : Y) + (+b.dataset.step);
                     if (n < 1 || n > BUILD_MAX[k]) return;
                     if (k === 'x') X = n; else Y = n;
