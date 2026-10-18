@@ -39,6 +39,7 @@ const PROJECTS = [
         images:       imgs('assets/projects/101-gates/gallery/', [
             ['01.webp', 'Details Model']
         ]),
+        firstImage:   0,
         slides:       sl('assets/projects/101-gates/slides/', [
             '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',
             '08.webp', '09.webp', '10.webp', '11.webp', '12.webp', '13.webp', '14.webp',
@@ -99,6 +100,7 @@ const PROJECTS = [
             'communal_library.webp', 'disassemble_story.webp', 'energy_usage.webp',
             'facade_a1.webp'
         ]),
+        firstImage:   8,
     },
     {
         id:           'horizontal-modernism',
@@ -222,6 +224,7 @@ In summary, the planning proposes an almost complete preservation of the existin
             'Code_modol_2x5.webp', 'Conect_In_The_Air.webp', 'Connectors-02.webp',
             'Cross_Detail.webp', 'Full_Section.webp', 'Hand_Mockup.webp', 'Section_View.webp'
         ]),
+        firstImage:   7,
     },
     {
         id:           'cloud-to-ground',
@@ -242,6 +245,7 @@ Curated by Edith Kofsky and Oren Eldar.`,
             'tile_sample.webp', 'tile_sample_01.webp', 'iso_gardem_F0.webp',
             'iso_gardem_F1.webp'
         ]),
+        firstImage:   0,
     },
     {
         id:           'derman-verbakel',

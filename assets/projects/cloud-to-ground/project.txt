@@ -12,7 +12,7 @@ order: 80
 color: #14d2b2
 background: #ffffff
 gallery:
-  cast.webp
+  * cast.webp
   mold_draft.webp
   mold_01.webp
   mold_02.webp

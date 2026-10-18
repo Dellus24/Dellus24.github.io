@@ -1969,7 +1969,16 @@
         // still opens only ONE window, the one marked in its project.txt.
         function openProject(project) {
             openInfo(project);
-            if (project.images && project.images.length) openGallery(project);
+            if (project.images && project.images.length) {
+                openGallery(project);
+                // One picture opens with the project (Nir, 2026-10-19): the
+                // `*` line of its gallery: block, else the first. It takes the
+                // gallery's own primary key, so clicking a thumb swaps this
+                // picture rather than opening a second one.
+                const i = project.firstImage || 0, img = project.images[i];
+                if (!openWins[`img-primary-${project.id}`]?.isConnected) openImage({ src: img.src, label: img.label, key: `img-primary-${project.id}`, projectId: project.id,
+                            fallbackLabel: `${project.title} — image ${i + 1} of ${project.images.length}` });
+            }
             if (project.model) open3D(project, 0, project.view || null);
             requestAnimationFrame(() => tileProjectWindows(project));
         }
@@ -2151,6 +2160,24 @@
                 let w = h * ar;
                 if (w > capW) { w = capW; h = w / ar; }
                 items.push({ el: elSl, w, h, frame: false });
+                if (img && !img.naturalWidth && !img.dataset.tileHook) {
+                    img.dataset.tileHook = '1';
+                    img.addEventListener('load', () => tileProjectWindows(project), { once: true });
+                }
+            }
+
+            // The picture that opens with the project — sized like the
+            // slideshow, from its own aspect. openImage sizes itself to the
+            // picture on load, after this has placed it, so tile again then
+            // (its listener was added first, so it runs first).
+            const elIm = openWins[`img-primary-${project.id}`];
+            if (elIm && !elIm.classList.contains('closing')) {
+                const img = elIm.querySelector('img');
+                const ar  = (img && img.naturalWidth) ? img.naturalWidth / img.naturalHeight : 4 / 3;
+                let h = clamp(vh * 0.40, 240, capH);
+                let w = h * ar;
+                if (w > capW) { w = capW; h = w / ar; }
+                items.push({ el: elIm, w, h, frame: false });
                 if (img && !img.naturalWidth && !img.dataset.tileHook) {
                     img.dataset.tileHook = '1';
                     img.addEventListener('load', () => tileProjectWindows(project), { once: true });

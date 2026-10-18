@@ -305,9 +305,19 @@ for (const id of fs.readdirSync(projectsDir).sort(natCmp)) {
     if (blocks.gallery) {
         rec.images = [];
         const listed = new Set();
+        // A leading `*` marks the image that opens WITH the project, beside
+        // its box — the same mark `models:` uses for the model that opens.
+        // Unlike models it does not reorder anything: gallery order is
+        // curated. With none marked, the first image opens.
+        let firstImage = -1;
         for (const line of blocks.gallery) {
-            const [file, ...rest] = line.split('|');
+            const isFirst = line.startsWith('*');
+            const [file, ...rest] = line.replace(/^\*\s*/, '').split('|');
             const name = file.trim();
+            if (isFirst) {
+                if (firstImage !== -1) err(`${where}: two gallery images marked "*" — only one opens with the project`);
+                firstImage = rec.images.length;
+            }
             const label = rest.join('|').trim();
             if (!onDisk.includes(name)) err(`${where}: gallery file "${name}" is not in gallery/`);
             if (listed.has(name)) err(`${where}: gallery file "${name}" is listed twice`);
@@ -316,6 +326,7 @@ for (const id of fs.readdirSync(projectsDir).sort(natCmp)) {
             if (label) im.label = label;
             rec.images.push(im);
         }
+        rec.firstImage = Math.max(0, firstImage);
         for (const f of onDisk) {
             if (!listed.has(f)) warn(`${where}: gallery/${f} is on disk but not listed — it will not appear`);
         }
@@ -707,6 +718,7 @@ for (const p of projects) {
         out.push(`        images:       imgs(${q(folder)}, [`);
         out.push(wrapItems(entries, '            '));
         out.push('        ]),');
+        out.push(`        firstImage:   ${p.firstImage},`);
     }
     if (p.slides) {
         const folder = `assets/projects/${p.id}/slides/`;

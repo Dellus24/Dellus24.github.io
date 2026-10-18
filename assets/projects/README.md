@@ -326,6 +326,18 @@ gallery:
   01.webp | Details Model
 ```
 
+**One picture opens with the project**, beside its box. Mark it with a leading
+`*`, the same mark `models:` uses for the model that opens. It does not move
+the image — the gallery keeps the order you wrote. With nothing marked, the
+first image opens; two marks is a build error.
+
+```
+gallery:
+  cast.webp
+  * mold_draft.webp
+  01.webp | Details Model
+```
+
 If a file sits in `gallery/` but isn't listed, the build **warns** and the file
 does not appear. That is the safety net: adding an image to the folder and
 forgetting to list it can't silently do nothing.

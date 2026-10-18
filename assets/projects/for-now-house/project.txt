@@ -19,7 +19,7 @@ gallery:
   Code_modol_2x5.webp
   Conect_In_The_Air.webp
   Connectors-02.webp
-  Cross_Detail.webp
+  * Cross_Detail.webp
   Full_Section.webp
   Hand_Mockup.webp
   Section_View.webp

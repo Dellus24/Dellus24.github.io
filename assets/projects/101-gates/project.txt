@@ -15,7 +15,7 @@ models:
   * spring.glb
   Detail.glb
 gallery:
-  01.webp | Details Model
+  * 01.webp | Details Model
 credit: Guided by Ifat Finkelman and Deborah Pinto Fdeda.
 
 ---
