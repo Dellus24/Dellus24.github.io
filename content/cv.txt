@@ -16,8 +16,8 @@ Architect & Builder
 2024–2026 | Derman Verbakel Architects - Research & Design
 2025 | "Miksha" group Exhibition at 4tress
 2023–2025 | Teaching Assistant Digital Tools 2d & 3d Year at Bezalel Architecture Department
-2024 | For Now House, Research Group Bezlael Academy
-2022–2023 | Israeli Pavilion at the Venice Architecture Biennale - Research & Protoype
+2024 | For Now House, Research Group Bezalel Academy
+2022–2023 | Israeli Pavilion at the Venice Architecture Biennale - Research & Prototype
 2022 | Cinema Rex - Stage Design&Build
 2021 | Sabio Levy Architects - Concept development
 2019 | Carpentry - Furniture and set design constructions
@@ -28,8 +28,8 @@ Architect & Builder
 Autocad, Bricscad
 Rhino, Grasshopper, Blender
 Revit, Archicad
-Adobe Packge
-Microsoft Packge
+Adobe Package
+Microsoft Package
 
 # Languages
 

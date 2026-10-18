@@ -504,13 +504,15 @@
         .theme-row-header {
             display: flex; align-items: center; justify-content: space-between;
         }
+        /* Sentence case like the menu and the CV (Nir, 2026-10-19). The
+           tracking came down with the capitals — it was there to space them. */
         .theme-row-label {
-            font-size: 0.45rem; letter-spacing: 0.14em;
-            text-transform: uppercase; opacity: 0.4; user-select: none;
+            font-size: 0.45rem; letter-spacing: 0.03em;
+            opacity: 0.4; user-select: none;
         }
         .theme-row-sublabel {
-            font-size: 0.38rem; letter-spacing: 0.12em;
-            text-transform: uppercase; opacity: 0.25;
+            font-size: 0.38rem; letter-spacing: 0.03em;
+            opacity: 0.25;
             margin-top: 2px; user-select: none;
         }
         .theme-font-line { display: flex; align-items: center; gap: 10px; }
@@ -564,8 +566,8 @@
             display: flex; gap: 6px; flex-wrap: wrap;
         }
         .theme-font-btn {
-            font-size: 0.42rem; letter-spacing: 0.08em;
-            text-transform: uppercase; background: none;
+            font-size: 0.42rem; letter-spacing: 0.03em;
+            background: none;
             border: 1px solid var(--border-soft); cursor: pointer;
             padding: 3px 8px; color: var(--fg); opacity: 0.4;
             transition: opacity 0.15s, border-color 0.15s, font-weight 0.15s;
