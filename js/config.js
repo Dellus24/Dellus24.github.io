@@ -3,7 +3,7 @@
 //
 // Every value here comes from the .txt content sources:
 //   assets/projects/<id>/project.txt   one per project
-//   content/{about,cv,contact}.txt     the static panels
+//   content/{about,cv}.txt             the static panels
 //
 // Edit those, then regenerate:   node tools/build-content.mjs
 // Hand edits to this file are overwritten by the next build.
@@ -258,93 +258,71 @@ Curated by Edith Kofsky and Oren Eldar.`,
 ];
 
 // ============================================================================
-// STATIC PAGES — About / CV / Contact
+// STATIC PAGES — About / CV
 // ============================================================================
 
 const STATIC = {
     about: {
         title: 'About',
-        body: `NIR DELLUS
+        body: `Nir Dellus
 B.Arch — Bezalel Academy of Arts and Design
 
 Architect, researcher, and educator working across digital
 design, architectural theory, and computational methods.
 
-Currently at Derman Verbakel Architects in research and
-design, and Teaching Assistant at Bezalel Architecture.
 
-Research interests span the relationship between digital
-tools and architectural thinking, archival methods, and
-the politics of built form.`,
+
+# Contact
+
+Email | Nir@Dellus.com
+Location | Vienna, Austria
+
+Feel free to Contact`,
+        html: `<p>Nir Dellus<br>B.Arch — Bezalel Academy of Arts and Design</p><p>Architect, researcher, and educator working across digital<br>design, architectural theory, and computational methods.</p><h3>Contact</h3><div class="text-rows"><span class="text-row-l">Email</span><span class="text-row-r">Nir@Dellus.com</span><span class="text-row-l">Location</span><span class="text-row-r">Vienna, Austria</span></div><p>Feel free to Contact</p>`,
     },
     cv: {
         title: 'CV — Nir Dellus',
-        body: `NIR DELLUS — CURRICULUM VITAE
+        body: `Architect & Builder
 
+# Education
 
-CONTACT
+2019–2024 | Bezalel Academy of Arts and Design – B.Arch.
+2023 (Fall) | Exchange Studies Aarhus School Of Architecture
+2011–2013 | Ankori High School, Rishon LeZion - High School Diploma
 
-Location       Vienna
-Email          ndellus3@gmail.com
-Date of Birth  24/10/1996
+# Professional experience
 
+2024–2026 | Derman Verbakel Architects - Research & Design
+2025 | "Miksha" group Exhibition at 4tress
+2023–2025 | Teaching Assistant Digital Tools 2d & 3d Year at Bezalel Architecture Department
+2024 | For Now House, Research Group Bezlael Academy
+2022–2023 | Israeli Pavilion at the Venice Architecture Biennale - Research & Protoype
+2022 | Cinema Rex - Stage Design&Build
+2021 | Sabio Levy Architects - Concept development
+2019 | Carpentry - Furniture and set design constructions
+2014–2015 | Volunteer Year, Tarbut (Culture) Movement
 
-PROFESSIONAL EXPERIENCE
+# Software
 
-2024–Present   Derman Verbakel Architects
-               Research & Design
+Autocad, Bricscad
+Rhino, Grasshopper, Blender
+Revit, Archicad
+Adobe Packge
+Microsoft Packge
 
-2023–2025      Bezalel Architecture Department
-               Teaching Assistant — Digital Tools, 2nd & 3rd Year
+# Languages
 
-2022–2023      Israeli Pavilion
-               Venice Architecture Biennale
-               Research & Prototype
+Hebrew - Native
+English - Fluent
+German - B1 actively learning
 
-2021           Sabio Levy Architects
-               Concept Development
+# Contact information
 
-2019           Carpentry
-               Furniture and Set Design Constructions
-
-2014–2015      Volunteer Year, Tarbut (Culture) Movement
-
-
-EDUCATION
-
-2019–2024      Bezalel Academy of Arts and Design
-               B.Arch.
-
-2023 (Fall)    Exchange Studies
-               Aarhus School of Architecture
-
-2011–2013      Ankori High School, Rishon LeZion
-               High School Diploma
-
-
-LANGUAGES
-
-Hebrew         Native
-English        Fluent
-German         A1 — actively learning
-
-
-SOFTWARE
-
-CAD/3D         AutoCAD, BricsCAD, Rhino, Grasshopper,
-               Blender, Revit, ArchiCAD
-Other          Adobe Suite, Microsoft Office`,
-    },
-    contact: {
-        title: 'Contact',
-        body: `NIR DELLUS
-
-Email     ndellus3@gmail.com
-
-Location  Vienna, Austria
-
-Open for research collaborations,
-teaching, and design work.`,
+Vienna.
++43 670 1953 100
+Nir@Dellus.com`,
+        html: `<p>Architect &amp; Builder</p><h3>Education</h3><div class="text-rows"><span class="text-row-l">2019–2024</span><span class="text-row-r">Bezalel Academy of Arts and Design – B.Arch.</span><span class="text-row-l">2023 (Fall)</span><span class="text-row-r">Exchange Studies Aarhus School Of Architecture</span><span class="text-row-l">2011–2013</span><span class="text-row-r">Ankori High School, Rishon LeZion - High School Diploma</span></div><h3>Professional experience</h3><div class="text-rows"><span class="text-row-l">2024–2026</span><span class="text-row-r">Derman Verbakel Architects - Research &amp; Design</span><span class="text-row-l">2025</span><span class="text-row-r">&quot;Miksha&quot; group Exhibition at 4tress</span><span class="text-row-l">2023–2025</span><span class="text-row-r">Teaching Assistant Digital Tools 2d &amp; 3d Year at Bezalel Architecture Department</span><span class="text-row-l">2024</span><span class="text-row-r">For Now House, Research Group Bezlael Academy</span><span class="text-row-l">2022–2023</span><span class="text-row-r">Israeli Pavilion at the Venice Architecture Biennale - Research &amp; Protoype</span><span class="text-row-l">2022</span><span class="text-row-r">Cinema Rex - Stage Design&amp;Build</span><span class="text-row-l">2021</span><span class="text-row-r">Sabio Levy Architects - Concept development</span><span class="text-row-l">2019</span><span class="text-row-r">Carpentry - Furniture and set design constructions</span><span class="text-row-l">2014–2015</span><span class="text-row-r">Volunteer Year, Tarbut (Culture) Movement</span></div><h3>Software</h3><p>Autocad, Bricscad<br>Rhino, Grasshopper, Blender<br>Revit, Archicad<br>Adobe Packge<br>Microsoft Packge</p><h3>Languages</h3><p>Hebrew - Native<br>English - Fluent<br>German - B1 actively learning</p><h3>Contact information</h3><p>Vienna.<br>+43 670 1953 100<br>Nir@Dellus.com</p>`,
+        download: 'assets/cv/CV_Nir_Dellus.pdf',
     },
 };
 
