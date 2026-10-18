@@ -179,13 +179,33 @@ The text shown in the landing's own window.
 | `<project> gallery` | that project's whole thumbnail grid |
 | `<project> slides [file]` | that project's slideshow. Name a slide to open on it, e.g. `slides 37.webp`. A number works too, but the filename survives slides being inserted or removed |
 | `<project> box` | that project's text box, as it opens normally |
+| `<project> build` | the flat-pack window: the project's parts nested on sheets and stacked, assembling into the frame. Reads the project's `build/` folder (see below). Only `for-now-house` has one |
 | `about` / `cv` / `contact` | the static panels |
-| `text` | the landing's own text, from below the `---` |
+| `text` | the landing's own text, from below the `---`. **Opens only when listed** |
 | `menu` | the site menu itself |
 
 Unknown projects, missing files, a `gallery` on a project with no gallery, a
-`slides` on a project with no slides, and the same window listed twice are all
-build errors.
+`slides` on a project with no slides, a `build` on a project with no `build/`
+data, and the same window listed twice are all build errors.
+
+**Since 2026-10-18 the desktop landing is `menu` + `for-now-house build`** and
+nothing else. The composition before it is kept as comments under the
+`windows:` block, ready to paste back. The `build` window gets no hover
+"Go to …" overlay — it is played with, so it carries its own link instead.
+
+#### A project's `build/` folder — exported, never edited
+
+`assets/projects/for-now-house/build/<X>x<Y>.json`, one file per size (length
+1-10 × width 1-3 modules), each holding every part's outline (slots included)
+and position **exactly as Grasshopper produced them** from
+`D:\projects\Flat pack\Conector v2.gh`. The site only lays the parts out flat
+and animates them; Grasshopper decides what the house is.
+
+After changing the `.gh`, re-export with `_local/tools/export-build-toy.cs`
+(outside the repo): run it in Rhino through the Rhino MCP `run_csharp`, with
+Grasshopper open on the file, one width (`YS`) per batch — width 3 takes about
+two minutes. It writes to `_local/build-toy/batches/`; copy those 30 files over
+this folder and commit them. Never hand-edit the JSON.
 
 **Weight is the constraint.** The site's initial load is ~404 KB; models on disk
 run from 14 KB to 3.0 MB. Three large models plus three full-size images would
