@@ -38,7 +38,10 @@ const PROJECTS = [
             { src: 'assets/projects/101-gates/models/Detail.glb', label: 'Detail' },
         ],
         images:       imgs('assets/projects/101-gates/gallery/', [
-            ['01.webp', 'Details Model']
+            ['01.webp', 'Details Model'], '6site map 4 .webp', 'Afikoman_Plan_+_Drawing.webp',
+            'Age Periods.webp', 'Diffrent scales.webp', 'geolim site map.webp',
+            'PLayground+Drawing.webp', 'Rashi 1 Artboard 1.webp', 'Rashi 2 Artboard 1.webp',
+            'Slope+Drawing.webp', 'The 11 yr old  kid hand.webp', 'View 1+Drawing.webp'
         ]),
         firstImage:   0,
         slides:       sl('assets/projects/101-gates/slides/', [
@@ -252,7 +255,7 @@ Curated by Edith Kofsky and Oren Eldar.`,
             'tile_sample.webp', 'tile_sample_01.webp', 'iso_gardem_F0.webp',
             'iso_gardem_F1.webp'
         ]),
-        firstImage:   0,
+        firstImage:   5,
     },
     {
         id:           'derman-verbakel',
