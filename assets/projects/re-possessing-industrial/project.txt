@@ -12,6 +12,7 @@ order: 20
 color: #0091ff
 background: #ffffff
 credit: Guided by Zvi Efrat and Liran Messer.
+view: angle -140.7 7.4 pan -0.4 -0.4 0.3 zoom 3 res 0.8 invert on
 
 ---
 

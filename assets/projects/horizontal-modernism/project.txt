@@ -12,6 +12,7 @@ order: 40
 color: #ff0000
 background: #ffffff
 credit: Guided by Zvi Efrat and Liran Messer.
+view: angle -95.7 -0.5 pan 0 0 -0.1 zoom 0.4 spin 0.001 res 0.7
 
 ---
 

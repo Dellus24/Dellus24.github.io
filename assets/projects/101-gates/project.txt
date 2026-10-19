@@ -17,6 +17,7 @@ models:
 gallery:
   * 01.webp | Details Model
 credit: Guided by Ifat Finkelman and Deborah Pinto Fdeda.
+view: angle 115.9 -0.9 zoom 3.4 spin 0.009 chars Detailed res 0.6
 
 ---
 

@@ -24,6 +24,7 @@ gallery:
   Hand_Mockup.webp
   Section_View.webp
 credit: Supported and funded by the Bezalel Research Authority.
+view: angle -42.2 31.1 pan 0 0.1 -0.1 zoom 8.9 mode wireframe
 
 ---
 

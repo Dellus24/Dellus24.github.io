@@ -31,6 +31,7 @@ const PROJECTS = [
         credit:       `Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
         color:        '#000000',
         background:   '#ffffff',
+        view:         {"angle":[115.9,-0.9],"zoom":3.4,"spin":0.009,"res":0.6,"chars":"Detailed"},
         model:        'assets/projects/101-gates/models/spring.glb',
         models:       [
             { src: 'assets/projects/101-gates/models/spring.glb', label: 'spring' },
@@ -62,6 +63,7 @@ const PROJECTS = [
         credit:       `Guided by Zvi Efrat and Liran Messer.`,
         color:        '#0091ff',
         background:   '#ffffff',
+        view:         {"angle":[-140.7,7.4],"pan":[-0.4,-0.4,0.3],"zoom":3,"res":0.8,"invert":true},
         model:        'assets/projects/re-possessing-industrial/models/silo.glb',
         slides:       sl('assets/projects/re-possessing-industrial/slides/', [
             '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',
@@ -115,6 +117,7 @@ const PROJECTS = [
         credit:       `Guided by Zvi Efrat and Liran Messer.`,
         color:        '#ff0000',
         background:   '#ffffff',
+        view:         {"angle":[-95.7,-0.5],"pan":[0,0,-0.1],"zoom":0.4,"spin":0.001,"res":0.7},
         model:        'assets/projects/horizontal-modernism/models/Markiza.glb',
         slides:       sl('assets/projects/horizontal-modernism/slides/', [
             '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',
@@ -192,6 +195,7 @@ In summary, the planning proposes an almost complete preservation of the existin
         color:        '#ffffff',
         background:   '#000000',
         landingColor: '#c4c4c4',
+        view:         {"angle":[60.8,48.1],"pan":[-0.1,-0.3,0.2],"zoom":2.6,"spin":0.005,"mode":"wireframe"},
         model:        'assets/projects/pray-and-play/models/Floor Detail.glb',
         slides:       sl('assets/projects/pray-and-play/slides/', [
             '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',
@@ -219,6 +223,7 @@ In summary, the planning proposes an almost complete preservation of the existin
         credit:       `Supported and funded by the Bezalel Research Authority.`,
         color:        '#d2a914',
         background:   '#ffffff',
+        view:         {"angle":[-42.2,31.1],"pan":[0,0.1,-0.1],"zoom":8.9,"mode":"wireframe"},
         model:        'assets/projects/for-now-house/models/Conector A.glb',
         images:       imgs('assets/projects/for-now-house/gallery/', [
             'CNC_machine.webp', 'Cnc_Example.webp', 'Code_Image.webp', 'Code_modol_1x1.webp',
@@ -240,6 +245,7 @@ In summary, the planning proposes an almost complete preservation of the existin
 Curated by Edith Kofsky and Oren Eldar.`,
         color:        '#14d2b2',
         background:   '#ffffff',
+        view:         {"angle":[-52.3,21.2],"pan":[0.1,-0.7,-0.2],"zoom":3.4,"mode":"wireframe"},
         model:        'assets/projects/cloud-to-ground/models/Pavilion Model.glb',
         images:       imgs('assets/projects/cloud-to-ground/gallery/', [
             'cast.webp', 'mold_draft.webp', 'mold_01.webp', 'mold_02.webp', 'mold_03.webp',

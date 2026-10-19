@@ -24,6 +24,7 @@ gallery:
 credit:
   Role: research assistant, prototyping and manufacturing.
   Curated by Edith Kofsky and Oren Eldar.
+view: angle -52.3 21.2 pan 0.1 -0.7 -0.2 zoom 3.4 mode wireframe
 
 ---
 
