@@ -92,6 +92,7 @@ const PROJECTS = [
         credit:       `Guided by Helle Blom.`,
         color:        '#1d9f1f',
         background:   '#ffffff',
+        view:         {"angle":[-6.1,22.5],"pan":[0.6,1,-0.2],"zoom":12.5,"spin":0.002,"decon":100,"mode":"wireframe"},
         model:        'assets/projects/get-lost/models/Cabine.glb',
         images:       imgs('assets/projects/get-lost/gallery/', [
             '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',
@@ -100,7 +101,7 @@ const PROJECTS = [
             'communal_library.webp', 'disassemble_story.webp', 'energy_usage.webp',
             'facade_a1.webp'
         ]),
-        firstImage:   8,
+        firstImage:   21,
     },
     {
         id:           'horizontal-modernism',

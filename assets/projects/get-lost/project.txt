@@ -20,7 +20,7 @@ gallery:
   06.webp
   07.webp
   08.webp
-  * 09.webp
+  09.webp
   10.webp
   11.webp
   12.webp
@@ -33,8 +33,9 @@ gallery:
   communal_library.webp
   disassemble_story.webp
   energy_usage.webp
-  facade_a1.webp
+  * facade_a1.webp
 credit: Guided by Helle Blom.
+view: angle -6.1 22.5 pan 0.6 1 -0.2 zoom 12.5 spin 0.002 mode wireframe decon 100
 
 ---
 
