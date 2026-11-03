@@ -616,20 +616,20 @@
         .viewer-wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
 
         .cv-canvas, .cv-ascii {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: var(--panel-w, 0px); right: 0; bottom: 0;
         }
         .cv-canvas canvas { width: 100% !important; height: 100% !important; display: block; }
         .cv-ascii { display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
         .viewer-loading {
-            position: absolute; top: 50%; left: 50%;
+            position: absolute; top: 50%; left: calc(50% + var(--panel-w, 0px) / 2);
             transform: translate(-50%, -50%);
             display: flex; flex-direction: column; align-items: center; gap: 9px;
-            color: var(--fg); opacity: 0.5; pointer-events: none; z-index: 5;
+            color: var(--fg); pointer-events: none; z-index: 5;
             text-align: center;
         }
         .viewer-loading .ld-txt {
-            font-size: 0.5rem; letter-spacing: 0.03em;
+            font-size: 0.65rem; letter-spacing: 0.03em;
             white-space: pre-wrap; max-width: 200px;
         }
         .viewer-loading .ld-track { opacity: 0.2; }
@@ -646,56 +646,37 @@
         }
 
         .focus-btn {
-            position: absolute; top: 10px; left: 50%;
+            position: absolute; top: 10px; left: calc(50% + var(--panel-w, 0px) / 2);
             transform: translateX(-50%);
             font-family: var(--font-family);
-            font-size: 0.55rem; letter-spacing: 0.1em;
+            font-size: 0.65rem; letter-spacing: 0.03em;
             background: none; border: none; cursor: pointer; color: var(--fg);
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.3s; z-index: 15;
+            visibility: hidden; z-index: 15;
             display: flex; flex-direction: column; align-items: center; gap: 2px;
             white-space: nowrap; user-select: none;
         }
-        .focus-label { font-size: 0.38rem; letter-spacing: 0.03em; opacity: 0.7; }
-        .focus-btn.visible { opacity: 0.45; pointer-events: auto; }
-        .focus-btn.visible:hover { opacity: 0.9; }
+        .focus-btn.visible { visibility: visible; }
 
-        .win-settings {
-            position: absolute; bottom: 28px; left: 0; right: 0;
-            background: var(--bg); border-top: 1px solid var(--border-strong); z-index: 20;
-            overflow: hidden; max-height: 0; opacity: 0;
-            pointer-events: none;
-            transition: max-height 0.3s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.25s;
-        }
-        .win-settings.open { max-height: 200px; opacity: 1; pointer-events: auto; }
-
-        .settings-inner { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
-        /* Deconstruct and authored views apply in every render mode, so they sit in
-           their own always-on block above the mode-specific settings. */
-        .settings-inner.model-settings { border-bottom: 1px solid var(--border-soft); }
-
-        .setting-row { display: flex; align-items: center; gap: 10px; }
-
+        /* Viewer controls are one type (Nir, 2026-11-03): 0.65rem, full ink, no
+           underline, no fade. What is selected carries a 1px ink box; every
+           other control keeps a transparent one so selecting shifts nothing.
+           Anything that shows only when needed appears and goes instantly. */
         .setting-label {
-            font-size: 0.42rem; letter-spacing: 0.03em; opacity: 0.35;
-            white-space: nowrap; width: 62px; flex-shrink: 0;
+            font-size: 0.65rem; letter-spacing: 0.03em; white-space: nowrap;
         }
-        /* A row label that is also the row's action. Underlined so it reads as
-           clickable without adding a button box next to the slider it drives. */
+        /* A row label that is also the row's action. How it reads as clickable
+           is still open (Nir, 2026-11-03): for now it looks like any label. */
         .setting-label.label-btn {
-            font-family: var(--font-family); font-size: 0.42rem;
+            font-family: var(--font-family); font-size: 0.65rem;
             background: none; border: none; padding: 0; margin: 0;
-            color: var(--fg); opacity: 0.5; cursor: pointer; text-align: left;
-            text-decoration: underline; text-underline-offset: 2px;
-            text-decoration-thickness: 1px;
-            transition: opacity 0.2s;
+            color: var(--fg); cursor: pointer; text-align: left;
         }
-        .setting-label.label-btn:hover { opacity: 1; }
+        .setting-val { font-size: 0.65rem; letter-spacing: 0.03em; }
 
         .ctrl-slider {
             -webkit-appearance: none; appearance: none;
-            width: 90px; height: 1px; background: var(--fg);
-            opacity: 0.3; outline: none; cursor: pointer;
+            width: 100%; height: 1px; background: var(--fg);
+            outline: none; cursor: pointer;
         }
         .ctrl-slider::-webkit-slider-thumb {
             -webkit-appearance: none; width: 8px; height: 8px;
@@ -706,157 +687,112 @@
             border-radius: 50%; cursor: pointer; border: none;
         }
 
-        .ctrl-toggle {
+        .ctrl-toggle, .charset-option {
             font-family: var(--font-family);
-            font-size: 0.42rem; letter-spacing: 0.03em;
-            background: none; border: 1px solid var(--border-soft); cursor: pointer;
-            padding: 2px 7px; color: var(--fg); opacity: 0.4;
-            transition: opacity 0.2s, background 0.2s, color 0.2s;
+            font-size: 0.65rem; letter-spacing: 0.03em;
+            background: none; border: 1px solid transparent; cursor: pointer;
+            padding: 2px 6px; color: var(--fg); white-space: nowrap;
         }
-        .ctrl-toggle:hover { opacity: 0.65; }
-        .ctrl-toggle.on { opacity: 1; background: var(--fg); color: var(--bg); }
+        .ctrl-toggle.on, .charset-option.active { border-color: var(--fg); }
 
         .charset-group { display: flex; gap: 5px; flex-wrap: wrap; }
 
-        .charset-option {
-            font-family: var(--font-family);
-            font-size: 0.42rem; letter-spacing: 0.03em;
-            background: none; border: 1px solid var(--border-soft); cursor: pointer;
-            padding: 2px 6px; color: var(--fg); opacity: 0.3;
-            transition: opacity 0.2s, border-color 0.2s;
-        }
-        .charset-option:hover { opacity: 0.55; }
-        .charset-option.active { opacity: 1; border-color: var(--fg); font-weight: bold; }
-
-        /* Reveal strip. Matches the bar height so approaching the bottom edge from
-           anywhere fills the bar in. It sits below the bar in z-order and never
-           swallows the pointer events the orbit controller needs - pointerdown on
-           it still bubbles to the viewer body. */
-        .win-bottom-hover {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 28px; z-index: 20;
-        }
-
-        /* The bar is always mounted but rests BARE: no background, no rule, and only
-           the Settings button visible, so the viewer reads clean while still
-           advertising that it can be edited. Hover fills the rest in; clicking
-           Settings pins it open until you click away.
-           pointer-events stays none on the bar itself so the bottom 28px of the
-           viewer stays draggable - only the Settings button opts back in. */
-        .win-bottom-bar {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 28px; border-top: 1px solid transparent;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 10px; background: transparent; z-index: 21;
+        /* The side panel, shared by the 3D viewer and the landing's build
+           window (Nir, 2026-11-03). Always open, down the window's left side.
+           The rows share one grid - labels, then the controls, then the
+           values - so every control starts and ends on the same two lines, an
+           invisible square. A control with no value runs across the value
+           column to the right edge. Rows and groups are display: contents so
+           their children sit in the panel's grid; drags in the gaps between
+           controls still reach the drawing. */
+        .side-panel {
+            position: absolute; top: 0; left: 0; bottom: 0; z-index: 21;
+            box-sizing: border-box; padding: 18px 20px;
+            overflow-y: auto; overflow-x: hidden;
+            display: grid; grid-template-columns: auto 140px min-content;
+            align-items: center; align-content: start; column-gap: 10px; row-gap: 7px;
             pointer-events: none;
-            transition: background 0.25s, border-color 0.25s;
+            outline: 1px solid transparent; outline-offset: -10px;
         }
-        .win-bottom-bar.visible {
-            background: var(--bg); border-top-color: var(--border-strong);
-            pointer-events: auto;
+        /* The panel is its own column, never over the drawing (Nir,
+           2026-11-03): the drawing starts where the panel ends. attachSidePanel
+           keeps --panel-w on the window body at the panel's width. The line on
+           its right is the resize handle - trimmed short of the top and bottom -
+           and dragging it widens the controls column. */
+        .side-divider {
+            position: absolute; top: 18px; bottom: 18px; left: var(--panel-w, 0px);
+            width: 9px; margin-left: -4px; z-index: 22;
+            cursor: col-resize; touch-action: none;
         }
-
-        .wbb-left {
-            display: flex; align-items: center; gap: 2px;
-            opacity: 0; transform: translateY(4px); pointer-events: none;
-            transition: opacity 0.25s, transform 0.25s;
+        .side-divider::before {
+            content: ''; position: absolute; left: 4px; top: 0; bottom: 0;
+            width: 1px; background: var(--fg);
         }
-        .win-bottom-bar.visible .wbb-left { opacity: 1; transform: translateY(0); pointer-events: auto; }
-
-        .mode-btn {
-            font-family: var(--font-family);
-            font-size: 0.65rem; letter-spacing: 0.03em;
-            background: none; border: none; cursor: pointer;
-            padding: 3px 4px; color: var(--fg); opacity: 0.3;
-            transition: opacity 0.2s, font-weight 0.15s; white-space: nowrap;
+        /* Collapsed: a thick line on the window's left edge and a blinking >
+           beside it, which reopens the panel. */
+        .side-open {
+            display: none; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            font-family: var(--font-family); font-size: 0.65rem; color: var(--fg);
+            background: none; border: none; padding: 2px; cursor: pointer;
+            animation: sideopen 1s steps(1) infinite;
         }
-        .mode-btn:hover { opacity: 0.55; }
-        .mode-btn.active { opacity: 1; font-weight: bold; }
+        @keyframes sideopen { 50% { visibility: hidden; } }
+        .side-divider.collapsed { margin-left: 0; width: 24px; cursor: e-resize; }
+        .side-divider.collapsed::before { left: 0; width: 3px; }
+        .side-divider.collapsed .side-open { display: block; }
+        @media (prefers-reduced-motion: reduce) { .side-open { animation: none; } }
+        .side-panel > * { pointer-events: auto; }
+        .side-panel .settings-inner, .side-panel .setting-row, .side-panel .build-row { display: contents; }
+        .side-panel .setting-label { grid-column: 1; }
+        .side-panel .span-ctrl { grid-column: 2 / -1; }
+        .side-panel .setting-val { grid-column: 3; min-width: 2.6em; text-align: right; }
+        /* Option groups spread edge to edge. Their boxes reach 7px past the
+           lines (padding + border) so the TEXT sits on them. */
+        .side-panel .charset-group { justify-content: space-between; margin: 0 -7px; }
+        .side-panel .ctrl-toggle { justify-self: start; margin-left: -7px; }
 
         /* Build window — the landing (Nir, 2026-10-18). The drawing takes the
-           whole window; the controls and the counts float down its left side,
-           one row under the other, and drags in the gaps between them still
-           reach the drawing. */
-        .build-canvas { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+           whole window; the controls and the counts float down its left side. */
+        .build-canvas { position: absolute; top: 0; left: var(--panel-w, 0px); right: 0; bottom: 0; }
         .build-canvas canvas { width: 100% !important; height: 100% !important; display: block; }
-        .build-side {
-            position: absolute; top: 18px; left: 20px; z-index: 21;
-            display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
-            pointer-events: none;
-            outline: 1px solid transparent; outline-offset: 8px;
-        }
-        /* "Change parameters" points here: while it is hovered, the panel's
-           outline blinks. */
-        .build-side.build-flag { animation: buildflag 0.8s steps(1) infinite; }
-        @keyframes buildflag { 0% { outline-color: var(--fg); } 50% { outline-color: transparent; } }
-        .build-side > * { pointer-events: auto; }
-        /* Larger than the viewer's settings (0.42rem), still below the menu's
-           0.65rem: on the landing these controls are the content. */
-        .build-row { display: flex; align-items: center; gap: 6px; }
-        .build-side .setting-label, .build-side .setting-label.label-btn { width: auto; font-size: 0.55rem; }
-        .build-side .charset-option { font-size: 0.55rem; padding: 2px 8px; }
-        .build-side .ctrl-slider { width: 140px; }
+        /* The counts span the box, label left and number on the right edge;
+           Go to For Now House sits centred under them. */
+        .build-side > .build-counts { grid-column: 1 / -1; }
+        .build-side > .setting-label.label-btn.build-go { grid-column: 1 / -1; justify-self: center; text-align: center; }
+        .build-step { display: flex; align-items: center; justify-content: space-between; }
+        /* "Change parameters" points here: while it is hovered, the panel is
+           outlined. */
+        .build-side.build-flag { outline-color: var(--fg); }
+        /* − and + sit flush with the slider ends; the button keeps its width. */
+        .build-step .charset-option { padding: 2px 0; min-width: 1.6em; }
+        .build-step [data-step="-1"] { text-align: left; }
+        .build-step [data-step="1"] { text-align: right; }
+        /* A stepper at its limit is hidden, keeping its place so the number
+           stays put. */
+        .build-step .charset-option:disabled { visibility: hidden; }
         .build-val { font-size: 0.65rem; min-width: 1.4em; text-align: center; }
-        .build-width-val { font-size: 0.5rem; opacity: 0.5; min-width: 2.6em; }
         .build-counts {
-            display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
-            font-size: 0.55rem; letter-spacing: 0.03em; opacity: 0.6; margin-top: 4px;
+            display: flex; flex-direction: column; gap: 3px;
+            font-size: 0.65rem; letter-spacing: 0.03em; margin-top: 4px;
         }
-        /* The invitations, under the drawing at the size of the menu's text:
-           "Change parameters" (hover it and the panel blinks) above a turning
-           sign that says the drawing can be moved. The + steppers pulse too.
-           Each goes away for good once what it points at has been used. */
+        .build-counts > div { display: flex; justify-content: space-between; gap: 10px; }
+        /* The invitations, under the drawing: "Change parameters" (hover it and
+           the panel is outlined) above a sign that says the drawing can be
+           moved. Both go away for good once the drawing or a stepper is used. */
         .build-hint {
-            position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 18px; left: calc(50% + var(--panel-w, 0px) / 2); transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center; gap: 12px;
             pointer-events: none; z-index: 15;
         }
         .build-ask, .build-turn {
-            font-family: var(--font-family); font-size: 0.7rem; letter-spacing: 0.03em;
-            color: var(--fg); opacity: 0; transition: opacity 0.6s;
+            font-family: var(--font-family); font-size: 0.65rem; letter-spacing: 0.03em;
+            color: var(--fg); visibility: hidden;
             white-space: nowrap; user-select: none;
         }
         .build-ask { background: none; border: none; padding: 2px 6px; cursor: default; }
-        .build-ask.visible { opacity: 0.6; pointer-events: auto; }
-        .build-ask.visible:hover, .build-ask.visible:focus-visible { opacity: 1; }
+        .build-ask.visible { visibility: visible; pointer-events: auto; }
         .build-turn { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .build-turn.visible { opacity: 0.55; }
-        .build-turn-icon { font-size: 1.1rem; display: inline-block; animation: buildturn 2.4s ease-in-out infinite; }
-        @keyframes buildturn { 0%, 100% { transform: rotate(-30deg); } 50% { transform: rotate(30deg); } }
-        .build-blink { animation: buildblink 1.2s ease-in-out infinite; }
-        @keyframes buildblink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; border-color: var(--fg); } }
-        @media (prefers-reduced-motion: reduce) {
-            .build-turn-icon, .build-blink, .build-side.build-flag { animation: none; }
-            .build-blink { opacity: 1; border-color: var(--fg); }
-            .build-side.build-flag { outline-color: var(--fg); }
-        }
-
-        /* The one control that is always visible, so it carries normal weight and
-           full opacity rather than the bar's faded treatment. */
-        .settings-toggle-btn {
-            font-family: var(--font-family);
-            font-size: 0.65rem; letter-spacing: 0.03em;
-            background: none; border: none; cursor: pointer;
-            padding: 3px 4px; color: var(--fg); opacity: 1;
-            transition: opacity 0.2s; white-space: nowrap;
-            display: flex; align-items: center; gap: 4px;
-            pointer-events: auto;
-        }
-        .settings-toggle-btn:hover { opacity: 0.6; }
-
-        .settings-arrow { font-size: 0.5rem; transition: transform 0.25s; display: inline-block; }
-        .settings-toggle-btn.open .settings-arrow { transform: rotate(180deg); }
-
-        .speed-inline {
-            display: flex; align-items: center; gap: 5px;
-            margin-left: 6px; opacity: 0.4; transition: opacity 0.2s;
-        }
-        .speed-inline:hover { opacity: 0.8; }
-        .speed-inline .ctrl-slider { width: 55px; }
-        .speed-inline-label {
-            font-family: var(--font-family);
-            font-size: 0.65rem; letter-spacing: 0.03em;
-        }
+        .build-turn.visible { visibility: visible; }
 
         /* ── IMAGE VIEWER ─────────────────────────────────────── */
         .img-float {
@@ -2866,7 +2802,7 @@
 
                 this._ac = new AbortController();
                 const sig = { signal: this._ac.signal };
-                const skip = e => e.target.closest('.win-bottom-bar') || e.target.closest('.win-settings');
+                const skip = e => e.target.closest('.side-panel, .side-divider');
                 this._pts = new Map();   // active pointers over the viewer
                 this._pinch = null;      // pinch gesture start state
                 this.el.style.touchAction = 'none';
@@ -2917,6 +2853,7 @@
                 window.addEventListener('pointerup', endPtr, sig);
                 window.addEventListener('pointercancel', endPtr, sig);
                 this.el.addEventListener('wheel', e => {
+                    if (skip(e)) return;    // the panel scrolls when it is taller than the window
                     e.preventDefault();
                     this.radius = Math.max(0.3, Math.min(200, this.radius * (e.deltaY > 0 ? 1.1 : 0.9)));
                 }, { passive: false });
@@ -3045,6 +2982,81 @@
         // is the model marked in project.txt and the only one openProject opens;
         // the rest come from the 3D View dropdown, each in its own window so two
         // models can sit side by side.
+        // The side panel is a column of its own (Nir, 2026-11-03): the drawing
+        // starts where it ends. Keeps --panel-w on the window body at the
+        // panel's VISIBLE width, so the canvas, Orient on model and the hints
+        // sit in what is left, and calls onResize when that space changes.
+        // The line on the panel's right edge drags both ways. Right of the
+        // panel's natural width it widens the controls column, up to where the
+        // drawing would drop under 40% of the window. Left of it the panel is
+        // cropped from the right - the letters cut at the line - and at the
+        // window's edge it collapses to a thick line with a blinking >, which
+        // reopens it on a click or a drag.
+        function attachSidePanel(body, panel, onResize) {
+            const line = document.createElement('div');
+            line.className = 'side-divider';
+            line.innerHTML = '<button type="button" class="side-open" aria-label="Show the controls" tabindex="-1">&gt;</button>';
+            panel.after(line);
+            const openBtn = line.firstChild;
+            let crop = null;      // visible width while cropped, null when whole
+            let last = -1;
+            const visible = () => crop === null ? panel.offsetWidth : crop;
+            function apply() {
+                const w = visible();
+                panel.style.clipPath = crop === null ? '' : `inset(0 ${panel.offsetWidth - crop}px 0 0)`;
+                const shut = crop === 0;
+                panel.style.visibility = shut ? 'hidden' : '';
+                line.classList.toggle('collapsed', shut);
+                openBtn.tabIndex = shut ? 0 : -1;
+                if (w === last) return;
+                last = w;
+                body.style.setProperty('--panel-w', w + 'px');
+                onResize();
+            }
+            // The panel's natural width changes with its content (a model
+            // loading its Deconstruct row, a mode switch); a crop holds.
+            const ro = new ResizeObserver(() => {
+                if (!panel.isConnected) { ro.disconnect(); return; }
+                if (crop !== null) crop = Math.min(crop, panel.offsetWidth);
+                apply();
+            });
+            ro.observe(panel);
+            const reopen = () => { crop = null; panel.style.gridTemplateColumns = ''; apply(); };
+            line.addEventListener('pointerdown', e => {
+                e.preventDefault(); e.stopPropagation();
+                line.setPointerCapture(e.pointerId);
+                const x0 = e.clientX, v0 = visible();
+                const c0 = parseFloat(getComputedStyle(panel).gridTemplateColumns.split(' ')[1]) || 140;
+                const natural = panel.offsetWidth - (c0 - 140);
+                const vMax = Math.max(natural, body.clientWidth * 0.6);
+                let moved = false;
+                const move = ev => {
+                    const dx = (ev.clientX - x0) / viewScale();
+                    if (Math.abs(dx) > 3) moved = true;
+                    const v = Math.max(0, Math.min(vMax, v0 + dx));
+                    if (v >= natural) {
+                        crop = null;
+                        panel.style.gridTemplateColumns = `auto ${140 + v - natural}px min-content`;
+                    } else {
+                        panel.style.gridTemplateColumns = '';
+                        crop = v < 8 ? 0 : v;
+                    }
+                    apply();
+                };
+                const up = () => {
+                    line.removeEventListener('pointermove', move);
+                    line.removeEventListener('pointerup', up);
+                    line.removeEventListener('pointercancel', up);
+                    // A click on the collapsed line (or its >) reopens it.
+                    if (!moved && v0 === 0) reopen();
+                };
+                line.addEventListener('pointermove', move);
+                line.addEventListener('pointerup', up);
+                line.addEventListener('pointercancel', up);
+            });
+            openBtn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); reopen(); openBtn.blur(); } });
+        }
+
         async function open3D(project, which = 0, savedView = null) {
             const list  = (project.models && project.models.length > 1) ? project.models : null;
             const entry = list ? list[which] : null;
@@ -3071,48 +3083,45 @@
                     <div class="cv-canvas" role="img" aria-label="Interactive 3D model of ${project.title}. Drag to orbit. Not conveyable as text; see the project description and images."></div>
                     <div class="cv-ascii" aria-hidden="true"></div>
                     <button class="focus-btn" aria-label="Reset camera to model"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
-                    <div class="win-settings">
+                    <div class="side-panel viewer-side">
                         <div class="settings-inner model-settings" style="display:none">
-                            <div class="setting-row decon-row" style="display:none"><button class="setting-label label-btn decon-btn" aria-label="Deconstruct the model, or put it back together">Deconstruct</button><input type="range" class="ctrl-slider decon-slider" min="0" max="100" step="0.5" value="0" aria-label="How far the model is deconstructed"><span class="decon-val" style="font-size:0.42rem;opacity:0.5;margin-left:6px">0%</span></div>
-                            <div class="setting-row views-row" style="display:none"><span class="setting-label">Views</span><div class="charset-group views-group"></div></div>
+                            <div class="setting-row decon-row" style="display:none"><button class="setting-label label-btn decon-btn" aria-label="Deconstruct the model, or put it back together">Deconstruct</button><input type="range" class="ctrl-slider decon-slider" min="0" max="100" step="0.5" value="0" aria-label="How far the model is deconstructed"><span class="setting-val decon-val">0%</span></div>
+                            <div class="setting-row views-row" style="display:none"><span class="setting-label">Views</span><div class="charset-group views-group span-ctrl"></div></div>
                         </div>
+                        <div class="setting-row"><span class="setting-label">Mode</span><div class="charset-group span-ctrl">
+                            <button class="charset-option mode-btn active" data-mode="ascii">Ascii</button>
+                            <button class="charset-option mode-btn" data-mode="wireframe">Wire</button>
+                            <button class="charset-option mode-btn" data-mode="solid">Solid</button>
+                        </div></div>
                         <div class="settings-inner ascii-settings">
-                            <div class="setting-row"><span class="setting-label">Res</span><input type="range" class="ctrl-slider res-slider" min="0.1" max="1.0" step="0.05" value="0.4"></div>
+                            <div class="setting-row"><span class="setting-label">Res</span><input type="range" class="ctrl-slider res-slider span-ctrl" min="0.1" max="1.0" step="0.05" value="0.4" aria-label="ASCII resolution"></div>
                             <div class="setting-row"><span class="setting-label">Invert</span><button class="ctrl-toggle on invert-toggle">On</button></div>
-                            <div class="setting-row"><span class="setting-label">Chars</span><div class="charset-group ascii-charset"></div></div>
+                            <div class="setting-row"><span class="setting-label">Chars</span><div class="charset-group ascii-charset span-ctrl"></div></div>
                         </div>
                         <div class="settings-inner wire-settings" style="display:none">
-                            <div class="setting-row"><span class="setting-label">Lines</span><div class="charset-group wire-lines-group">
+                            <div class="setting-row"><span class="setting-label">Lines</span><div class="charset-group wire-lines-group span-ctrl">
                                 <button class="charset-option" data-wire="edges">Edges</button>
                                 <button class="charset-option" data-wire="all">All</button>
                                 <button class="charset-option active" data-wire="hidden">Hidden</button>
                             </div></div>
-                            <div class="setting-row"><span class="setting-label">Width</span><input type="range" class="ctrl-slider wire-width-slider" min="1" max="6" step="0.5" value="1"><span class="wire-width-val" style="font-size:0.42rem;opacity:0.5;margin-left:6px">1px</span></div>
+                            <div class="setting-row"><span class="setting-label">Width</span><input type="range" class="ctrl-slider wire-width-slider" min="1" max="6" step="0.5" value="1" aria-label="Line thickness"><span class="setting-val wire-width-val">1px</span></div>
                         </div>
                         <div class="settings-inner solid-settings" style="display:none">
                             <div class="setting-row"><span class="setting-label">Edges</span><button class="ctrl-toggle solid-edges-toggle">Off</button></div>
-                            <div class="setting-row"><span class="setting-label">Render</span><button class="ctrl-toggle" style="opacity:0.22;cursor:default">Soon</button></div>
                         </div>
-                    </div>
-                    <div class="win-bottom-hover"></div>
-                    <div class="win-bottom-bar">
-                        <div class="wbb-left">
-                            <button class="mode-btn active" data-mode="ascii">Ascii</button>
-                            <button class="mode-btn" data-mode="wireframe">Wire</button>
-                            <button class="mode-btn" data-mode="solid">Solid</button>
-                            <div class="speed-inline"><span class="speed-inline-label">Speed</span><input type="range" class="ctrl-slider speed-slider" min="0" max="0.015" step="0.001" value="0"></div>
-                        </div>
-                        <button class="settings-toggle-btn">Settings <span class="settings-arrow">&#9652;</span></button>
+                        <div class="setting-row"><span class="setting-label">Speed</span><input type="range" class="ctrl-slider speed-slider span-ctrl" min="0" max="0.015" step="0.001" value="0" aria-label="Turning speed"></div>
                     </div>
                 `;
 
                 const canvasCont     = body.querySelector('.cv-canvas');
+                // The drawing's size: the body less the side panel's VISIBLE
+                // width, which attachSidePanel keeps in --panel-w (a cropped or
+                // collapsed panel keeps its full offsetWidth). Read off the body,
+                // not the canvas, which is display: none in ASCII mode.
+                const sidePanel      = body.querySelector('.viewer-side');
+                const viewW = () => body.clientWidth - (parseFloat(body.style.getPropertyValue('--panel-w')) || 0);
                 const asciiCont      = body.querySelector('.cv-ascii');
                 const focusBtn       = body.querySelector('.focus-btn');
-                const settingsPanel  = body.querySelector('.win-settings');
-                const settingsToggle = body.querySelector('.settings-toggle-btn');
-                const bottomBar      = body.querySelector('.win-bottom-bar');
-                const bottomHover    = body.querySelector('.win-bottom-hover');
                 const modelPanel     = body.querySelector('.model-settings');
                 const deconRow     = body.querySelector('.decon-row');
                 const viewsRow       = body.querySelector('.views-row');
@@ -3128,7 +3137,7 @@
                 renderer.setPixelRatio(1); renderer.setClearColor(BG, 1);
                 canvasCont.appendChild(renderer.domElement);
 
-                const vw = body.clientWidth || 560, vh = body.clientHeight || 422;
+                const vw = viewW() || 560, vh = body.clientHeight || 422;
                 const camera = new THREE.PerspectiveCamera(50, vw / vh, 0.1, 1000);
                 camera.position.set(3, 2.5, 3);
                 // Parallel-projection companion, used only while an authored
@@ -3583,52 +3592,9 @@
                     applyAsciiScheme();
                 }
 
-                // Bottom bar show/hide
-                let barLocked = false, hideT = null;
-                const showBar = () => { clearTimeout(hideT); bottomBar.classList.add('visible'); };
-                const hideBar = () => { if (barLocked) return; hideT = setTimeout(() => bottomBar.classList.remove('visible'), 300); };
-                const closeSettings = thenHide => {
-                    settingsPanel.classList.remove('open');
-                    settingsToggle.classList.remove('open');
-                    barLocked = false;
-                    if (thenHide) hideBar();
-                };
-                bottomHover.addEventListener('mouseenter', showBar);
-                bottomBar.addEventListener('mouseenter', () => clearTimeout(hideT));
-                bottomBar.addEventListener('mouseleave', hideBar);
-                // Settings is the only part of the resting bar that stays
-                // hit-testable, so hovering it has to reveal the rest itself - the
-                // hover strip underneath never sees that pointer.
-                settingsToggle.addEventListener('mouseenter', showBar);
-                // The faded controls stay in the tab order, so reveal the bar when
-                // focus lands inside it rather than leaving a keyboard user driving
-                // buttons they cannot see.
-                bottomBar.addEventListener('focusin', showBar);
-                bottomBar.addEventListener('focusout', e => { if (!bottomBar.contains(e.relatedTarget)) hideBar(); });
-                body.addEventListener('pointerdown', e => {
-                    if (e.target.closest('.win-bottom-bar, .win-settings')) return;
-                    // An open panel is pinned and stays pinned: orbiting, panning and
-                    // zooming the model are the whole point of having it open, so only
-                    // the Settings button itself closes it.
-                    if (e.pointerType === 'mouse') return;
-                    // Touch has no hover: a tap on the viewer reveals the bar, which
-                    // hides itself after a few seconds (unless settings are open).
-                    showBar();
-                    hideT = setTimeout(() => { if (!barLocked) bottomBar.classList.remove('visible'); }, 3500);
-                });
-                settingsPanel.addEventListener('mouseenter', () => clearTimeout(hideT));
-                settingsPanel.addEventListener('mouseleave', hideBar);
-                settingsToggle.addEventListener('click', () => {
-                    // Closing from the button itself leaves the pointer over the bar,
-                    // so let mouseleave hide it rather than racing a timer against it.
-                    if (settingsPanel.classList.contains('open')) { closeSettings(false); return; }
-                    settingsPanel.classList.add('open'); settingsToggle.classList.add('open');
-                    barLocked = true; showBar();
-                });
-
                 // Controls
                 body.querySelector('.res-slider').addEventListener('input', e => {
-                    ascii.resolution = parseFloat(e.target.value); ascii.setSize(body.clientWidth, body.clientHeight);
+                    ascii.resolution = parseFloat(e.target.value); ascii.setSize(viewW(), body.clientHeight);
                 });
                 body.querySelector('.speed-slider').addEventListener('input', e => { orbit.autoSpeed = parseFloat(e.target.value); });
                 const deconVal    = body.querySelector('.decon-val');
@@ -3663,7 +3629,7 @@
                 // visitor never sees it.
                 if (new URLSearchParams(location.search).has('layout')) {
                     const row = document.createElement('div');
-                    row.className = 'setting-row';
+                    row.style.cssText = 'grid-column:1/-1;display:flex;align-items:center';
                     row.innerHTML = '<button class="ctrl-toggle save-view-btn" type="button">Save view</button>' +
                                     '<input class="save-view-out" readonly spellcheck="false" ' +
                                     'style="flex:1;margin-left:6px;min-width:0;font:inherit;background:none;' +
@@ -3736,7 +3702,7 @@
                 });
 
                 function resizeVP() {
-                    const w = body.clientWidth, h = body.clientHeight;
+                    const w = viewW(), h = body.clientHeight;
                     if (w < 1 || h < 1) return;
                     camera.aspect = w / h; camera.updateProjectionMatrix();
                     // The authored frame's height is what we honour; width follows
@@ -3747,6 +3713,7 @@
                     wireEdgeMat.resolution.set(w, h); solidEdgeMat.resolution.set(w, h);
                 }
                 frame.addEventListener('win-resize', resizeVP);
+                attachSidePanel(body, sidePanel, resizeVP);
                 // Called by the phone board when the zoom settles. Capped at 2:
                 // past that the extra pixels cost more than they show.
                 frame._setBoardScale = (z) => {
@@ -3960,7 +3927,7 @@
                 const body = frame.querySelector('.win-body');
                 Object.assign(body.style, { padding: '0', overflow: 'hidden', position: 'relative' });
                 const stepper = (axis, label, more, fewer) => `
-                        <div class="build-row"><span class="setting-label">${label}</span><button class="charset-option" data-axis="${axis}" data-step="-1" aria-label="${fewer}">&#x2212;</button><span class="build-val" data-axis="${axis}">1</span><button class="charset-option" data-axis="${axis}" data-step="1" aria-label="${more}">+</button></div>`;
+                        <div class="build-row"><span class="setting-label">${label}</span><div class="build-step span-ctrl"><button class="charset-option" data-axis="${axis}" data-step="-1" aria-label="${fewer}">&#x2212;</button><span class="build-val" data-axis="${axis}">1</span><button class="charset-option" data-axis="${axis}" data-step="1" aria-label="${more}">+</button></div></div>`;
                 body.innerHTML = `
                     <div class="build-canvas" role="img" aria-label="Interactive 3D drawing of the For Now House frame: its plywood connectors nested on sheets and its beams and pillars stacked, moving into the assembled frame. Drag to orbit."></div>
                     <button class="focus-btn" aria-label="Reset the view to the whole flat pack"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
@@ -3968,11 +3935,11 @@
                         <button type="button" class="build-ask" tabindex="-1" aria-label="Change parameters: the controls are on the left">Change parameters</button>
                         <div class="build-turn" aria-hidden="true"><span class="build-turn-icon">&#x21BB;</span><span>Drag to turn · scroll to zoom</span></div>
                     </div>
-                    <div class="build-side">
+                    <div class="build-side side-panel">
                         ${stepper('x', 'Length', 'More modules along the length', 'Fewer modules along the length')}
                         ${stepper('y', 'Width', 'More modules across the width', 'Fewer modules across the width')}
-                        <div class="build-row"><button class="setting-label label-btn build-play">Assemble</button><input type="range" class="ctrl-slider build-slider" min="0" max="100" step="0.1" value="0" aria-label="From flat pack to assembled frame"></div>
-                        <div class="build-row"><span class="setting-label">Lines</span><input type="range" class="ctrl-slider build-width" min="1" max="6" step="0.5" value="1" aria-label="Line thickness"><span class="build-width-val">1px</span></div>
+                        <div class="build-row"><button class="setting-label label-btn build-play">Assemble</button><input type="range" class="ctrl-slider build-slider span-ctrl" min="0" max="100" step="0.1" value="0" aria-label="From flat pack to assembled frame"></div>
+                        <div class="build-row"><span class="setting-label">Lines</span><input type="range" class="ctrl-slider build-width" min="1" max="6" step="0.5" value="1" aria-label="Line thickness"><span class="setting-val build-width-val">1px</span></div>
                         <div class="build-counts" aria-live="polite"><div>Loading…</div></div>
                         ${project ? '<button class="setting-label label-btn build-go">Go to For Now House</button>' : ''}
                     </div>`;
@@ -4073,9 +4040,9 @@
                     world.add(fills, lines, sheetLines);
                     built = { parts, shapes, flat: lay.flat, home, delay, segAt, triAt };
                     const n = lay.sheets.length;
-                    countsEl.innerHTML = `<div>${n} sheet${n === 1 ? '' : 's'} of plywood</div>` +
-                        `<div>${lay.connectorCount} connectors</div>` +
-                        `<div>${lay.longCount} beams and pillars</div>`;
+                    countsEl.innerHTML = `<div><span>Sheets of plywood</span><span>${n}</span></div>` +
+                        `<div><span>Connectors</span><span>${lay.connectorCount}</span></div>` +
+                        `<div><span>Beams and pillars</span><span>${lay.longCount}</span></div>`;
                     countsEl.title = 'Beams and pillars by length: ' + lay.lengths.map(([l, c]) => `${c} × ${l} cm`).join(', ');
                     poseAll();
                     return lay;
@@ -4130,21 +4097,19 @@
                 }
 
                 // The invitations, shown once the first assembly has finished:
-                // the + steppers pulse until one is used; "Change parameters"
-                // and the turning sign show as a pair until dropHints().
-                const plus = [...body.querySelectorAll('.build-side [data-step="1"]')];
-                let invited = false, paramsUsed = false;
+                // "Change parameters" and the turning sign show as a pair until
+                // dropHints().
+                let invited = false;
                 function invite() {
                     if (invited || !alive) return;
                     invited = true;
-                    if (!paramsUsed) plus.forEach(b => { if (!b.disabled) b.classList.add('build-blink'); });
                     if (!hintsDone) {
                         askEl.classList.add('visible'); askEl.tabIndex = 0;
                         turnEl.classList.add('visible');
                     }
                 }
-                // Hovering (or focusing) "Change parameters" blinks a frame
-                // around the controls. A tap has no hover, so it blinks a while.
+                // Hovering (or focusing) "Change parameters" outlines the
+                // controls. A tap has no hover, so it holds the outline a while.
                 const flag = on => sideEl.classList.toggle('build-flag', on);
                 askEl.addEventListener('mouseenter', () => flag(true));
                 askEl.addEventListener('mouseleave', () => flag(false));
@@ -4160,8 +4125,7 @@
                     steppers.forEach(b => {
                         const v = b.dataset.axis === 'x' ? X : Y, lim = BUILD_MAX[b.dataset.axis];
                         const off = (+b.dataset.step < 0 && v <= 1) || (+b.dataset.step > 0 && v >= lim);
-                        b.disabled = off; b.style.opacity = off ? '0.12' : '';
-                        if (off) b.classList.remove('build-blink');
+                        b.disabled = off;
                     });
                 }
                 async function show() {
@@ -4184,8 +4148,6 @@
                     }
                 }
                 steppers.forEach(b => b.addEventListener('click', () => {
-                    paramsUsed = true;
-                    plus.forEach(p => p.classList.remove('build-blink'));
                     dropHints();
                     const k = b.dataset.axis, n = (k === 'x' ? X : Y) + (+b.dataset.step);
                     if (n < 1 || n > BUILD_MAX[k]) return;
@@ -4224,6 +4186,7 @@
                     if (!userMoved) fitView();
                 }
                 frame.addEventListener('win-resize', resize);
+                attachSidePanel(body, sideEl, resize);
                 resize();
 
                 const onThemeChange = () => {
