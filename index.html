@@ -170,30 +170,22 @@
         body.resizing  { user-select: none; }
 
         /* Touch: drag surfaces must not pan/zoom the page */
-        .win-titlebar, .win-resize-edge, .slide-float, .img-float,
-        .slide-resize, .img-float-resize { touch-action: none; }
+        .win-titlebar, .win-resize-edge, .img-float,
+        .img-float-resize { touch-action: none; }
 
-        /* ── Slideshow ── */
-        .slide-float {
-            position: absolute; overflow: hidden;
-            background: var(--bg); border: 1px solid var(--border-strong);
-            color: var(--fg);          /* see .win-frame */
-            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-            user-select: none; transition: box-shadow 0.15s;
-            cursor: grab;
-        }
-        .slide-float:active { cursor: grabbing; }
-        .slide-float img {
-            position: absolute; inset: 0 0 28px 0;
-            width: 100%; height: calc(100% - 28px);
-            object-fit: contain; display: block; pointer-events: none;
+        /* ── Slideshow ── a .win-frame like the others; the picture fills the
+           body and the < > sit over its two sides. */
+        .slide-body { padding: 0; overflow: hidden; }
+        .slide-img {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: contain; display: block; pointer-events: none; user-select: none;
         }
         .slide-nav {
-            position: absolute; top: 0; bottom: 28px; width: 22%;
+            position: absolute; top: 0; bottom: 0; width: 22%;
             display: flex; align-items: center;
             cursor: pointer; opacity: 0; transition: opacity 0.15s;
         }
-        .slide-float:hover .slide-nav { opacity: 1; }
+        .win-frame:hover .slide-nav { opacity: 1; }
         .slide-nav-prev { left: 0; justify-content: flex-start; padding-left: 10px; }
         .slide-nav-next { right: 0; justify-content: flex-end;  padding-right: 10px; }
         .slide-chevron {
@@ -201,21 +193,6 @@
             transition: opacity 0.1s; text-shadow: 0 0 6px var(--bg);
         }
         .slide-nav:hover .slide-chevron { opacity: 1; }
-        .slide-bar {
-            position: absolute; bottom: 0; left: 0; right: 0; height: 28px;
-            display: flex; align-items: center; padding: 0 8px; gap: 8px;
-            border-top: 1px solid var(--border-strong);
-            font-size: 0.55rem; opacity: 0; transition: opacity 0.2s;
-        }
-        .slide-float:hover .slide-bar { opacity: 1; }
-        .slide-title  { flex: 1; opacity: 0.5; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .slide-counter { opacity: 0.35; flex-shrink: 0; }
-        .slide-close  { opacity: 0.3; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s; }
-        .slide-close:hover { opacity: 0.9; }
-        .slide-resize {
-            position: absolute; bottom: 0; right: 0;
-            width: 14px; height: 14px; cursor: nwse-resize;
-        }
 
         /* ג"€ג"€ WINDOW FRAME ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ */
         .win-frame {
@@ -884,17 +861,15 @@
            window would be noisy, so mark it with the titlebar instead. */
         .win-frame:focus { outline: none; }
         .win-frame:focus-visible { outline: none; }
-        .win-frame:focus-visible > .win-titlebar,
-        .slide-float:focus-visible > .slide-bar {
+        .win-frame:focus-visible > .win-titlebar {
             outline: 2px solid var(--fg);
             outline-offset: -2px;
         }
         /* Reveal hover-gated controls for keyboard users. */
         .win-close:focus-visible,
         .win-collapse:focus-visible { opacity: 1 !important; }
-        .slide-float:focus-within .slide-nav { opacity: 1; }
-        .slide-nav:focus-visible,
-        .slide-close:focus-visible { opacity: 1; }
+        .win-frame:focus-within .slide-nav { opacity: 1; }
+        .slide-nav:focus-visible { opacity: 1; }
         /* Skip link — first tab stop, lets keyboard users reach the menu
            without walking every open window. */
         .skip-link {
@@ -1086,8 +1061,7 @@
            A finger cannot aim at 3px anyway, so the board drops them. Windows
            still MOVE by their titlebar; only edge-resize goes. */
         html.phone.board .win-resize-edge,
-        html.phone.board .img-float-resize,
-        html.phone.board .slide-resize { pointer-events: none; }
+        html.phone.board .img-float-resize { pointer-events: none; }
 
         /* ── FINGER-SIZED WINDOW CHROME ON THE BOARD (2026-10-11) ─────────
            Nir: the bar on top should "work good with finger tips and not be
@@ -1114,8 +1088,7 @@
            The side edges stay off — they sit 3px OUTSIDE the window and were
            the halo that stole canvas touches. */
         html.phone.board .win-frame .win-resize-edge[data-dir="nw"],
-        html.phone.board .img-float-resize,
-        html.phone.board .slide-resize {
+        html.phone.board .img-float-resize {
             pointer-events: auto;
             /* COUNTER-SCALED, which is the whole point. A grip sized in canvas
                pixels shrinks with the board: 44px measured 19px on screen at
@@ -1131,14 +1104,12 @@
         html.phone.board .win-frame .win-resize-edge[data-dir="nw"] {
             top: 0; left: 0; right: auto; bottom: auto;
         }
-        html.phone.board .img-float-resize,
-        html.phone.board .slide-resize { bottom: 0; right: 0; left: auto; top: auto; }
+        html.phone.board .img-float-resize { bottom: 0; right: 0; left: auto; top: auto; }
 
         /* A grip you can see, or nobody will know it is there: two strokes in
            the corner, in the ink the window is already wearing. */
         html.phone.board .win-frame .win-resize-edge[data-dir="nw"]::after,
-        html.phone.board .img-float-resize::after,
-        html.phone.board .slide-resize::after {
+        html.phone.board .img-float-resize::after {
             content: ''; position: absolute; opacity: 0.4;
             width:  min(13px * var(--bzi, 1), 28px);
             height: min(13px * var(--bzi, 1), 28px);
@@ -1148,8 +1119,7 @@
             border-left: min(2px * var(--bzi, 1), 4px) solid var(--fg);
             border-top:  min(2px * var(--bzi, 1), 4px) solid var(--fg);
         }
-        html.phone.board .img-float-resize::after,
-        html.phone.board .slide-resize::after {
+        html.phone.board .img-float-resize::after {
             right: min(5px * var(--bzi, 1), 11px); bottom: min(5px * var(--bzi, 1), 11px);
             border-right:  min(2px * var(--bzi, 1), 4px) solid var(--fg);
             border-bottom: min(2px * var(--bzi, 1), 4px) solid var(--fg);
@@ -1176,22 +1146,18 @@
            So it follows the pattern the 3D viewer ALREADY uses for touch — a
            tap reveals it, and it withdraws on its own a few seconds later. At
            rest the picture is the whole window, which is the point of it. */
-        html.phone.board .img-float-bar,
-        html.phone.board .slide-bar {
+        html.phone.board .img-float-bar {
             height: 44px; opacity: 0; pointer-events: none;
             transition: opacity 0.18s ease;
         }
-        html.phone.board .img-float.bar-on .img-float-bar,
-        html.phone.board .slide-float.bar-on .slide-bar {
+        html.phone.board .img-float.bar-on .img-float-bar {
             opacity: 1; pointer-events: auto;
         }
         html.phone.board .img-float-title { font-size: 11px; opacity: 0.6; }
-        html.phone.board .slide-bar { font-size: 12px; }
 
         /* Close: a glyph big enough to hit, and visible without a hover. */
         html.phone.board .win-frame .win-close,
-        html.phone.board .img-float .img-float-close,
-        html.phone.board .slide-float .slide-close {
+        html.phone.board .img-float .img-float-close {
             opacity: 0.55;
             font-size: 19px; line-height: 1;
             min-width: 44px; height: 44px;
@@ -1358,7 +1324,7 @@
         // After closing a window with no recorded opener, land on whatever is
         // now on top rather than dumping focus on <body>.
         function focusTopmostWindow() {
-            const wins = [...document.querySelectorAll('.win-frame, .slide-float')]
+            const wins = [...document.querySelectorAll('.win-frame')]
                 .filter(el => !el.classList.contains('closing'));
             if (!wins.length) return;
             wins.sort((a, b) => (+a.style.zIndex || 0) - (+b.style.zIndex || 0));
@@ -1580,21 +1546,19 @@
         // ── SLIDESHOW WINDOW ──────────────────────────────────────────────────────
         function openSlideshow(project, startAt = 0) {
             focusOrCreate(`slides-${project.id}`, () => {
-                const ws = document.getElementById('workspace');
-                const { x, y } = nextSpawn(640, 440);
                 const slides = project.slides;
                 // Which slide is showing. Was a private counter, so the ?layout
                 // composer could not see it and a landing slideshow always
                 // reopened on slide 1 however it had been left (Nir, 2026-10-02).
                 let idx = Math.max(0, Math.min(startAt | 0, slides.length - 1));
 
-                const el = document.createElement('div');
-                el.className = 'slide-float spawning';
-                el.style.cssText = `left:${x}px;top:${y}px;z-index:${++topZ};width:640px;height:440px;`;
-                openWins[`slides-${project.id}`] = el;
-                el.dataset.projectId = project.id;
-                el.dataset.winKind = 'slides';
-                el._slideState = () => ({
+                // A window like the text and gallery windows (Nir, 2026-11-04):
+                // the shared frame, its titlebar on top carrying the counter, the
+                // picture filling the body. It used to be a hand-built float with
+                // its controls in a bar along the bottom.
+                const frame = makeFrame({ title: project.title + ' — Slides', tag: 'Slides', w: 640, h: 440, minW: 280, minH: 200,
+                                          key: `slides-${project.id}`, projectId: project.id, kind: 'slides' });
+                frame._slideState = () => ({
                     index: idx,
                     file: String(slides[idx].src || slides[idx]).split('/').pop(),
                 });
@@ -1608,29 +1572,29 @@
                 // same shape the `gallery:` block already uses.
                 const slideAlt = i => `${project.title} — slide ${i + 1} of ${slides.length}`;
 
-                el.setAttribute('role', 'group');
-                el.setAttribute('aria-label', `${project.title} — slideshow, ${slides.length} slides`);
-                el.tabIndex = -1;
-
-                el.innerHTML = `
+                frame.querySelector('.win-title').insertAdjacentHTML('beforeend',
+                    ` <span class="slide-counter" aria-live="polite" aria-atomic="true">${idx + 1} / ${slides.length}</span>`);
+                const body = frame.querySelector('.win-body');
+                body.className += ' slide-body';
+                body.innerHTML = `
                     <img class="slide-img" draggable="false" decoding="async" src="${slides[idx].src || slides[idx]}" alt="${slideAlt(idx)}">
                     <div class="slide-nav slide-nav-prev" role="button" tabindex="0" aria-label="Previous slide"><span class="slide-chevron" aria-hidden="true">&lt;</span></div>
                     <div class="slide-nav slide-nav-next" role="button" tabindex="0" aria-label="Next slide"><span class="slide-chevron" aria-hidden="true">&gt;</span></div>
-                    <div class="slide-bar">
-                        <span class="slide-title">${project.title}</span>
-                        <span class="slide-counter" aria-live="polite" aria-atomic="true">1 / ${slides.length}</span>
-                        <span class="slide-close" role="button" tabindex="0" aria-label="Close ${project.title} slideshow">&#x00D7;</span>
-                    </div>
-                    <div class="slide-resize"></div>
                 `;
 
-                ws.appendChild(el);
-                setTimeout(() => el.classList.remove('spawning'), 320);
+                const imgEl      = body.querySelector('.slide-img');
+                const counterEl  = frame.querySelector('.slide-counter');
 
-                const imgEl      = el.querySelector('.slide-img');
-                const counterEl  = el.querySelector('.slide-counter');
-                const docAC      = new AbortController();
-                const docSig     = { signal: docAC.signal };
+                // The window's height follows the first slide's proportions, so a
+                // wide slide has no empty bands (Nir, 2026-11-04). Only while the
+                // window is still its spawn size: a landing's authored geometry or
+                // the project tiling has already sized it and is left alone.
+                imgEl.addEventListener('load', () => {
+                    if (frame.offsetWidth !== 640 || frame.offsetHeight !== 440 || !imgEl.naturalWidth) return;
+                    const chrome = frame.offsetHeight - body.clientHeight;
+                    const h = Math.round(body.clientWidth * imgEl.naturalHeight / imgEl.naturalWidth + chrome);
+                    frame.style.height = Math.max(200, Math.min(h, window.innerHeight - frame.offsetTop - 10)) + 'px';
+                }, { once: true });
 
                 // Warm the browser cache for the neighbouring slides so
                 // prev/next doesn't wait on a fresh download.
@@ -1652,81 +1616,27 @@
                     preloadAround();
                 }
 
-                const prevBtn = el.querySelector('.slide-nav-prev');
-                const nextBtn = el.querySelector('.slide-nav-next');
+                const prevBtn = body.querySelector('.slide-nav-prev');
+                const nextBtn = body.querySelector('.slide-nav-next');
                 prevBtn.addEventListener('click', () => go(-1));
                 nextBtn.addEventListener('click', () => go(1));
                 onActivateKey(prevBtn, () => go(-1));
                 onActivateKey(nextBtn, () => go(1));
 
-                function closeSlides() {
-                    docAC.abort();
-                    el.classList.add('closing');
-                    announce(`${project.title} slideshow closed`);
-                    const back = el._opener;
-                    setTimeout(() => {
-                        el.remove();
-                        delete openWins[`slides-${project.id}`];
-                        if (back && back.isConnected) back.focus();
-                        else focusTopmostWindow();
-                    }, 220);
-                }
-                const slideCloseBtn = el.querySelector('.slide-close');
-                slideCloseBtn.addEventListener('click', e => { e.stopPropagation(); closeSlides(); });
-                onActivateKey(slideCloseBtn, closeSlides);
-                el._close = closeSlides;
-
-                // Arrow keys / Home / End drive the sequence; Escape closes.
-                // Scoped to the window so it only applies while focused.
-                el.addEventListener('keydown', e => {
+                // Arrow keys / Home / End drive the sequence; Escape closes
+                // (makeFrame). Scoped to the window so it only applies while focused.
+                frame.addEventListener('keydown', e => {
                     if (e.target.closest('input, select, textarea')) return;
                     switch (e.key) {
                         case 'ArrowLeft':  case 'ArrowUp':   go(-1); break;
                         case 'ArrowRight': case 'ArrowDown': go(1);  break;
                         case 'Home':       go(-idx); break;
                         case 'End':        go(slides.length - 1 - idx); break;
-                        case 'Escape':     closeSlides(); break;
                         default: return;
                     }
                     e.preventDefault();
                     e.stopPropagation();
                 });
-
-                // Drag
-                el.addEventListener('pointerdown', () => el.style.zIndex = ++topZ);
-                let dragging = false, resizing = false, ox = 0, oy = 0, rw = 0, rh = 0;
-                el.addEventListener('pointerdown', e => {
-                    if (!e.isPrimary) return;
-                    if (e.target.closest('.slide-nav, .slide-close, .slide-resize')) return;
-                    dragging = true;
-                    ox = e.clientX + ws.scrollLeft - el.offsetLeft;
-                    oy = e.clientY + ws.scrollTop  - el.offsetTop;
-                    el.style.cursor = 'grabbing';
-                    document.body.classList.add('dragging'); e.preventDefault();
-                });
-                el.querySelector('.slide-resize').addEventListener('pointerdown', e => {
-                    if (!e.isPrimary) return;
-                    e.stopPropagation(); resizing = true;
-                    ox = e.clientX; oy = e.clientY;
-                    rw = el.offsetWidth; rh = el.offsetHeight;
-                    document.body.classList.add('resizing'); e.preventDefault();
-                });
-                document.addEventListener('pointermove', e => {
-                    if (!e.isPrimary) return;
-                    if (dragging) {
-                        el.style.left = Math.max(0, e.clientX + ws.scrollLeft - ox) + 'px';
-                        el.style.top  = Math.max(0, e.clientY + ws.scrollTop  - oy) + 'px';
-                    } else if (resizing) {
-                        el.style.width  = Math.max(280, rw + e.clientX - ox) + 'px';
-                        el.style.height = Math.max(200, rh + e.clientY - oy) + 'px';
-                    }
-                }, docSig);
-                const endSlideDrag = () => {
-                    if (dragging) { dragging = false; el.style.cursor = ''; document.body.classList.remove('dragging'); }
-                    if (resizing) { resizing = false; document.body.classList.remove('resizing'); }
-                };
-                document.addEventListener('pointerup', endSlideDrag, docSig);
-                document.addEventListener('pointercancel', endSlideDrag, docSig);
             });
         }
 
@@ -2113,10 +2023,11 @@
             if (elSl) {
                 const img = elSl.querySelector('.slide-img');
                 const ar  = (img && img.naturalWidth) ? img.naturalWidth / img.naturalHeight : 3 / 2;
+                const tb = 25;                                  // titlebar + its border
                 let h = clamp(vh * 0.40, 240, capH);
-                let w = h * ar;
-                if (w > capW) { w = capW; h = w / ar; }
-                items.push({ el: elSl, w, h, frame: false });
+                let w = (h - tb) * ar;
+                if (w > capW) { w = capW; h = w / ar + tb; }
+                items.push({ el: elSl, w, h, frame: true });
                 if (img && !img.naturalWidth && !img.dataset.tileHook) {
                     img.dataset.tileHook = '1';
                     img.addEventListener('load', () => tileProjectWindows(project), { once: true });
@@ -2220,7 +2131,7 @@
             // its right edge this changes nothing in the usual case — the scan
             // starts exactly on the boundary and clears it — but it is what
             // keeps a menu that is anywhere else from being landed on.
-            const obstacles = [...ws.querySelectorAll('.win-frame, .slide-float, .img-float')]
+            const obstacles = [...ws.querySelectorAll('.win-frame, .img-float')]
                 .filter(f => f !== themeFrame && !mine.has(f))
                 .map(f => ({ x: f.offsetLeft, y: f.offsetTop, w: f.offsetWidth, h: f.offsetHeight }));
             const maxBottom = obstacles.reduce((y, o) => Math.max(y, o.y + o.h), topY);
@@ -4284,14 +4195,13 @@
             // Collect all movable windows + floating images + slideshows
             const frames = [...ws.querySelectorAll('.win-frame')].filter(f => f !== menuEl && f !== themeFrame);
             const floats = [...ws.querySelectorAll('.img-float')];
-            const slides = [...ws.querySelectorAll('.slide-float')];
-            const all    = [...frames, ...floats, ...slides];
+            const all    = [...frames, ...floats];
             if (!all.length) return;
 
             // Weight determines relative area: heavier = more space
             function weight(f) {
                 if (f.classList.contains('img-float')) return 1.5;
-                if (f.classList.contains('slide-float')) return 3;
+                if (f.dataset.winKind === 'slides') return 3;
                 if (f.querySelector('.cv-canvas')) return 4;
                 if (f.querySelector('.gallery-body')) {
                     const n = f.querySelectorAll('.gallery-thumb').length || 1;
@@ -4769,7 +4679,7 @@
             // so the block reads roughly left-to-right.
             const SOLO = ['text', 'menu', 'about', 'cv'];
             const block = () => {
-                const wins = [...document.querySelectorAll('.win-frame, .img-float, .slide-float')]
+                const wins = [...document.querySelectorAll('.win-frame, .img-float')]
                     .filter(el => !el.classList.contains('closing'))
                     .filter(el => el.dataset.winKind && el.dataset.winKind !== 'theme');
 
@@ -5233,11 +5143,12 @@
                 zoomLabel.textContent = Math.round(view.z * 100) + '%';
             };
 
-            // A window is a .win-frame, a .slide-float OR an .img-float — the
-            // same trio tileProjectWindows and the layout tool already use.
+            // A window is a .win-frame or an .img-float (a slideshow is a
+            // .win-frame since 2026-11-04) — the same pair tileProjectWindows
+            // and the layout tool use.
             // Selecting only .win-frame here silently left every image and
             // slideshow out of the board's extent and out of the cull.
-            const WINS = '.win-frame, .slide-float, .img-float';
+            const WINS = '.win-frame, .img-float';
 
             // Live geometry, never a stored constant: the board is whatever the
             // windows currently occupy, so moving one re-fits correctly.
@@ -5443,11 +5354,11 @@
             // A drag is not a tap: moving a window must not flash its bar.
             const barT = new WeakMap(), downAt = new WeakMap();
             ws.addEventListener('pointerdown', e => {
-                const host = e.target.closest('.img-float, .slide-float');
+                const host = e.target.closest('.img-float');
                 if (host) downAt.set(host, [e.clientX, e.clientY]);
             }, true);
             ws.addEventListener('pointerup', e => {
-                const host = e.target.closest('.img-float, .slide-float');
+                const host = e.target.closest('.img-float');
                 if (!host) return;
                 const from = downAt.get(host);
                 if (!from || Math.hypot(e.clientX - from[0], e.clientY - from[1]) > 12) return;
