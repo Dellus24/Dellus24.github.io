@@ -671,9 +671,19 @@
            is still open (Nir, 2026-11-03): for now it looks like any label. */
         .setting-label.label-btn {
             font-family: var(--font-family); font-size: 0.65rem;
-            background: none; border: none; padding: 0; margin: 0;
+            background: none; border: 1px solid transparent; padding: 2px 6px; margin: -3px -7px;
             color: var(--fg); cursor: pointer; text-align: left;
         }
+        /* What can be used says so under the pointer (Nir, 2026-11-04): the
+           same 1px ink box as a selection. The label's negative margin keeps
+           its text where it was, so the box shifts nothing. */
+        .setting-label.label-btn:hover, .setting-label.label-btn:focus-visible,
+        .ctrl-toggle:hover, .charset-option:hover,
+        .ctrl-toggle:focus-visible, .charset-option:focus-visible { border-color: var(--fg); outline: none; }
+        .focus-btn:hover, .focus-btn:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
+        /* A drawing that turns shows a hand. */
+        .cv-canvas, .cv-ascii, .build-canvas { cursor: grab; }
+        .cv-canvas:active, .cv-ascii:active, .build-canvas:active { cursor: grabbing; }
         .setting-val { font-size: 0.65rem; letter-spacing: 0.03em; }
 
         .ctrl-slider {
@@ -731,15 +741,18 @@
             content: ''; position: absolute; left: 4px; top: 0; bottom: 0;
             width: 1px; background: var(--fg);
         }
-        /* Collapsed: a thick line on the window's left edge and a blinking >
-           beside it, which reopens the panel. */
+        /* Collapsed: a thick line on the window's left edge and, beside it, a
+           ^ over a word, turned on its side so the ^ points into the window
+           (Nir, 2026-11-04). It fades in and out, and reopens the panel. */
         .side-open {
             display: none; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-            font-family: var(--font-family); font-size: 0.65rem; color: var(--fg);
+            font-family: var(--font-family); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--fg);
             background: none; border: none; padding: 2px; cursor: pointer;
-            animation: sideopen 1s steps(1) infinite;
+            writing-mode: vertical-rl; text-align: center; line-height: 1.2;
+            animation: sideopen 1.6s ease-in-out infinite;
         }
-        @keyframes sideopen { 50% { visibility: hidden; } }
+        .side-open > span { display: block; }
+        @keyframes sideopen { 50% { opacity: 0; } }
         .side-divider.collapsed { margin-left: 0; width: 24px; cursor: e-resize; }
         .side-divider.collapsed::before { left: 0; width: 3px; }
         .side-divider.collapsed .side-open { display: block; }
@@ -762,6 +775,11 @@
            Go to For Now House sits centred under them. */
         .build-side > .build-counts { grid-column: 1 / -1; }
         .build-side > .setting-label.label-btn.build-go { grid-column: 1 / -1; justify-self: center; text-align: center; }
+        /* Assemble and Take apart share one width, the longer word's, so the
+           label column - and every line after it - holds still when it swaps. */
+        .build-play { display: inline-grid; }
+        .build-play > span, .build-play::after { grid-area: 1 / 1; }
+        .build-play::after { content: 'Take apart'; visibility: hidden; }
         .build-step { display: flex; align-items: center; justify-content: space-between; }
         /* "Change parameters" points here: while it is hovered, the panel is
            outlined. */
@@ -2790,6 +2808,11 @@
         }
 
         // ג"€ג"€ 3D VIEWER ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€ג"€
+        // "Drag to turn · scroll to zoom" teaches the gesture once (Nir,
+        // 2026-11-04): after the visitor has turned or zoomed any 3D view, no
+        // later window shows it.
+        let viewTaught = false;
+
         class SimpleOrbit {
             constructor(camera, el) {
                 this.camera = camera; this.el = el;
@@ -2995,13 +3018,13 @@
         // cropped from the right - the letters cut at the line - and at the
         // window's edge it collapses to a thick line with a blinking >, which
         // reopens it on a click or a drag.
-        function attachSidePanel(body, panel, onResize) {
+        function attachSidePanel(body, panel, onResize, { label = '', closed = false } = {}) {
             const line = document.createElement('div');
             line.className = 'side-divider';
-            line.innerHTML = '<button type="button" class="side-open" aria-label="Show the controls" tabindex="-1">&gt;</button>';
+            line.innerHTML = `<button type="button" class="side-open" aria-label="Show the controls" tabindex="-1"><span aria-hidden="true">^</span>${label ? `<span aria-hidden="true">${label}</span>` : ''}</button>`;
             panel.after(line);
             const openBtn = line.firstChild;
-            let crop = null;      // visible width while cropped, null when whole
+            let crop = closed ? 0 : null;   // visible width while cropped, null when whole
             let last = -1;
             const visible = () => crop === null ? panel.offsetWidth : crop;
             function apply() {
@@ -3086,6 +3109,7 @@
                     <div class="cv-canvas" role="img" aria-label="Interactive 3D model of ${project.title}. Drag to orbit. Not conveyable as text; see the project description and images."></div>
                     <div class="cv-ascii" aria-hidden="true"></div>
                     <button class="focus-btn" aria-label="Reset camera to model"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
+                    <div class="build-hint"><div class="build-turn" aria-hidden="true"><span class="build-turn-icon">&#x21BB;</span><span>Drag to turn · scroll to zoom</span></div></div>
                     <div class="side-panel viewer-side">
                         <div class="settings-inner model-settings" style="display:none">
                             <div class="setting-row decon-row" style="display:none"><button class="setting-label label-btn decon-btn" aria-label="Deconstruct the model, or put it back together">Deconstruct</button><input type="range" class="ctrl-slider decon-slider" min="0" max="100" step="0.5" value="0" aria-label="How far the model is deconstructed"><span class="setting-val decon-val">0%</span></div>
@@ -3179,7 +3203,17 @@
 
                 const orbit = new SimpleOrbit(camera, body);
 
-                const matWhite   = new THREE.MeshLambertMaterial({ color: 0xffffff });
+                // The landing's turning sign, under the model once it has loaded;
+                // the first drag or zoom on the drawing takes it away for good.
+                const turnEl = body.querySelector('.build-turn');
+                const taught = e => {
+                    if (e.target.closest('.side-panel, .side-divider')) return;
+                    viewTaught = true; turnEl.classList.remove('visible');
+                };
+                body.addEventListener('pointerdown', taught);
+                body.addEventListener('wheel', taught, { passive: true });
+
+                const matWhite  = new THREE.MeshLambertMaterial({ color: 0xffffff });
                 // These were hardcoded black while the background was read from
                 // the stylesheet, so a viewer opened under any non-black ink drew
                 // black lines until the NEXT theme change happened to correct it.
@@ -3293,6 +3327,7 @@
                         if (firstAuthoredView) applyView(firstAuthoredView);
                         // applyView zeroes the spin; honour an authored one after.
                         if (savedView) frame._applyViewState(savedView);
+                        if (!viewTaught) turnEl.classList.add('visible');
                     }).catch(err => {
                         console.error('3D load failed:', err);
                         loadingEl.classList.remove('indet');
@@ -3716,7 +3751,8 @@
                     wireEdgeMat.resolution.set(w, h); solidEdgeMat.resolution.set(w, h);
                 }
                 frame.addEventListener('win-resize', resizeVP);
-                attachSidePanel(body, sidePanel, resizeVP);
+                // Settings start closed in every project (Nir, 2026-11-04).
+                attachSidePanel(body, sidePanel, resizeVP, { label: 'settings', closed: true });
                 // Called by the phone board when the zoom settles. Capped at 2:
                 // past that the extra pixels cost more than they show.
                 frame._setBoardScale = (z) => {
@@ -3941,7 +3977,7 @@
                     <div class="build-side side-panel">
                         ${stepper('x', 'Length', 'More modules along the length', 'Fewer modules along the length')}
                         ${stepper('y', 'Width', 'More modules across the width', 'Fewer modules across the width')}
-                        <div class="build-row"><button class="setting-label label-btn build-play">Assemble</button><input type="range" class="ctrl-slider build-slider span-ctrl" min="0" max="100" step="0.1" value="0" aria-label="From flat pack to assembled frame"></div>
+                        <div class="build-row"><button class="setting-label label-btn build-play"><span>Assemble</span></button><input type="range" class="ctrl-slider build-slider span-ctrl" min="0" max="100" step="0.1" value="0" aria-label="From flat pack to assembled frame"></div>
                         <div class="build-row"><span class="setting-label">Lines</span><input type="range" class="ctrl-slider build-width" min="1" max="6" step="0.5" value="1" aria-label="Line thickness"><span class="setting-val build-width-val">1px</span></div>
                         <div class="build-counts" aria-live="polite"><div>Loading…</div></div>
                         ${project ? '<button class="setting-label label-btn build-go">Go to For Now House</button>' : ''}
@@ -4015,7 +4051,7 @@
                     fills.geometry.attributes.position.needsUpdate = true;
                     sheetMat.opacity = Math.max(0, 1 - T * 3);
                     sheetLines.visible = sheetMat.opacity > 0;
-                    playBtn.textContent = T > 0.5 ? 'Take apart' : 'Assemble';
+                    playBtn.firstChild.textContent = T > 0.5 ? 'Take apart' : 'Assemble';
                 }
 
                 function build(data) {
@@ -4083,7 +4119,7 @@
                     askEl.classList.remove('visible'); askEl.tabIndex = -1;
                     clearTimeout(flagT); flag(false);
                 };
-                const moved = () => { userMoved = true; dropHints(); };
+                const moved = () => { userMoved = true; viewTaught = true; dropHints(); };
                 canvasCont.addEventListener('pointerdown', moved);
                 canvasCont.addEventListener('wheel', moved, { passive: true });
                 focusBtn.addEventListener('click', () => {
