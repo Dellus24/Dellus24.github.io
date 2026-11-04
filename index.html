@@ -729,6 +729,12 @@
             animation: sideopen 1.6s ease-in-out infinite;
         }
         .side-open > span { display: block; }
+        /* Once a panel has been opened, the sign has done its job (Nir,
+           2026-11-04): in every viewer after that it shows only while the
+           pointer is on the line, steady, and goes again when it leaves. */
+        .side-divider.taught .side-open { opacity: 0; animation: none; }
+        .side-divider.taught:hover .side-open,
+        .side-divider.taught .side-open:focus-visible { opacity: 1; }
         @keyframes sideopen { 50% { opacity: 0; } }
         .side-divider.collapsed { margin-left: 0; width: 24px; cursor: e-resize; }
         .side-divider.collapsed::before { left: 0; width: 3px; }
@@ -2929,14 +2935,18 @@
         // cropped from the right - the letters cut at the line - and at the
         // window's edge it collapses to a thick line with a blinking >, which
         // reopens it on a click or a drag.
+        // Set the first time any side panel is opened from collapsed; from then
+        // on every panel's sign waits for a hover (see .side-divider.taught).
+        let panelTaught = false;
+
         function attachSidePanel(body, panel, onResize, { label = '', closed = false } = {}) {
             const line = document.createElement('div');
-            line.className = 'side-divider';
+            line.className = panelTaught ? 'side-divider taught' : 'side-divider';
             line.innerHTML = `<button type="button" class="side-open" aria-label="Show the controls" tabindex="-1"><span aria-hidden="true">^</span>${label ? `<span aria-hidden="true">${label}</span>` : ''}</button>`;
             panel.after(line);
             const openBtn = line.firstChild;
             let crop = closed ? 0 : null;   // visible width while cropped, null when whole
-            let last = -1;
+            let last = -1, wasShut = crop === 0;
             const visible = () => crop === null ? panel.offsetWidth : crop;
             function apply() {
                 const w = visible();
@@ -2944,6 +2954,11 @@
                 const shut = crop === 0;
                 panel.style.visibility = shut ? 'hidden' : '';
                 line.classList.toggle('collapsed', shut);
+                if (wasShut && !shut && !panelTaught) {
+                    panelTaught = true;
+                    document.querySelectorAll('.side-divider').forEach(d => d.classList.add('taught'));
+                }
+                wasShut = shut;
                 openBtn.tabIndex = shut ? 0 : -1;
                 if (w === last) return;
                 last = w;
