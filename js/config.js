@@ -253,7 +253,9 @@ Curated by Edith Kofsky and Oren Eldar.`,
         images:       imgs('assets/projects/cloud-to-ground/gallery/', [
             'cast.webp', 'mold_draft.webp', 'mold_01.webp', 'mold_02.webp', 'mold_03.webp',
             'tile_sample.webp', 'tile_sample_01.webp', 'iso_gardem_F0.webp',
-            'iso_gardem_F1.webp'
+            'iso_gardem_F1.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',
+            '08.webp', '09.webp', '12.webp', '13.webp', '14.webp', '15.webp', '16.webp',
+            '17.webp', '18.webp', '19.webp'
         ]),
         firstImage:   5,
     },
