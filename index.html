@@ -449,7 +449,10 @@
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 1px; padding: 1px; overflow-y: auto; flex: 1;
+            /* Rows keep the thumbs' full 4:3 height and the grid scrolls; auto rows
+               shrank to fit the window, so with many images each row covered the last. */
+            grid-auto-rows: max-content; align-content: start;
+            gap: 1px; padding: 1px; overflow-y: auto; flex: 1; min-height: 0;
         }
 
         .gallery-thumb {
