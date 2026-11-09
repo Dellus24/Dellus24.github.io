@@ -1966,6 +1966,19 @@
         // Content-proportional packer for a single project's windows.
         // (Separate from orderWindows/BSP — this one sizes each window to its
         // content and packs into rows, never stretching to fill the canvas.)
+        // Width of a native scrollbar, measured once (0 on overlay-scrollbar systems).
+        let _sbW = null;
+        function scrollbarW() {
+            if (_sbW === null) {
+                const d = document.createElement('div');
+                d.style.cssText = 'position:absolute;top:-999px;width:100px;height:100px;overflow:scroll';
+                document.body.appendChild(d);
+                _sbW = d.offsetWidth - d.clientWidth;
+                d.remove();
+            }
+            return _sbW;
+        }
+
         function tileProjectWindows(project) {
             const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
             const ws = document.getElementById('workspace');
@@ -2017,10 +2030,29 @@
             // takes part in the tiling — later picks from the dropdown spawn
             // normally, like any window opened on its own.
             const el3d = openWins[`3d-${project.id}`] || openWins[`3d-${project.id}-0`];
+            const elInfo = openWins[`info-${project.id}`];
             if (el3d) {
                 let w = clamp(vw * 0.40, 460, capW);
                 let h = clamp(w * 0.78, 340, capH);
-                items.push({ el: el3d, w, h, frame: true });
+                // Fill the space beside the project box (Nir, 2026-11-09). The
+                // uniform shrink below used to scale the hero down with the
+                // gallery row even when only that row overflowed — 310x242 at
+                // 1200x800 with empty canvas to its right. So the hero takes
+                // ALL the width right of the box, at least the box's height,
+                // and sits out the shrink like the box does. Too narrow for
+                // that (the 260 frame floor) and it packs as before.
+                // It reaches the right margin, so it also leaves room for the
+                // workspace's scrollbar: if the block turns out taller than the
+                // screen, the bar appears AFTER this has measured, and a hero
+                // flush to innerWidth then forces a horizontal scroll too.
+                const boxW = elInfo && (elInfo._naturalW || elInfo.offsetWidth);
+                const boxH = elInfo && (elInfo._naturalH || elInfo.offsetHeight);
+                const besideW = boxW ? Math.floor(availW - boxW - gap - scrollbarW()) : 0;
+                if (!boardOn && besideW >= 260) {
+                    items.push({ el: el3d, w: besideW, h: Math.min(availH, Math.max(boxH, h)), frame: true, noShrink: true });
+                } else {
+                    items.push({ el: el3d, w, h, frame: true });
+                }
             }
 
             // Slideshow — match the image's aspect ratio (object-fit:contain,
@@ -3057,7 +3089,7 @@
                                 <button class="charset-option" data-wire="all">All</button>
                                 <button class="charset-option active" data-wire="hidden">Hidden</button>
                             </div></div>
-                            <div class="setting-row"><span class="setting-label">Width</span><input type="range" class="ctrl-slider wire-width-slider" min="1" max="6" step="0.5" value="1" aria-label="Line thickness"><span class="setting-val wire-width-val">1px</span></div>
+                            <div class="setting-row"><span class="setting-label">Width</span><input type="range" class="ctrl-slider wire-width-slider" min="0.25" max="6" step="0.25" value="1" aria-label="Line thickness"><span class="setting-val wire-width-val">1px</span></div>
                         </div>
                         <div class="settings-inner solid-settings" style="display:none">
                             <div class="setting-row"><span class="setting-label">Edges</span><button class="ctrl-toggle solid-edges-toggle">Off</button></div>
@@ -3098,6 +3130,7 @@
                 // is not an elevation. SimpleOrbit drives whichever is active.
                 const orthoCam = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.01, 1000);
                 let activeCam = camera;
+                let authoredFrame = null;   // the Blender camera last applied (see resizeVP), null for the viewer's own
                 let orthoRefRadius = 5;   // orbit radius at which orthoCam.zoom is 1
 
                 const scene = new THREE.Scene();
@@ -3147,7 +3180,10 @@
                 const matWireAll = new THREE.MeshBasicMaterial({ color: FG, wireframe: true });
                 const matSolid   = new THREE.MeshLambertMaterial({ color: 0xcccccc });
                 const solidEdgeMat = new LineMaterial({ color: FG, linewidth: 1, worldUnits: false, opacity: 0.15, transparent: true, resolution: new THREE.Vector2(vw, vh) });
-                const wireEdgeMat  = new LineMaterial({ color: FG, linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(vw, vh) });
+                // transparent so it can fade in and draw sub-pixel widths faintly; still
+                // depth-tested against the fill meshes, which render first as opaque.
+                const wireEdgeMat  = new LineMaterial({ color: FG, linewidth: 1, worldUnits: false, transparent: true, opacity: 1, resolution: new THREE.Vector2(vw, vh) });
+                let lineAlpha = 1, lineFade = null;   // width < 1px draws as a fainter 1px line
 
                 // ---- Per-part ascii ------------------------------------------
                 // Shading alone reads the model as one mass: every mesh shares one
@@ -3322,6 +3358,10 @@
                             pos, target, dist,
                             fov: src.isPerspectiveCamera ? src.fov : null,
                             orthoHalfH: src.isOrthographicCamera ? Math.abs(src.top - src.bottom) / 2 * k : null,
+                            // The shape of Blender's camera frame, so resizeVP can
+                            // fit the whole frame into a window of any shape.
+                            aspect: src.isPerspectiveCamera ? src.aspect
+                                  : Math.abs(src.right - src.left) / Math.max(1e-6, Math.abs(src.top - src.bottom)),
                         };
                         // The FIRST camera in the file is where the model opens.
                         // Nir's rule is that view data lives in the .glb, so a
@@ -3428,12 +3468,11 @@
                     orbit.autoSpeed = 0;
                     const sp = body.querySelector('.speed-slider'); if (sp) sp.value = '0';
 
+                    authoredFrame = { aspect: v.aspect || 0, fov: v.fov || 50, halfH: v.orthoHalfH || 0 };
                     if (v.orthoHalfH) {
-                        orthoCam.top = v.orthoHalfH; orthoCam.bottom = -v.orthoHalfH;
                         orthoRefRadius = v.dist;
                         setActiveCam(orthoCam);
                     } else {
-                        if (v.fov) { camera.fov = v.fov; camera.updateProjectionMatrix(); }
                         setActiveCam(camera);
                     }
                     orbit.target.copy(v.target);
@@ -3472,11 +3511,41 @@
 
                 // Edge/fill helper meshes are expensive to compute (EdgesGeometry
                 // over the full mesh), so they're built on first use only.
+                // Built in slices between frames, not in one go: on Theater Gate
+                // (1.4M vertices) EdgesGeometry alone took ~16 s and the window sat
+                // on its loading screen the whole time. Now the model shows at
+                // once in the solid look and the lines fade in when every part
+                // has them (Nir, 2026-11-09). edgesBuilt: false | 'building' | true.
                 function ensureEdges() {
-                    if (edgesBuilt || !modelGroup) return;
-                    edgesBuilt = true;
+                    if (edgesBuilt !== false || !modelGroup) return;
+                    edgesBuilt = 'building';
+                    const todo = realMeshes.slice();
+                    let i = 0;
+                    const slice = () => {
+                        if (!body.isConnected) return;               // window closed mid-build
+                        const t0 = performance.now();
+                        while (i < todo.length && performance.now() - t0 < 12) buildEdgesFor(todo[i++]);
+                        if (i < todo.length) { setTimeout(slice, 0); return; }
+                        edgesBuilt = true;
+                        syncClones();   // the model may already be part-way deconstructed
+                        if (mode === 'wireframe') { applyWire(); fadeInLines(); }
+                        else if (mode === 'solid') applySolid();
+                    };
+                    setTimeout(slice, 0);
+                }
+                function fadeInLines() {
+                    const t0 = performance.now();
+                    if (lineFade) cancelAnimationFrame(lineFade);
+                    const tick = () => {
+                        const k = Math.min(1, (performance.now() - t0) / 400);
+                        wireEdgeMat.opacity = lineAlpha * k;
+                        lineFade = k < 1 ? requestAnimationFrame(tick) : null;
+                    };
+                    wireEdgeMat.opacity = 0; tick();
+                }
+                function buildEdgesFor(child) {
                     const curBg = new THREE.Color(canvasOf());
-                    realMeshes.forEach(child => {
+                    {
                         const eg = new THREE.EdgesGeometry(child.geometry, 15);
                         const lg = new LineSegmentsGeometry(); lg.setPositions(eg.attributes.position.array); eg.dispose();
                         const em = new LineSegments2(lg, wireEdgeMat);
@@ -3490,8 +3559,7 @@
                             color: curBg, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.FrontSide
                         }));
                         fm.visible = false; (child.parent || modelGroup).add(fm); wireFillMeshes.push(fm);
-                    });
-                    syncClones();   // the model may already be part-way deconstructed
+                    }
                 }
 
                 function resetMeshes() {
@@ -3503,6 +3571,8 @@
                     if (!modelGroup) return; ensureEdges(); resetMeshes();
                     if (wireLinesMode === 'all') {
                         realMeshes.forEach(c => c.material = matWireAll);
+                    } else if (edgesBuilt !== true) {
+                        realMeshes.forEach(c => c.material = matSolid);   // until the lines exist
                     } else if (wireLinesMode === 'edges') {
                         realMeshes.forEach(c => c.visible = false);
                         edgeMeshes.forEach(e => { e.material = wireEdgeMat; e.visible = true; });
@@ -3517,7 +3587,7 @@
                     if (solidEdges) ensureEdges();
                     resetMeshes();
                     realMeshes.forEach(c => c.material = matSolid);
-                    edgeMeshes.forEach(e => { e.material = solidEdgeMat; e.visible = solidEdges; });
+                    edgeMeshes.forEach(e => { e.material = solidEdgeMat; e.visible = solidEdges && edgesBuilt === true; });
                 }
 
                 let mode = 'ascii';
@@ -3649,7 +3719,15 @@
                     });
                 });
                 const wireW = body.querySelector('.wire-width-slider'), wireWVal = body.querySelector('.wire-width-val');
-                wireW.addEventListener('input', e => { const v = parseFloat(e.target.value); wireEdgeMat.linewidth = v; wireWVal.textContent = v + 'px'; });
+                // Under 1px the line cannot get thinner at pixel ratio 1, so it stays one
+                // pixel wide and gets fainter in proportion instead (Nir, 2026-11-09).
+                wireW.addEventListener('input', e => {
+                    const v = parseFloat(e.target.value);
+                    wireEdgeMat.linewidth = Math.max(1, v);
+                    lineAlpha = Math.min(1, v);
+                    if (!lineFade) wireEdgeMat.opacity = lineAlpha;
+                    wireWVal.textContent = v + 'px';
+                });
 
                 const solidEdgesBtn = body.querySelector('.solid-edges-toggle');
                 solidEdgesBtn.addEventListener('click', () => {
@@ -3659,6 +3737,7 @@
 
                 const _mc = new THREE.Vector3(0, 0, 0);
                 focusBtn.addEventListener('click', () => {
+                    authoredFrame = null;
                     camera.fov = 50; camera.updateProjectionMatrix();
                     setActiveCam(camera);
                     viewsGroup.querySelectorAll('.charset-option').forEach(b => b.classList.remove('active'));
@@ -3668,9 +3747,21 @@
                 function resizeVP() {
                     const w = viewW(), h = body.clientHeight;
                     if (w < 1 || h < 1) return;
+                    // The WHOLE authored frame fits the window, the way Blender
+                    // shows its camera frame in a viewport (Nir, 2026-11-09). It
+                    // used to honour the frame's height only, so a window
+                    // narrower than the camera cropped its sides: a 16:9 camera
+                    // in a 555x483 window showed ~64% of Blender's width. Now a
+                    // narrower window gains room above and below instead.
+                    const grow = (authoredFrame && authoredFrame.aspect) ? Math.max(1, authoredFrame.aspect / (w / h)) : 1;
+                    if (authoredFrame && activeCam === camera) {
+                        const t = Math.tan(THREE.MathUtils.degToRad(authoredFrame.fov) / 2) * grow;
+                        camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(t));
+                    }
                     camera.aspect = w / h; camera.updateProjectionMatrix();
-                    // The authored frame's height is what we honour; width follows
-                    // the window, which is resizable and so cannot match Blender's.
+                    if (authoredFrame && authoredFrame.halfH) {
+                        orthoCam.top = authoredFrame.halfH * grow; orthoCam.bottom = -orthoCam.top;
+                    }
                     orthoCam.left = -orthoCam.top * (w / h); orthoCam.right = orthoCam.top * (w / h);
                     orthoCam.updateProjectionMatrix();
                     renderer.setSize(w, h); ascii.setSize(w, h);

@@ -31,17 +31,18 @@ const PROJECTS = [
         credit:       `Guided by Ifat Finkelman and Deborah Pinto Fdeda.`,
         color:        '#000000',
         background:   '#ffffff',
-        view:         {"angle":[115.9,-0.9],"zoom":3.4,"spin":0.009,"res":0.6,"chars":"Detailed"},
-        model:        'assets/projects/101-gates/models/spring.glb',
+        view:         {"spin":0,"mode":"wireframe"},
+        model:        'assets/projects/101-gates/models/Theater Gate.glb',
         models:       [
-            { src: 'assets/projects/101-gates/models/spring.glb', label: 'spring' },
+            { src: 'assets/projects/101-gates/models/Theater Gate.glb', label: 'Theater Gate' },
+            { src: 'assets/projects/101-gates/models/Spring.glb', label: 'Spring' },
             { src: 'assets/projects/101-gates/models/Detail.glb', label: 'Detail' },
         ],
         images:       imgs('assets/projects/101-gates/gallery/', [
-            ['01.webp', 'Details Model'], '6site map 4 .webp', 'Afikoman_Plan_+_Drawing.webp',
-            'Age Periods.webp', 'Diffrent scales.webp', 'geolim site map.webp',
-            'PLayground+Drawing.webp', 'Rashi 1 Artboard 1.webp', 'Rashi 2 Artboard 1.webp',
-            'Slope+Drawing.webp', 'The 11 yr old  kid hand.webp', 'View 1+Drawing.webp'
+            '01.webp', '6site map 4 .webp', 'Afikoman_Plan_+_Drawing.webp', 'Age Periods.webp',
+            'Diffrent scales.webp', 'geolim site map.webp', 'PLayground+Drawing.webp',
+            'Rashi 1 Artboard 1.webp', 'Rashi 2 Artboard 1.webp', 'Slope+Drawing.webp',
+            'The 11 yr old  kid hand.webp', 'View 1+Drawing.webp'
         ]),
         firstImage:   0,
         slides:       sl('assets/projects/101-gates/slides/', [
