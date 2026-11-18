@@ -146,12 +146,25 @@ const PROJECTS = [
         title:        'Stor(e)age',
         year:         '2023',
         category:     'academic',
-        location:     'Jerusalem, Israel',
+        location:     'Ramla, Israel',
         participants: 'Nir Dellus',
         type:         'Studio 9',
-        description:  `Description to be added.`,
-        color:        '#fe81d6',
-        background:   '#2e6c2d',
+        description:  `The project takes place in the struggling Israeli periphery, in the heart of the industrial area of Ramla. Through our investigations, we observed that Ramla is divided into distinct zones, with roads acting as boundaries separating the residential areas from the industrial zones. The main controller of the industrial area is a large monopoly in Israel. We understood that Ramla relied on tax revenue from the surrounding industry, which is why we proposed a solution that would benefit both the company and the city. we suggested that the company should build a massive automated warehouse combined with a shopping center. However, instead of constructing a building with no regard for social environmental factors, we offered a completely new approach to industrial architecture. Our building focuses on creating a sustainable and highly economical structure that interacts with the city and gives back to its surroundings. `,
+        color:        '#8dcaa0',
+        background:   '#ffffff',
+        images:       imgs('assets/projects/stor-e-age/gallery/', [
+            '00 Material Scheme.webp', '01 iso all building [Recovered]-01.webp',
+            '02 iso all building office-01.webp', '03 iso all building rent-01.webp',
+            '04 iso all building storage-01.webp', '05 iso all building store-01.webp',
+            '06 iso all building visit-01.webp', '07 envlope office with roof.webp',
+            '08 Office Render 3.webp', '09 Office Render 2.webp', '11 Office Render 1.webp',
+            '13 Storage Unit.webp', '14 Werhouse modol.webp', '15 Offices.webp',
+            '16 Plan Stores and Werhouse.webp', '17 Racks.webp', '18 Section + Details.webp',
+            '19 Section1.webp', '20 Section2.webp', '21 Section3.webp',
+            '22In Building Render.webp', '23 constructionArtboard 2.webp', '24 Facade .webp',
+            '25 Park.webp'
+        ]),
+        firstImage:   0,
         slides:       sl('assets/projects/stor-e-age/slides/', [
             '01.webp', '02.webp', '03.webp', '04.webp', '05.webp', '06.webp', '07.webp',
             '08.webp', '09.webp', '10.webp', '11.webp', '12.webp', '13.webp', '14.webp',
@@ -271,6 +284,10 @@ Curated by Edith Kofsky and Oren Eldar.`,
         description:  `At the intersection of digital tools and physical construction, working in the R&D department at Derman Verbakel Architects where computational design meets the pragmatic realities of urban planning. In this role, I developed codes for planners that embed planning regulations directly into software, transforming complex legal frameworks into automated design tools. This work included building user interfaces that make computational processes accessible to non-technical users, deconstructing complex design workflows into intuitive interactions. A key project was a data-driven and code-based smart neighbourhood design for Haifa's Bay — processing dataset inputs and user demands to generate planning building polygons and volumes.`,
         color:        '#1e00ff',
         background:   '#ffffff',
+        images:       imgs('assets/projects/derman-verbakel/gallery/', [
+            '00 HFA TRM.webp', '01 BVL.webp'
+        ]),
+        firstImage:   0,
     },
 ];
 
