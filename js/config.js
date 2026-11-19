@@ -147,7 +147,7 @@ const PROJECTS = [
         year:         '2023',
         category:     'academic',
         location:     'Ramla, Israel',
-        participants: 'Nir Dellus',
+        participants: 'Nir Dellus and Ophir Itzkin',
         type:         'Studio 9',
         description:  `The project takes place in the struggling Israeli periphery, in the heart of the industrial area of Ramla. Through our investigations, we observed that Ramla is divided into distinct zones, with roads acting as boundaries separating the residential areas from the industrial zones. The main controller of the industrial area is a large monopoly in Israel. We understood that Ramla relied on tax revenue from the surrounding industry, which is why we proposed a solution that would benefit both the company and the city. we suggested that the company should build a massive automated warehouse combined with a shopping center. However, instead of constructing a building with no regard for social environmental factors, we offered a completely new approach to industrial architecture. Our building focuses on creating a sustainable and highly economical structure that interacts with the city and gives back to its surroundings. `,
         color:        '#8dcaa0',

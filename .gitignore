@@ -168,3 +168,7 @@ assets/projects/*/model/*
 
 # Claude Code local settings - internal, never pushed
 .claude/
+
+# Favicon drafts - assets/favicon/work/ is a local scratch folder, never pushed.
+# The live icon is the file in assets/favicon/ that index.html, 404.html and cv.html link to.
+assets/favicon/work/

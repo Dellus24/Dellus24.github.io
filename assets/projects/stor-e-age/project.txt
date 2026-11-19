@@ -2,7 +2,7 @@ title: Stor(e)age
 year: 2023
 category: academic
 location: Ramla, Israel
-participants: Nir Dellus
+participants: Nir Dellus and Ophir Itzkin
 type: Studio 9
 order: 50
 # PLACEHOLDER colours - both are yours to change.
