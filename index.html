@@ -1204,43 +1204,34 @@
         html.phone.board .board-menu .proj-name { font-size: 14px; }
 
         /* ── SETTINGS AS A POP-UP SHEET ON THE PHONE (Nir, 2026-11-24) ────
-           On the desktop the panel is a column beside the drawing. On a phone
-           held upright that column took ~80% of the width and squeezed the
-           model into a strip. Here it rises from the bottom instead, and the
-           drawing gives up only its height (--panel-h, set by attachSidePanel),
-           so the model always stays whole above it.
-           Its line becomes the sheet's handle: shut, a "^ settings" bar along
-           the bottom; open, the same words on the sheet's top edge with the
-           sign turned down. A tap toggles it — nothing to drag, and no hover
-           needed, so the sign always shows. */
+           On the desktop the panel is a column beside the drawing; on a phone
+           held upright that squeezed the model into a strip. Here it rises
+           from the bottom and FLOATS OVER the drawing: no background, no rule,
+           and the drawing keeps the whole window — "only place that clips the
+           3d viewer is the boundary of the viewer" (Nir). Every word that
+           floats over a drawing (the sheet, its handle, the invitations,
+           Orient on model) wears a halo in the window's background colour, so
+           it reads over the linework without a box.
+           Its line becomes the sheet's handle: "^ settings" along the bottom
+           when shut, the same words on the sheet's top edge with the sign
+           turned down when open. A tap toggles it; nothing to drag, and no
+           hover needed, so the sign always shows. */
         html.phone.board .side-panel {
             top: auto; left: 0; right: 0; bottom: 0;
             max-height: 58%;
             grid-template-columns: auto 1fr min-content !important;
             padding: 6px 18px 16px;
-            background: var(--bg);
-            border-top: 1px solid var(--border-soft);
         }
-        html.phone.board .cv-canvas, html.phone.board .cv-ascii,
-        html.phone.board .build-canvas { bottom: var(--panel-h, 0px); }
-        /* The two invitations sit at the drawing's top-left side, not over
-           the house (Nir, 2026-11-24: "they land on the house they can be on
-           the side"), the turning sign beside its words rather than above. */
-        html.phone.board [data-win-kind="build"] .build-hint {
-            top: 14px; bottom: auto; left: 16px; transform: none;
-            align-items: flex-start; gap: 6px;
+        html.phone.board .side-panel,
+        html.phone.board .side-divider .side-open,
+        html.phone.board .build-hint,
+        html.phone.board .focus-btn {
+            text-shadow: 0 0 2px var(--bg), 0 0 4px var(--bg), 0 0 7px var(--bg), 0 0 10px var(--bg);
         }
-        html.phone.board [data-win-kind="build"] .build-hint .build-turn { flex-direction: row; gap: 6px; }
-        html.phone.board [data-win-kind="build"] .build-hint .build-ask { padding-left: 0; }
-        /* Their own strip: the drawing starts below them, so a house framed
-           to fill the drawing can never run under them. Permanent, not only
-           while they show — they arrive after the first assembly, and the
-           drawing changing size then would jump the view. */
-        html.phone.board [data-win-kind="build"] .build-canvas { top: 84px; }
         html.phone.board .side-divider,
         html.phone.board .side-divider.collapsed {
             top: auto; left: 0; right: 0; width: auto; margin: 0;
-            bottom: calc(var(--panel-h, 40px) - 40px); height: 40px;
+            bottom: calc(var(--sheet-h, 40px) - 40px); height: 40px;
             cursor: pointer;
         }
         html.phone.board .side-divider::before { display: none; }
@@ -1251,9 +1242,28 @@
             font-size: 13px; white-space: nowrap;
         }
         html.phone.board .side-divider:not(.collapsed) .side-open > span:first-child { transform: rotate(180deg); }
-        html.phone.board .side-divider:not(.collapsed) {
-            background: var(--bg); border-top: 1px solid var(--border-soft);
+
+        /* A viewer's "Drag to turn" sits clear of the handle. */
+        html.phone.board .build-hint { bottom: 52px; }
+
+        /* The flat pack, SHUT: Length and Width stay out, floating over the
+           drawing just above the "^ settings" handle; the rest waits behind
+           it. (attachSidePanel hides a shut panel inline, hence !important.) */
+        html.phone.board [data-win-kind="build"] .side-panel:has(+ .side-divider.collapsed) {
+            visibility: visible !important; clip-path: none !important;
+            bottom: 40px; padding-bottom: 4px;
         }
+        html.phone.board [data-win-kind="build"] .side-panel:has(+ .side-divider.collapsed) > :nth-child(n+3) { display: none; }
+
+        /* The flat pack's two invitations sit at the drawing's top-left,
+           not over the middle of the house (Nir, 2026-11-24), the turning
+           sign beside its words. Floating, like everything else here. */
+        html.phone.board [data-win-kind="build"] .build-hint {
+            top: 14px; bottom: auto; left: 16px; transform: none;
+            align-items: flex-start; gap: 6px;
+        }
+        html.phone.board [data-win-kind="build"] .build-hint .build-turn { flex-direction: row; gap: 6px; }
+        html.phone.board [data-win-kind="build"] .build-hint .build-ask { padding-left: 0; }
 
         /* ── FULL SCREEN (Nir, 2026-11-24) ────────────────────────────────
            A tap on a window lifts it off the board into this layer, which
@@ -3130,20 +3140,19 @@
                 }
                 wasShut = shut;
                 openBtn.tabIndex = shut ? 0 : -1;
-                // PHONE: the panel is a pop-up sheet from the bottom (Nir,
-                // 2026-11-24: "it just need to be clear that its allways showing
-                // the model"). The drawing keeps the full width and gives up
-                // only the sheet's height, so the model stays whole above it
-                // and every change is seen as it is made. --panel-h is never
-                // set on the desktop, where the panel is a column beside it.
+                // PHONE: the panel is a pop-up sheet from the bottom that
+                // floats OVER the drawing, with no background (Nir, 2026-11-24:
+                // "only place that clips the 3d viewer is the boundary of the
+                // viewer"). The drawing keeps the whole window; --sheet-h only
+                // places the "settings" handle on the sheet's top edge (40 =
+                // the handle's own height). Never set on the desktop, where
+                // the panel is a column beside the drawing.
                 if (boardOn) {
-                    // + 40: the sheet's handle bar has its own strip, open or
-                    // shut, so it never sits over the drawing.
                     const h = (shut ? 0 : panel.offsetHeight) + 40;
                     if (h === last) return;
                     last = h;
                     body.style.setProperty('--panel-w', '0px');
-                    body.style.setProperty('--panel-h', h + 'px');
+                    body.style.setProperty('--sheet-h', h + 'px');
                     onResize();
                     return;
                 }
@@ -3189,6 +3198,15 @@
                     line.removeEventListener('pointermove', move);
                     line.removeEventListener('pointerup', up);
                     line.removeEventListener('pointercancel', up);
+                    // On the phone the toggle moves controls under the finger
+                    // (the sheet rises), and this tap's own click comes AFTER
+                    // pointerup — measured 2026-11-24 it landed on "Go to For
+                    // Now House" and opened the project. Swallow it.
+                    if (!moved && boardOn) {
+                        const eat = ev => { ev.stopPropagation(); ev.preventDefault(); };
+                        window.addEventListener('click', eat, { capture: true, once: true });
+                        setTimeout(() => window.removeEventListener('click', eat, true), 400);
+                    }
                     // A click on the collapsed line (or its >) reopens it.
                     if (!moved && v0 === 0) reopen();
                     // PHONE ONLY (Nir, 2026-11-24: "after opening the settings
@@ -3963,7 +3981,7 @@
                 });
 
                 function resizeVP() {
-                    const w = viewW(), h = body.clientHeight - (parseFloat(body.style.getPropertyValue('--panel-h')) || 0);
+                    const w = viewW(), h = body.clientHeight;
                     if (w < 1 || h < 1) return;
                     // The WHOLE authored frame fits the window, the way Blender
                     // shows its camera frame in a viewport (Nir, 2026-11-09). It
@@ -4489,10 +4507,10 @@
                     if (!userMoved) fitView();
                 }
                 frame.addEventListener('win-resize', resize);
-                // Open, as on the desktop (Nir, 2026-11-24 — closed was tried
-                // the same day and reversed). The phone's sheet bar needs a
-                // word beside its sign.
-                attachSidePanel(body, sideEl, resize, boardOn ? { label: 'settings' } : {});
+                // Phone: shut, with Length and Width left out over the drawing
+                // and "^ settings" to open the rest (Nir, 2026-11-24, after
+                // trying both open and fully shut). Open on the desktop.
+                attachSidePanel(body, sideEl, resize, boardOn ? { label: 'settings', closed: true } : {});
                 resize();
 
                 const onThemeChange = () => {
