@@ -5902,7 +5902,12 @@
                 win.dispatchEvent(new Event('win-resize'));
                 settle();
             };
-            document.addEventListener('keydown', e => { if (fs && e.key === 'Escape') exitFs(); });
+            // Capture phase: a window's own Escape handler closes the window,
+            // which would strand it inside the full-screen layer. Here Escape
+            // only leaves full screen.
+            document.addEventListener('keydown', e => {
+                if (fs && e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); exitFs(); }
+            }, true);
 
             // Inside full screen. A model owns every finger (orbit, pinch) —
             // it already does. A picture and a slideshow swipe: left for the
@@ -6086,10 +6091,11 @@
             window.addEventListener('orientationchange', () => requestAnimationFrame(() => fit(false)));
         }
 
-        // ?canvas opts into the board while the placeholder is still what a
-        // visitor gets. It comes down once Nir has approved the board.
-        const PHONE_MODE = !IS_PHONE ? null
-            : (new URLSearchParams(location.search).has('canvas') ? 'board' : 'placeholder');
+        // THE OFFICIAL PHONE VERSION (Nir approved it 2026-11-24): every phone
+        // gets the board. ?canvas, which hid it behind a flag while it was
+        // built, is gone. The placeholder (openPhoneGate) remains only as the
+        // board's own fallback when content/landing.txt has no phone-windows.
+        const PHONE_MODE = IS_PHONE ? 'board' : null;
 
         const menuFrame = (PHONE_MODE === 'placeholder') ? null : buildMenuWindow();
 
