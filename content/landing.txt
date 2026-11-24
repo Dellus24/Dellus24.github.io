@@ -91,8 +91,12 @@ windows:
 # board. Earlier arrangements (intro text + the Get Lost cabin; before that
 # five projects) are in git history and in tag phone-board-v1.
 #
+# 358 x 756 is a phone's own proportion: on a 390 x 844 iPhone the fitted
+# view shows it at exactly 100% (16px sides, 72px top for the +, 16px foot),
+# so the drawing and its text are full size. Other phones scale to fit.
+#
 phone-windows:
-  for-now-house  build                                 at 0 0       size 420 640
+  for-now-house  build                                 at 0 0       size 358 756
 
 ---
 

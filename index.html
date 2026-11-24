@@ -5509,9 +5509,13 @@
             // them, so the + never lands on a window's own ×. 72 = 14 margin
             // + 44 button + 14 clear.
             const BAND = 72;
+            // The FITTED view hides Fit, the zoom % and Expand (syncAtFit), so
+            // it only clears the + at the top; at the bottom a plain margin is
+            // enough, and the window can come forward. (Nir, 2026-11-24)
+            const FIT_FOOT = 16;
             const fitZoom = () => {
                 const e = extent(); if (!e || !e.w || !e.h) return 1;
-                return Math.min((innerWidth - 32) / e.w, (innerHeight - 2 * BAND) / e.h);
+                return Math.min((innerWidth - 32) / e.w, (innerHeight - BAND - FIT_FOOT) / e.h);
             };
             const clampZ = z => Math.max(fitZoom() * 0.7, Math.min(3, z));
 
@@ -5555,7 +5559,7 @@
                 const e = extent(); if (!e) return null;
                 const z = fitZoom();
                 return { z, x: (innerWidth - e.w * z) / 2 - e.x * z,
-                         y: BAND + (innerHeight - 2 * BAND - e.h * z) / 2 - e.y * z };
+                         y: BAND + (innerHeight - BAND - FIT_FOOT - e.h * z) / 2 - e.y * z };
             };
             // While the board shows exactly the fitted view — as it does when
             // it lands — Fit, the zoom % and Expand have nothing to offer and

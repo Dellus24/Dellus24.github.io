@@ -377,6 +377,6 @@ Every window here belongs to a project. Rest on one to open it, or use the menu 
     ],
     // The phone board. at/size are CANVAS PIXELS, not percentages.
     phoneWindows: [
-        { project: 'for-now-house', kind: 'build', at: [0, 0], size: [420, 640] },
+        { project: 'for-now-house', kind: 'build', at: [0, 0], size: [358, 756] },
     ],
 };
