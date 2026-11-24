@@ -1150,6 +1150,9 @@
             bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         }
         html.phone.board .board-expand:not(.on) { display: none; }
+        html.phone.board.board-at-fit .board-fit,
+        html.phone.board.board-at-fit .board-zoom,
+        html.phone.board.board-at-fit .board-expand { display: none; }
         html.phone.board .board-zoom {
             left: 14px;
             bottom: calc(14px + env(safe-area-inset-bottom, 0px));
@@ -4327,7 +4330,7 @@
                 // window as the slider moves. Kept, so Orient on model can come
                 // back to it.
                 let fit = null, view = null;
-                function fitView() {
+                function fitView(apply = true) {
                     if (!view) return;
                     const { data, lay } = view;
                     const box = new THREE.Box3();
@@ -4340,7 +4343,7 @@
                     const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
                     fit = { target: new THREE.Vector3(s.center.x * 0.01, s.center.z * 0.01, -s.center.y * 0.01),
                             radius: s.radius * 0.01 / Math.sin(Math.min(vfov, hfov) / 2) * 1.02 };
-                    orbit.target.copy(fit.target); orbit.radius = fit.radius;
+                    if (apply) { orbit.target.copy(fit.target); orbit.radius = fit.radius; }
                 }
                 // Until the visitor moves the view, every resize re-frames it —
                 // the landing sizes this window after it has opened.
@@ -4412,7 +4415,12 @@
                     if (mine !== token || !alive) return;
                     const lay = build(data);
                     view = { data, lay };
-                    fitView();
+                    // Frame it on the FIRST load only. A Length or Width step
+                    // used to re-frame every time, so the view jumped (Nir,
+                    // 2026-11-24: "it need to stick to the same view that the
+                    // user has but just expanding"). The new framing is still
+                    // worked out, so Orient on model can come back to it.
+                    fitView(firstLoad);
                     if (firstLoad) {
                         firstLoad = false;
                         orbit.rotX = orbit.tRotX = 0.55; orbit.rotY = orbit.tRotY = -0.6;
@@ -4427,6 +4435,7 @@
                     const k = b.dataset.axis, n = (k === 'x' ? X : Y) + (+b.dataset.step);
                     if (n < 1 || n > BUILD_MAX[k]) return;
                     if (k === 'x') X = n; else Y = n;
+                    userMoved = true;      // the view is the visitor's now: no re-framing on resize either
                     show();
                 }));
 
@@ -4461,10 +4470,10 @@
                     if (!userMoved) fitView();
                 }
                 frame.addEventListener('win-resize', resize);
-                // Closed on the phone (Nir, 2026-11-24), where it is a sheet
-                // over half the window; open on the desktop as always. The
-                // phone's bar needs a word beside its ^.
-                attachSidePanel(body, sideEl, resize, boardOn ? { label: 'settings', closed: true } : {});
+                // Open, as on the desktop (Nir, 2026-11-24 — closed was tried
+                // the same day and reversed). The phone's sheet bar needs a
+                // word beside its sign.
+                attachSidePanel(body, sideEl, resize, boardOn ? { label: 'settings' } : {});
                 resize();
 
                 const onThemeChange = () => {
@@ -5517,6 +5526,10 @@
                 }
                 for (const f of ws.querySelectorAll('.win-frame[data-win-kind="model"]'))
                     if (!f._offBoard) f._setBoardScale && f._setBoardScale(view.z);
+                // At-fit first: Expand sits by Fit's width, which is 0 while
+                // Fit is hidden — measured the other way round, Expand landed
+                // on top of Fit and a tap on Fit opened full screen.
+                syncAtFit();
                 syncExpand();
             };
 
@@ -5538,11 +5551,25 @@
                 tweenId = requestAnimationFrame(step);
             };
 
-            const fit = (animate = true) => {
-                const e = extent(); if (!e) return;
+            const fitTarget = () => {
+                const e = extent(); if (!e) return null;
                 const z = fitZoom();
-                const x = (innerWidth  - e.w * z) / 2 - e.x * z;
-                const y = BAND + (innerHeight - 2 * BAND - e.h * z) / 2 - e.y * z;
+                return { z, x: (innerWidth - e.w * z) / 2 - e.x * z,
+                         y: BAND + (innerHeight - 2 * BAND - e.h * z) / 2 - e.y * z };
+            };
+            // While the board shows exactly the fitted view — as it does when
+            // it lands — Fit, the zoom % and Expand have nothing to offer and
+            // stay off the screen (Nir, 2026-11-24). Once the visitor drifts
+            // away they come back. Checked whenever the view settles.
+            const syncAtFit = () => {
+                const t = fitTarget();
+                const at = !!t && Math.abs(view.z - t.z) < t.z * 0.02
+                         && Math.abs(view.x - t.x) < 8 && Math.abs(view.y - t.y) < 8;
+                document.documentElement.classList.toggle('board-at-fit', at);
+            };
+            const fit = (animate = true) => {
+                const t = fitTarget(); if (!t) return;
+                const { z, x, y } = t;
                 if (animate) tweenTo(z, x, y);
                 else { view.z = z; view.x = x; view.y = y; applyView(); settle(); }
             };
