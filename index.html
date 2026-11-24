@@ -1193,21 +1193,44 @@
         html.phone.board .board-menu .proj-row { min-height: 40px; }
         html.phone.board .board-menu .proj-name { font-size: 14px; }
 
-        /* ── THE SETTINGS LINE ON THE PHONE (Nir, 2026-11-24) ─────────────
-           Open, the panel showed only a 1px line, closed by DRAGGING it — which
-           nothing on a phone tells you. So the open line carries the same sign
-           as the shut one, turned to point back out, and a tap closes it
-           (attachSidePanel). The desktop's "show the sign on hover once
-           learned" cannot work without a hover, so on the phone it always shows.
-           The line is finger-wide; it reaches over the drawing, not the panel. */
-        html.phone.board .side-divider { width: 30px; margin-left: -4px; }
-        html.phone.board .side-divider.collapsed { width: 34px; margin-left: 0; }
-        html.phone.board .side-divider .side-open,
-        html.phone.board .side-divider.taught .side-open { display: block; opacity: 1; animation: none; }
-        html.phone.board .side-divider:not(.collapsed) .side-open {
-            left: 8px; transform: translateY(-50%) rotate(180deg);
+        /* ── SETTINGS AS A POP-UP SHEET ON THE PHONE (Nir, 2026-11-24) ────
+           On the desktop the panel is a column beside the drawing. On a phone
+           held upright that column took ~80% of the width and squeezed the
+           model into a strip. Here it rises from the bottom instead, and the
+           drawing gives up only its height (--panel-h, set by attachSidePanel),
+           so the model always stays whole above it.
+           Its line becomes the sheet's handle: shut, a "^ settings" bar along
+           the bottom; open, the same words on the sheet's top edge with the
+           sign turned down. A tap toggles it — nothing to drag, and no hover
+           needed, so the sign always shows. */
+        html.phone.board .side-panel {
+            top: auto; left: 0; right: 0; bottom: 0;
+            max-height: 58%;
+            grid-template-columns: auto 1fr min-content !important;
+            padding: 6px 18px 16px;
+            background: var(--bg);
+            border-top: 1px solid var(--border-soft);
         }
-        html.phone.board .side-divider:not(.collapsed).taught .side-open { opacity: 0.55; }
+        html.phone.board .cv-canvas, html.phone.board .cv-ascii,
+        html.phone.board .build-canvas { bottom: var(--panel-h, 0px); }
+        html.phone.board .build-hint { bottom: calc(52px + var(--panel-h, 0px)); }
+        html.phone.board .side-divider,
+        html.phone.board .side-divider.collapsed {
+            top: auto; left: 0; right: 0; width: auto; margin: 0;
+            bottom: calc(var(--panel-h, 40px) - 40px); height: 40px;
+            cursor: pointer;
+        }
+        html.phone.board .side-divider::before { display: none; }
+        html.phone.board .side-divider .side-open,
+        html.phone.board .side-divider.taught .side-open {
+            display: flex; gap: 8px; align-items: center; opacity: 1; animation: none;
+            writing-mode: horizontal-tb; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            font-size: 13px; white-space: nowrap;
+        }
+        html.phone.board .side-divider:not(.collapsed) .side-open > span:first-child { transform: rotate(180deg); }
+        html.phone.board .side-divider:not(.collapsed) {
+            background: var(--bg); border-top: 1px solid var(--border-soft);
+        }
 
         /* ── FULL SCREEN (Nir, 2026-11-24) ────────────────────────────────
            A tap on a window lifts it off the board into this layer, which
@@ -3084,6 +3107,23 @@
                 }
                 wasShut = shut;
                 openBtn.tabIndex = shut ? 0 : -1;
+                // PHONE: the panel is a pop-up sheet from the bottom (Nir,
+                // 2026-11-24: "it just need to be clear that its allways showing
+                // the model"). The drawing keeps the full width and gives up
+                // only the sheet's height, so the model stays whole above it
+                // and every change is seen as it is made. --panel-h is never
+                // set on the desktop, where the panel is a column beside it.
+                if (boardOn) {
+                    // + 40: the sheet's handle bar has its own strip, open or
+                    // shut, so it never sits over the drawing.
+                    const h = (shut ? 0 : panel.offsetHeight) + 40;
+                    if (h === last) return;
+                    last = h;
+                    body.style.setProperty('--panel-w', '0px');
+                    body.style.setProperty('--panel-h', h + 'px');
+                    onResize();
+                    return;
+                }
                 if (w === last) return;
                 last = w;
                 body.style.setProperty('--panel-w', w + 'px');
@@ -3107,6 +3147,9 @@
                 const vMax = Math.max(natural, body.clientWidth * 0.6);
                 let moved = false;
                 const move = ev => {
+                    // The phone's sheet opens and closes by a tap; it is not
+                    // dragged to a width.
+                    if (boardOn) { if (Math.hypot(ev.clientX - x0, ev.clientY - e.clientY) > 8) moved = true; return; }
                     const dx = (ev.clientX - x0) / viewScale();
                     if (Math.abs(dx) > 3) moved = true;
                     const v = Math.max(0, Math.min(vMax, v0 + dx));
@@ -3164,7 +3207,7 @@
                     <div class="cv-canvas" role="img" aria-label="Interactive 3D model of ${project.title}. Drag to orbit. Not conveyable as text; see the project description and images."></div>
                     <div class="cv-ascii" aria-hidden="true"></div>
                     <button class="focus-btn" aria-label="Reset camera to model"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
-                    <div class="build-hint"><div class="build-turn" aria-hidden="true"><span class="build-turn-icon">&#x21BB;</span><span>Drag to turn · scroll to zoom</span></div></div>
+                    <div class="build-hint"><div class="build-turn" aria-hidden="true"><span class="build-turn-icon">&#x21BB;</span><span>Drag to turn · ${boardOn ? 'pinch' : 'scroll'} to zoom</span></div></div>
                     <div class="side-panel viewer-side">
                         <div class="settings-inner model-settings" style="display:none">
                             <div class="setting-row decon-row" style="display:none"><button class="setting-label label-btn decon-btn" aria-label="Deconstruct the model, or put it back together">Deconstruct</button><input type="range" class="ctrl-slider decon-slider" min="0" max="100" step="0.5" value="0" aria-label="How far the model is deconstructed"><span class="setting-val decon-val">0%</span></div>
@@ -3897,7 +3940,7 @@
                 });
 
                 function resizeVP() {
-                    const w = viewW(), h = body.clientHeight;
+                    const w = viewW(), h = body.clientHeight - (parseFloat(body.style.getPropertyValue('--panel-h')) || 0);
                     if (w < 1 || h < 1) return;
                     // The WHOLE authored frame fits the window, the way Blender
                     // shows its camera frame in a viewport (Nir, 2026-11-09). It
@@ -4141,7 +4184,7 @@
                     <button class="focus-btn" aria-label="Reset the view to the whole flat pack"><span class="focus-icon" aria-hidden="true">[+]</span><span class="focus-label">Orient on model</span></button>
                     <div class="build-hint">
                         <button type="button" class="build-ask" tabindex="-1" aria-label="Change parameters: the controls are on the left">Change parameters</button>
-                        <div class="build-turn" aria-hidden="true"><span class="build-turn-icon">&#x21BB;</span><span>Drag to turn · scroll to zoom</span></div>
+                        <div class="build-turn" aria-hidden="true"><span class="build-turn-icon">&#x21BB;</span><span>Drag to turn · ${boardOn ? 'pinch' : 'scroll'} to zoom</span></div>
                     </div>
                     <div class="build-side side-panel">
                         ${stepper('x', 'Length', 'More modules along the length', 'Fewer modules along the length')}

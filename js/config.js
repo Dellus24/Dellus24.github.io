@@ -377,7 +377,6 @@ Every window here belongs to a project. Rest on one to open it, or use the menu 
     ],
     // The phone board. at/size are CANVAS PIXELS, not percentages.
     phoneWindows: [
-        { kind: 'text', at: [40, 40], size: [360, 200] },
-        { project: 'get-lost', kind: 'model', src: 'assets/projects/get-lost/models/Cabine.glb', view: {"angle":[151.1,28.3],"pan":[0,1.2,-0.2],"zoom":12.3,"spin":0.002,"decon":100,"mode":"wireframe"}, at: [440, 40], size: [420, 560] },
+        { project: 'for-now-house', kind: 'build', at: [0, 0], size: [420, 640] },
     ],
 };

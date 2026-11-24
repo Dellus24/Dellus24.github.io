@@ -85,23 +85,14 @@ windows:
 # of fixed content; asked to be 17% of a phone it would be 66px wide, and it
 # simply cannot be.
 #
-# WEIGHT WAS THE FIRST CONSTRAINT. The desktop landing pulls 8.4 MB. This
-# board is ~1.6 MB, almost all of it Cabine.glb:
+# THE PHONE MIRRORS THE DESKTOP (Nir, 2026-11-24): one window, the For Now
+# House flat pack, the same as the desktop landing. The menu is NOT listed:
+# on the phone it is pinned to the screen behind the + and never sits on the
+# board. Earlier arrangements (intro text + the Get Lost cabin; before that
+# five projects) are in git history and in tag phone-board-v1.
 #
-#     Floor Detail.glb      13 KB        gallery THUMB    13-23 KB
-#     silo.glb             104 KB        gallery full    500-800 KB
-#     Cabine.glb          1431 KB
-#
-# Every image here is a `thumbs/` derivative for that reason. Swapping
-# Cabine.glb for a thumb would take the board under 250 KB — your call.
-#
-# WHY THESE: models read best small. They are 1px linework, high contrast, and
-# they move, so each one carries its project colour legibly at a zoom where a
-# photograph is mud. Five projects, five inks — zoomed out the board reads as
-# colour before it reads as content.
 phone-windows:
-  text                                                 at 40 40     size 360 200
-  get-lost  model                                      at 440 40    size 420 560   angle 151.1 28.3 pan 0 1.2 -0.2 zoom 12.3 spin 0.002 mode wireframe decon 100
+  for-now-house  build                                 at 0 0       size 420 640
 
 ---
 
