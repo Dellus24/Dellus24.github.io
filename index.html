@@ -1193,6 +1193,22 @@
         html.phone.board .board-menu .proj-row { min-height: 40px; }
         html.phone.board .board-menu .proj-name { font-size: 14px; }
 
+        /* ── THE SETTINGS LINE ON THE PHONE (Nir, 2026-11-24) ─────────────
+           Open, the panel showed only a 1px line, closed by DRAGGING it — which
+           nothing on a phone tells you. So the open line carries the same sign
+           as the shut one, turned to point back out, and a tap closes it
+           (attachSidePanel). The desktop's "show the sign on hover once
+           learned" cannot work without a hover, so on the phone it always shows.
+           The line is finger-wide; it reaches over the drawing, not the panel. */
+        html.phone.board .side-divider { width: 30px; margin-left: -4px; }
+        html.phone.board .side-divider.collapsed { width: 34px; margin-left: 0; }
+        html.phone.board .side-divider .side-open,
+        html.phone.board .side-divider.taught .side-open { display: block; opacity: 1; animation: none; }
+        html.phone.board .side-divider:not(.collapsed) .side-open {
+            left: 8px; transform: translateY(-50%) rotate(180deg);
+        }
+        html.phone.board .side-divider:not(.collapsed).taught .side-open { opacity: 0.55; }
+
         /* ── FULL SCREEN (Nir, 2026-11-24) ────────────────────────────────
            A tap on a window lifts it off the board into this layer, which
            fills the page — not the browser's Fullscreen API, which iPhone
@@ -1250,6 +1266,19 @@
         html.phone.board .board-fs-win .gallery-grid {
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         }
+        /* The swipe sign: the 3D viewer's "Drag to turn" in look and place. */
+        html.phone.board .board-fs-hint {
+            position: absolute; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+            transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            font-size: 13px; letter-spacing: 0.03em; white-space: nowrap;
+            padding: 6px 12px; background: var(--bg);
+            pointer-events: none; user-select: none; z-index: 40;
+            opacity: 0; transition: opacity 0.4s ease;
+        }
+        html.phone.board .board-fs-hint.on { opacity: 1; }
+        html.phone.board .board-fs-hint-icon { font-size: 18px; line-height: 1; }
+
         /* While a window is full screen nothing else is on the page.
            The board goes by OPACITY: a child can set visibility: visible
            and show through (the 3D viewer's hint did, over a full-screen
@@ -3096,6 +3125,11 @@
                     line.removeEventListener('pointercancel', up);
                     // A click on the collapsed line (or its >) reopens it.
                     if (!moved && v0 === 0) reopen();
+                    // PHONE ONLY (Nir, 2026-11-24: "after opening the settings
+                    // tab there is no way to close it"). Dragging the line shut
+                    // is undiscoverable under a finger, so on the board a tap on
+                    // the open line closes it. The desktop keeps the drag alone.
+                    else if (!moved && boardOn) { crop = 0; panel.style.gridTemplateColumns = ''; apply(); }
                 };
                 line.addEventListener('pointermove', move);
                 line.addEventListener('pointerup', up);
@@ -5611,7 +5645,7 @@
             // did (a model still orbits under one finger, a window still moves
             // by its bar), and a tap on a button, a thumbnail or a slider is
             // still that control.
-            const CONTROL = 'button, a, input, select, textarea, label, [role="button"], [role="radio"], [role="slider"], [role="tab"], [role="option"], .gallery-thumb, .win-resize-edge, .img-float-resize';
+            const CONTROL = 'button, a, input, select, textarea, label, [role="button"], [role="radio"], [role="slider"], [role="tab"], [role="option"], .gallery-thumb, .win-resize-edge, .img-float-resize, .side-panel, .side-divider';
             const downs = new Map();
             // WHICH window: by geometry (hitAt), never e.target — Chrome's
             // touch adjustment hands a finger to a NEIGHBOURING window, and
@@ -5711,6 +5745,7 @@
             const wireFs = (win, layer) => {
                 const kind = win.dataset.winKind;
                 const stage = layer.querySelector('.board-fs-stage');
+                if (kind === 'image' || kind === 'slides') teachSwipe(win, layer);
                 if (kind === 'image' || kind === 'slides') {
                     let sx = 0, sy = 0, on = false;
                     stage.addEventListener('pointerdown', e => {
@@ -5726,6 +5761,7 @@
                         // Distance and direction only: a slow, deliberate swipe is still a swipe.
                         if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
                         step(win, dx < 0 ? 1 : -1);
+                        swiped(layer);
                         layer.querySelector('.board-fs-title').textContent = titleOf(win);
                     }, true);
                 }
@@ -5742,6 +5778,40 @@
                     });
                 }
             };
+            // "Swipe" TEACHES ONCE, the way "Drag to turn" does in the 3D
+            // viewer (Nir, 2026-11-24): the first full-screen picture shows the
+            // sign straight away; until the visitor has actually swiped, every
+            // later one brings it back as a reminder after a few idle seconds.
+            // The first swipe retires it for the rest of the visit.
+            let swipeTaught = false, swipeShown = false;
+            const countOf = win => {
+                const p = PROJECTS.find(q => q.id === win.dataset.projectId);
+                const list = p && (win.dataset.winKind === 'slides' ? p.slides : p.images);
+                return list ? list.length : 0;
+            };
+            const teachSwipe = (win, layer) => {
+                if (swipeTaught || countOf(win) < 2) return;
+                const what = win.dataset.winKind === 'slides' ? 'slide' : 'picture';
+                const hint = document.createElement('div');
+                hint.className = 'board-fs-hint';
+                hint.setAttribute('aria-hidden', 'true');
+                hint.innerHTML = `<span class="board-fs-hint-icon">&#x2194;</span><span>Swipe for the next ${what}</span>`;
+                layer.querySelector('.board-fs-stage').appendChild(hint);
+                const show = () => {
+                    if (!hint.isConnected || swipeTaught) return;
+                    hint.classList.add('on');
+                    layer._hintOff = setTimeout(() => hint.classList.remove('on'), 3500);
+                };
+                layer._hintOn = setTimeout(show, swipeShown ? 4000 : 400);
+                swipeShown = true;
+            };
+            const swiped = layer => {
+                swipeTaught = true;
+                clearTimeout(layer._hintOn); clearTimeout(layer._hintOff);
+                const h = layer.querySelector('.board-fs-hint');
+                if (h) h.classList.remove('on');
+            };
+
             const step = (win, dir) => {
                 if (win.dataset.winKind === 'slides') {
                     const b = win.querySelector(dir > 0 ? '.slide-nav-next' : '.slide-nav-prev');
