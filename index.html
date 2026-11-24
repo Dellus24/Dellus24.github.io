@@ -1145,7 +1145,7 @@
         }
         /* Expand sits beside Fit (its right edge is set from Fit's width in
            JS) and shows only while a window holding the screen's centre
-           covers at least 45% of it. */
+           covers at least 40% of it. */
         html.phone.board .board-expand {
             bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         }
@@ -4231,15 +4231,16 @@
                 // ink edges over a fill painted in the window's background. The
                 // edges are the viewer's screen-space lines, so their thickness
                 // is a setting rather than the 1px plain lines are stuck at.
-                const lineMat  = new LineMaterial({ color: inkOfFrame(), linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(1, 1) });
+                // Each part's EDGES are drawn in its Grasshopper colour; its
+                // faces stay the background (Nir, 2026-11-24: "with out color
+                // in the inside but their lines are in different colors"). The
+                // colour is the swatch on that part's Custom Preview in the .gh,
+                // carried in the export as cats[].colour — never a table here.
+                // White material x per-vertex colour = the swatch exactly. The
+                // plywood sheets' outlines (sheetMat) stay in the project ink.
+                const lineMat  = new LineMaterial({ color: 0xffffff, vertexColors: true, linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(1, 1) });
                 const sheetMat = new LineMaterial({ color: inkOfFrame(), linewidth: 1, worldUnits: false, transparent: true, opacity: 1, resolution: new THREE.Vector2(1, 1) });
-                // Each part is FILLED in its Grasshopper colour (Nir, 2026-11-24:
-                // "inside the model each component need to be shown in a
-                // different color as in the original code"). The colour is the
-                // swatch on that part's Custom Preview in the .gh, carried in the
-                // export as cats[].colour — never a table here. The edges stay in
-                // the project ink, so the drawing keeps its line.
-                const fillMat  = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, side: THREE.DoubleSide,
+                const fillMat  = new THREE.MeshBasicMaterial({ color: bgOfFrame(), side: THREE.DoubleSide,
                     polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
                 let lines = null, lineArr = null, fills = null, sheetLines = null, built = null;
 
@@ -4291,16 +4292,18 @@
                     parts.forEach((p, i) => { segAt[i] = ns; triAt[i] = nt; ns += shapes[p[1]].segs.length; nt += shapes[p[1]].tris.length; });
                     [lines, fills, sheetLines].forEach(o => { if (o) { world.remove(o); o.geometry.dispose(); } });
                     lineArr = new Float32Array(ns);
-                    lines = new LineSegments2(new LineSegmentsGeometry().setPositions(lineArr), lineMat);
-                    const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nt), 3));
-                    const col = new Float32Array(nt), cc = new THREE.Color();
+                    // One colour per segment end, laid out exactly like lineArr.
+                    const lineCol = new Float32Array(ns), cc = new THREE.Color();
                     const catCol = (data.cats || []).map(k => new THREE.Color(k.colour || '#888888'));
                     parts.forEach((p, i) => {
-                        if (catCol[p[0]]) cc.copy(catCol[p[0]]); else cc.set(bgOfFrame());
-                        const n = shapes[p[1]].tris.length;
-                        for (let j = 0; j < n; j += 3) { col[triAt[i] + j] = cc.r; col[triAt[i] + j + 1] = cc.g; col[triAt[i] + j + 2] = cc.b; }
+                        if (catCol[p[0]]) cc.copy(catCol[p[0]]); else cc.set(inkOfFrame());
+                        const n = shapes[p[1]].segs.length;
+                        for (let j = 0; j < n; j += 3) { lineCol[segAt[i] + j] = cc.r; lineCol[segAt[i] + j + 1] = cc.g; lineCol[segAt[i] + j + 2] = cc.b; }
                     });
-                    fg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+                    const lg = new LineSegmentsGeometry().setPositions(lineArr);
+                    lg.setColors(lineCol);
+                    lines = new LineSegments2(lg, lineMat);
+                    const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nt), 3));
                     fills = new THREE.Mesh(fg, fillMat);
                     const sp = [];
                     for (const s of lay.sheets) {
@@ -4466,8 +4469,8 @@
 
                 const onThemeChange = () => {
                     const ink = inkOfFrame(), bg = bgOfFrame();
-                    lineMat.color.set(ink); sheetMat.color.set(ink);
-                    scene.background.set(bg);      // the fills keep their Grasshopper colours
+                    sheetMat.color.set(ink);       // the parts' lines keep their Grasshopper colours
+                    fillMat.color.set(bg); scene.background.set(bg);
                 };
                 window.addEventListener('theme-change', onThemeChange);
                 frame.addEventListener('frame-tint', onThemeChange);
@@ -5717,9 +5720,9 @@
             // and a finger landing near a 3D window's × did exactly that. Now a
             // tap is only ever the window's own. When the board comes to rest
             // with a window in the MIDDLE of the screen (it holds the screen's
-            // centre) covering at least 45% of it, an Expand button appears
+            // centre) covering at least 40% of it, an Expand button appears
             // beside Fit and opens THAT window full screen. (Nir set 70% first,
-            // then 45% + central, the same day.)
+            // then 45% + central, then 40%, the same day.)
             // settle() runs this at the end of every pan, pinch, double-tap and
             // fly-to.
             const CONTROL = 'button, a, input, select, textarea, label, [role="button"], [role="radio"], [role="slider"], [role="tab"], [role="option"], .gallery-thumb, .win-resize-edge, .img-float-resize, .side-panel, .side-divider';
@@ -5736,7 +5739,7 @@
                     const c = ix * iy / (W * H);
                     if (c > bc) { bc = c; best = f; }
                 }
-                expandFor = bc >= 0.45 ? best : null;
+                expandFor = bc >= 0.40 ? best : null;
                 expandBtn.classList.toggle('on', !!expandFor);
                 if (expandFor) expandBtn.style.right = (14 + fitBtn.offsetWidth + 8) + 'px';
             };
