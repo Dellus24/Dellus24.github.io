@@ -1144,7 +1144,8 @@
             bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         }
         /* Expand sits beside Fit (its right edge is set from Fit's width in
-           JS) and shows only while one window covers >70% of the screen. */
+           JS) and shows only while a window holding the screen's centre
+           covers at least 45% of it. */
         html.phone.board .board-expand {
             bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         }
@@ -4232,7 +4233,13 @@
                 // is a setting rather than the 1px plain lines are stuck at.
                 const lineMat  = new LineMaterial({ color: inkOfFrame(), linewidth: 1, worldUnits: false, resolution: new THREE.Vector2(1, 1) });
                 const sheetMat = new LineMaterial({ color: inkOfFrame(), linewidth: 1, worldUnits: false, transparent: true, opacity: 1, resolution: new THREE.Vector2(1, 1) });
-                const fillMat  = new THREE.MeshBasicMaterial({ color: bgOfFrame(), side: THREE.DoubleSide,
+                // Each part is FILLED in its Grasshopper colour (Nir, 2026-11-24:
+                // "inside the model each component need to be shown in a
+                // different color as in the original code"). The colour is the
+                // swatch on that part's Custom Preview in the .gh, carried in the
+                // export as cats[].colour — never a table here. The edges stay in
+                // the project ink, so the drawing keeps its line.
+                const fillMat  = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, side: THREE.DoubleSide,
                     polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
                 let lines = null, lineArr = null, fills = null, sheetLines = null, built = null;
 
@@ -4286,6 +4293,14 @@
                     lineArr = new Float32Array(ns);
                     lines = new LineSegments2(new LineSegmentsGeometry().setPositions(lineArr), lineMat);
                     const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nt), 3));
+                    const col = new Float32Array(nt), cc = new THREE.Color();
+                    const catCol = (data.cats || []).map(k => new THREE.Color(k.colour || '#888888'));
+                    parts.forEach((p, i) => {
+                        if (catCol[p[0]]) cc.copy(catCol[p[0]]); else cc.set(bgOfFrame());
+                        const n = shapes[p[1]].tris.length;
+                        for (let j = 0; j < n; j += 3) { col[triAt[i] + j] = cc.r; col[triAt[i] + j + 1] = cc.g; col[triAt[i] + j + 2] = cc.b; }
+                    });
+                    fg.setAttribute('color', new THREE.BufferAttribute(col, 3));
                     fills = new THREE.Mesh(fg, fillMat);
                     const sp = [];
                     for (const s of lay.sheets) {
@@ -4452,7 +4467,7 @@
                 const onThemeChange = () => {
                     const ink = inkOfFrame(), bg = bgOfFrame();
                     lineMat.color.set(ink); sheetMat.color.set(ink);
-                    fillMat.color.set(bg); scene.background.set(bg);
+                    scene.background.set(bg);      // the fills keep their Grasshopper colours
                 };
                 window.addEventListener('theme-change', onThemeChange);
                 frame.addEventListener('frame-tint', onThemeChange);
@@ -5701,8 +5716,10 @@
             // (Nir, 2026-11-24.) A tap on a window used to open it full screen,
             // and a finger landing near a 3D window's × did exactly that. Now a
             // tap is only ever the window's own. When the board comes to rest
-            // with one window covering more than 70% of the screen, an Expand
-            // button appears beside Fit and opens THAT window full screen.
+            // with a window in the MIDDLE of the screen (it holds the screen's
+            // centre) covering at least 45% of it, an Expand button appears
+            // beside Fit and opens THAT window full screen. (Nir set 70% first,
+            // then 45% + central, the same day.)
             // settle() runs this at the end of every pan, pinch, double-tap and
             // fly-to.
             const CONTROL = 'button, a, input, select, textarea, label, [role="button"], [role="radio"], [role="slider"], [role="tab"], [role="option"], .gallery-thumb, .win-resize-edge, .img-float-resize, .side-panel, .side-divider';
@@ -5713,12 +5730,13 @@
                 for (const f of ws.querySelectorAll(WINS)) {
                     if (f.classList.contains('closing')) continue;
                     const r = f.getBoundingClientRect();
+                    if (!(r.left <= W / 2 && r.right >= W / 2 && r.top <= H / 2 && r.bottom >= H / 2)) continue;
                     const ix = Math.max(0, Math.min(r.right, W) - Math.max(r.left, 0));
                     const iy = Math.max(0, Math.min(r.bottom, H) - Math.max(r.top, 0));
                     const c = ix * iy / (W * H);
                     if (c > bc) { bc = c; best = f; }
                 }
-                expandFor = bc > 0.7 ? best : null;
+                expandFor = bc >= 0.45 ? best : null;
                 expandBtn.classList.toggle('on', !!expandFor);
                 if (expandFor) expandBtn.style.right = (14 + fitBtn.offsetWidth + 8) + 'px';
             };
