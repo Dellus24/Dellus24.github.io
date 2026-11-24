@@ -101,7 +101,6 @@ windows:
 # colour before it reads as content.
 phone-windows:
   text                                                 at 40 40     size 360 200
-  menu                                                 at 40 280    size 260 598
   get-lost  model                                      at 440 40    size 420 560   angle 151.1 28.3 pan 0 1.2 -0.2 zoom 12.3 spin 0.002 mode wireframe decon 100
 
 ---

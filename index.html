@@ -1153,6 +1153,112 @@
             border: none; background: none; min-width: 0; padding: 0;
         }
 
+        /* ── THE PHONE'S MENU IS PINNED TO THE SCREEN (Nir, 2026-11-24) ──
+           Phone and desktop are two routes: this is the phone's own shell.
+           openPhoneBoard lifts the menu window OUT of the board into <body>,
+           so it does not pan or zoom. Collapsed it is only its own + sign, in
+           the very corner where its − sits when open, so tapping + reads as
+           the menu landing in place around it. !important because the menu
+           carries inline left/top/width from buildMenuWindow and the landing. */
+        html.phone.board .board-menu {
+            position: fixed !important;
+            top: calc(14px + env(safe-area-inset-top, 0px)) !important;
+            right: 14px !important; left: auto !important;
+            width: min(300px, calc(100vw - 28px)) !important;
+            height: auto !important;
+            max-height: calc(100dvh - 100px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+            display: flex; flex-direction: column;
+            z-index: 960 !important;
+        }
+        html.phone.board .board-menu .win-resize-edge,
+        html.phone.board .board-menu .cscroll-track { display: none; }
+        html.phone.board .board-menu .win-titlebar { padding-left: 14px; padding-right: 0; }
+        html.phone.board .board-menu .menu-body {
+            overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain;
+            min-height: 0;
+        }
+        html.phone.board .board-menu .menu-collapse {
+            font-size: 22px !important; opacity: 0.8 !important;
+            min-width: 44px; height: 44px; padding: 0 !important;
+            display: flex; align-items: center; justify-content: center;
+        }
+        html.phone.board .board-menu.board-menu-shut {
+            width: 44px !important; min-width: 0 !important;
+        }
+        html.phone.board .board-menu.board-menu-shut .win-title { display: none; }
+        html.phone.board .board-menu.board-menu-shut .win-titlebar {
+            padding: 0; border-bottom: none;
+        }
+        /* Finger-sized rows while it is open. */
+        html.phone.board .board-menu .proj-row { min-height: 40px; }
+        html.phone.board .board-menu .proj-name { font-size: 14px; }
+
+        /* ── FULL SCREEN (Nir, 2026-11-24) ────────────────────────────────
+           A tap on a window lifts it off the board into this layer, which
+           fills the page — not the browser's Fullscreen API, which iPhone
+           Safari gives to video only. The layer's bar carries the window's
+           title and the same − the menu uses, in the same corner. The board
+           underneath does not move, so − puts you back exactly where you were. */
+        html.phone.board #board-fs {
+            position: fixed; inset: 0; z-index: 980;
+            display: flex; flex-direction: column;
+            background: var(--bg); color: var(--fg);
+            font-family: var(--font-family); font-variation-settings: var(--font-var);
+        }
+        html.phone.board .board-fs-bar {
+            flex: 0 0 auto; display: flex; align-items: center; gap: 12px;
+            box-sizing: border-box;
+            padding: env(safe-area-inset-top, 0px) 14px 0 18px;
+            height: calc(58px + env(safe-area-inset-top, 0px));
+            border-bottom: 1px solid var(--border-soft);
+        }
+        html.phone.board .board-fs-title {
+            flex: 1; min-width: 0; font-size: 14px; opacity: 0.75;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        html.phone.board .board-fs-exit {
+            flex: 0 0 auto; min-width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; opacity: 0.8; cursor: pointer; user-select: none;
+            background: none; border: none; color: inherit; padding: 0;
+            font-family: inherit;
+        }
+        html.phone.board .board-fs-stage {
+            flex: 1; min-height: 0; position: relative;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        html.phone.board .board-fs-stage > .board-fs-win {
+            position: absolute !important;
+            left: 0 !important; top: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: auto !important; height: auto !important;
+            min-width: 0 !important; min-height: 0 !important; max-width: none !important;
+            border: none !important; box-shadow: none !important;
+            transform: none !important;
+        }
+        /* The layer's bar replaces the window's own: one title, one way out. */
+        html.phone.board .board-fs-win > .win-titlebar,
+        html.phone.board .board-fs-win .win-resize-edge,
+        html.phone.board .board-fs-win .img-float-bar,
+        html.phone.board .board-fs-win .img-float-resize,
+        html.phone.board .board-fs-win .img-float-chrome { display: none !important; }
+        /* Text reads bigger. zoom, not font-size: the windows set their type
+           in rem, so only zoom scales it — and it reflows at the new size. */
+        html.phone.board .board-fs-win:is([data-win-kind="box"], [data-win-kind="text"],
+            [data-win-kind="about"], [data-win-kind="cv"]) > .win-body { zoom: 1.4; }
+        html.phone.board .board-fs-win .win-body { touch-action: pan-y; }
+        html.phone.board .board-fs-win[data-win-kind="image"] { touch-action: none; }
+        html.phone.board .board-fs-win .gallery-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        }
+        /* While a window is full screen nothing else is on the page.
+           The board goes by OPACITY: a child can set visibility: visible
+           and show through (the 3D viewer's hint did, over a full-screen
+           picture), but nothing escapes an ancestor's opacity. Not display:
+           none — that would collapse every viewer on the board to 0x0. */
+        html.phone.board.board-fs-open #board-viewport { opacity: 0; pointer-events: none; }
+        html.phone.board.board-fs-open .board-btn,
+        html.phone.board.board-fs-open .board-menu { visibility: hidden; }
+
     </style>
 </head>
 <body>
@@ -1956,7 +2062,9 @@
             // dragged or resized — had the project block laid straight over it.
             // The distance from the menu is what is fixed; where the menu is
             // and how big it is are not. (Nir, 2026-10-10)
-            const menuEl   = document.getElementById('menu-body-inner')?.closest('.win-frame');
+            // The phone's menu is pinned to the SCREEN, not on the board
+            // (Nir, 2026-11-24), so there it is no obstacle and no anchor.
+            const menuEl   = boardOn ? null : document.getElementById('menu-body-inner')?.closest('.win-frame');
             const menuR    = menuEl ? menuEl.offsetLeft + menuEl.offsetWidth : leftX + 228;
             // ...unless the menu has been dragged so far right that nothing
             // fits beside it (260 is .win-frame's min-width). Then start from
@@ -5278,15 +5386,21 @@
                 }
                 return isFinite(x0) ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
             };
+            // The + sits in the top corner and Fit / zoom in the bottom ones,
+            // all pinned to the screen. Framing keeps the windows between
+            // them, so the + never lands on a window's own ×. 72 = 14 margin
+            // + 44 button + 14 clear.
+            const BAND = 72;
             const fitZoom = () => {
                 const e = extent(); if (!e || !e.w || !e.h) return 1;
-                return Math.min((innerWidth - 32) / e.w, (innerHeight - 32) / e.h);
+                return Math.min((innerWidth - 32) / e.w, (innerHeight - 2 * BAND) / e.h);
             };
             const clampZ = z => Math.max(fitZoom() * 0.7, Math.min(3, z));
 
             // What the renderers need told once the view stops moving: which
             // windows are off-screen (draw nothing) and how sharp to be.
             const settle = () => {
+                if (fs) return;      // full screen: the board is hidden, nothing on it draws
                 for (const f of ws.querySelectorAll(WINS)) {
                     const r = f.getBoundingClientRect();
                     f._offBoard = r.right < -80 || r.bottom < -80
@@ -5318,7 +5432,7 @@
                 const e = extent(); if (!e) return;
                 const z = fitZoom();
                 const x = (innerWidth  - e.w * z) / 2 - e.x * z;
-                const y = (innerHeight - e.h * z) / 2 - e.y * z;
+                const y = BAND + (innerHeight - 2 * BAND - e.h * z) / 2 - e.y * z;
                 if (animate) tweenTo(z, x, y);
                 else { view.z = z; view.x = x; view.y = y; applyView(); settle(); }
             };
@@ -5465,24 +5579,183 @@
             window.addEventListener('pointerup', endPtr);
             window.addEventListener('pointercancel', endPtr);
 
-            // An image and a slideshow carry their bar OVER their picture, so
-            // it cannot just be on (see the CSS). A tap brings it back for a
-            // few seconds — the same bargain open3D already strikes on touch.
-            // A drag is not a tap: moving a window must not flash its bar.
-            const barT = new WeakMap(), downAt = new WeakMap();
+            // ── THE MENU, PINNED TO THE SCREEN (Nir, 2026-11-24) ──────────
+            // Lifted out of the board into <body>, so it neither pans nor
+            // zooms, and outside #board-viewport, so the board's gestures
+            // never see a finger on it. It starts shut: the board is the page,
+            // and the + in the top-right corner is the way to the menu. Open,
+            // the menu's own − sits in that same corner. The board does not
+            // move while the menu is open, so − leaves you where you were.
+            // (This replaced 2026-10-12's tap-to-show-the-bar on images: a tap
+            // on a window now opens it full screen. Tag phone-board-v1 has it.)
+            const menu = document.querySelector('.win-frame[data-win-kind="menu"]');
+            if (menu) {
+                document.body.appendChild(menu);
+                menu.classList.add('board-menu');
+                const btn = menu.querySelector('.menu-collapse');
+                const sync = () => menu.classList.toggle('board-menu-shut', menu._collapsed());
+                new MutationObserver(sync).observe(btn, { attributes: true, attributeFilter: ['aria-expanded'] });
+                if (!menu._collapsed()) menu._toggleCollapse();
+                sync();
+                // Picking anything closes the menu by itself; the board then
+                // flies to what opened. A category toggle only unfolds a list.
+                menu.addEventListener('click', e => {
+                    if (!e.target.closest('.proj-row[data-id], .proj-row[data-static], .menu-home, [data-action]')) return;
+                    if (!menu._collapsed()) menu._toggleCollapse();
+                });
+            }
+
+            // ── TAP A WINDOW: FULL SCREEN (Nir, 2026-11-24) ───────────────
+            // A tap — down and up in place, quickly — on any part of a window
+            // that is not itself a control. A drag still does what it always
+            // did (a model still orbits under one finger, a window still moves
+            // by its bar), and a tap on a button, a thumbnail or a slider is
+            // still that control.
+            const CONTROL = 'button, a, input, select, textarea, label, [role="button"], [role="radio"], [role="slider"], [role="tab"], [role="option"], .gallery-thumb, .win-resize-edge, .img-float-resize';
+            const downs = new Map();
+            // WHICH window: by geometry (hitAt), never e.target — Chrome's
+            // touch adjustment hands a finger to a NEIGHBOURING window, and
+            // measured 2026-11-24 a tap on the gallery's bar opened the picture
+            // beside it. Whether it is a CONTROL: either reading counts, since
+            // a control that touch adjustment chose is the one that will act.
             ws.addEventListener('pointerdown', e => {
-                const host = e.target.closest('.img-float');
-                if (host) downAt.set(host, [e.clientX, e.clientY]);
+                const win = hitAt(e.clientX, e.clientY);
+                if (!win || !ws.contains(win)) return;
+                const under = document.elementFromPoint(e.clientX, e.clientY);
+                const ctl = !!e.target.closest(CONTROL) || !!(under && under.closest(CONTROL));
+                downs.set(e.pointerId, { win, x: e.clientX, y: e.clientY, t: e.timeStamp, ctl });
             }, true);
             ws.addEventListener('pointerup', e => {
-                const host = e.target.closest('.img-float');
-                if (!host) return;
-                const from = downAt.get(host);
-                if (!from || Math.hypot(e.clientX - from[0], e.clientY - from[1]) > 12) return;
-                host.classList.add('bar-on');
-                clearTimeout(barT.get(host));
-                barT.set(host, setTimeout(() => host.classList.remove('bar-on'), 3500));
+                const d = downs.get(e.pointerId); downs.delete(e.pointerId);
+                if (!d || d.ctl || downs.size) return;
+                if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10 || e.timeStamp - d.t > 500) return;
+                if (d.win.classList.contains('closing')) return;
+                enterFs(d.win);
+                // The browser fires this tap's click AFTER pointerup — by then
+                // on the full-screen window, at the same spot. Measured: a tap
+                // on the gallery's bar went full screen, then its click landed
+                // on a thumbnail and opened that picture. Swallow it.
+                const eat = ev => { ev.stopPropagation(); ev.preventDefault(); };
+                window.addEventListener('click', eat, { capture: true, once: true });
+                setTimeout(() => window.removeEventListener('click', eat, true), 400);
             }, true);
+            ws.addEventListener('pointercancel', e => downs.delete(e.pointerId), true);
+
+            let fs = null;     // { win, layer, home, next, ro }
+            const titleOf = win =>
+                (win.querySelector(':scope > .win-titlebar .win-title') || {}).textContent
+                || (win.querySelector('.img-float-title') || {}).textContent
+                || win.getAttribute('aria-label') || '';
+            const enterFs = win => {
+                if (fs) exitFs();
+                stopGlide(); stopTween();
+                const layer = document.createElement('div');
+                layer.id = 'board-fs';
+                layer.setAttribute('role', 'dialog');
+                layer.setAttribute('aria-label', titleOf(win) + ', full screen');
+                // The window's own pair, so a project's colours fill the page.
+                const cs = getComputedStyle(win);
+                layer.style.background = cs.backgroundColor;
+                layer.style.color = cs.color;
+                layer.innerHTML = `
+                    <div class="board-fs-bar">
+                        <span class="board-fs-title"></span>
+                        <button type="button" class="board-fs-exit" aria-label="Leave full screen">&#x2212;</button>
+                    </div>
+                    <div class="board-fs-stage"></div>`;
+                layer.querySelector('.board-fs-title').textContent = titleOf(win);
+                fs = { win, layer, home: win.parentNode, next: win.nextSibling };
+                // Reparenting keeps the window's state — a model keeps its
+                // view and its WebGL context — and its inline geometry is never
+                // touched: the CSS overrides it, so leaving just drops a class.
+                layer.querySelector('.board-fs-stage').appendChild(win);
+                win.classList.add('board-fs-win');
+                document.body.appendChild(layer);
+                document.documentElement.classList.add('board-fs-open');
+                layer.querySelector('.board-fs-exit').addEventListener('click', exitFs);
+                // Nothing behind is visible, so nothing behind draws.
+                for (const f of ws.querySelectorAll(WINS)) f._offBoard = true;
+                win._offBoard = false;
+                win._setBoardScale && win._setBoardScale(window.devicePixelRatio || 2);
+                // Full screen, the window's size IS the screen's, so turning
+                // the phone resizes it — and a 3D viewer only re-sizes its
+                // drawing surface when told (win-resize, normally sent by a
+                // resize grip). Measured 2026-11-24 without this: in landscape
+                // the model drew 780x1572 pixels into an 844x332 box, stretched.
+                fs.ro = new ResizeObserver(() => win.dispatchEvent(new Event('win-resize')));
+                fs.ro.observe(layer.querySelector('.board-fs-stage'));
+                wireFs(win, layer);
+            };
+            const exitFs = () => {
+                if (!fs) return;
+                const { win, layer, home, next, ro } = fs;
+                fs = null;
+                ro && ro.disconnect();
+                win.classList.remove('board-fs-win');
+                // Coming home is not arriving: without this the fly-to watcher
+                // below saw the window re-enter the board and flew to it, so −
+                // did not leave you where you were (measured 2026-11-24).
+                win._fsReturn = true;
+                if (win.isConnected) home.insertBefore(win, next && next.parentNode === home ? next : null);
+                layer.remove();
+                document.documentElement.classList.remove('board-fs-open');
+                win.dispatchEvent(new Event('win-resize'));
+                settle();
+            };
+            document.addEventListener('keydown', e => { if (fs && e.key === 'Escape') exitFs(); });
+
+            // Inside full screen. A model owns every finger (orbit, pinch) —
+            // it already does. A picture and a slideshow swipe: left for the
+            // next, right for the one before. A thumbnail in a full-screen
+            // gallery opens that picture full screen, so you can swipe on.
+            const wireFs = (win, layer) => {
+                const kind = win.dataset.winKind;
+                const stage = layer.querySelector('.board-fs-stage');
+                if (kind === 'image' || kind === 'slides') {
+                    let sx = 0, sy = 0, on = false;
+                    stage.addEventListener('pointerdown', e => {
+                        if (e.target.closest(CONTROL)) return;
+                        on = true; sx = e.clientX; sy = e.clientY;
+                        // The image window drags by its whole body on the
+                        // board; full screen it must hold still.
+                        if (kind === 'image') e.stopPropagation();
+                    }, true);
+                    stage.addEventListener('pointerup', e => {
+                        if (!on) return; on = false;
+                        const dx = e.clientX - sx, dy = e.clientY - sy;
+                        // Distance and direction only: a slow, deliberate swipe is still a swipe.
+                        if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                        step(win, dx < 0 ? 1 : -1);
+                        layer.querySelector('.board-fs-title').textContent = titleOf(win);
+                    }, true);
+                }
+                if (kind === 'gallery') {
+                    stage.addEventListener('click', e => {
+                        if (!e.target.closest('.gallery-thumb')) return;
+                        // The gallery's own handler has just swapped or opened
+                        // the project's picture window; follow it there.
+                        const key = `img-primary-${win.dataset.projectId}`;
+                        setTimeout(() => {
+                            const img = openWins[key];
+                            if (img && img.isConnected) enterFs(img);
+                        }, 0);
+                    });
+                }
+            };
+            const step = (win, dir) => {
+                if (win.dataset.winKind === 'slides') {
+                    const b = win.querySelector(dir > 0 ? '.slide-nav-next' : '.slide-nav-prev');
+                    if (b) b.click();
+                    return;
+                }
+                const project = PROJECTS.find(p => p.id === win.dataset.projectId);
+                const imgs = project && project.images;
+                if (!imgs || imgs.length < 2) return;
+                const cur = win.querySelector('img').getAttribute('src');
+                let i = imgs.findIndex(im => im.src === cur);
+                i = ((i < 0 ? 0 : i) + dir + imgs.length) % imgs.length;
+                swapImageContent(win, imgs[i].src, imgs[i].label || '');
+            };
 
             // ── build the board ───────────────────────────────────────────
             const board = (typeof LANDING !== 'undefined' && LANDING && LANDING.phoneWindows) || null;
@@ -5519,14 +5792,16 @@
                 }
                 const w = x1 - x0, h = y1 - y0;
                 if (!(w > 0 && h > 0)) return;
-                const z = clampZ(Math.min((innerWidth - 32) / w, (innerHeight - 32) / h));
+                const z = clampZ(Math.min((innerWidth - 32) / w, (innerHeight - 2 * BAND) / h));
                 tweenTo(z, (innerWidth - w * z) / 2 - x0 * z,
-                           (innerHeight - h * z) / 2 - y0 * z, 420);
+                           BAND + (innerHeight - 2 * BAND - h * z) / 2 - y0 * z, 420);
             };
             new MutationObserver(ms => {
                 if (!armed) return;          // not while the board is building
-                for (const m of ms) for (const n of m.addedNodes)
+                for (const m of ms) for (const n of m.addedNodes) {
+                    if (n._fsReturn) { n._fsReturn = false; continue; }
                     if (n.nodeType === 1 && n.matches && n.matches(WINS)) added.add(n);
+                }
                 if (!added.size) return;
                 clearTimeout(addT);
                 addT = setTimeout(flyToAdded, 320);
