@@ -59,10 +59,12 @@ function parseView(text) {
     eat(/\bchars\s+([A-Za-z]+)/i,               m => { v.chars  = m[1]; });
     eat(/\binvert\s+(on|off)\b/i,               m => { v.invert = m[1].toLowerCase() === 'on'; });
     eat(/\bedges\s+(on|off)\b/i,                m => { v.edges  = m[1].toLowerCase() === 'on'; });
+    eat(/\bprojection\s+(perspective|parallel)\b/i, m => { v.projection = m[1].toLowerCase(); });
     return [v, rest.trim().split(/\s+/).filter(Boolean)];
 }
-const VIEW_KEYS = /\b(angle|pan|zoom|spin|decon|res|width|mode|lines|chars|invert|edges)\b/i;
+const VIEW_KEYS = /\b(angle|pan|zoom|spin|decon|res|width|mode|lines|chars|invert|edges|projection)\b/i;
 const VIEW_HELP = 'mode: ascii|wireframe|solid, lines: edges|all|hidden, invert/edges: on|off, ' +
+                  'projection: perspective|parallel, ' +
                   'angle/pan/zoom/spin/decon/res/width take numbers';
 
 // Numeric-aware sort: a plain string sort puts '100.webp' before '99.webp'.

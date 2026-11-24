@@ -9,6 +9,21 @@
     <meta name="description" content="Architecture and design portfolio of Nir Dellus — academic and professional projects spanning computational design, architectural theory, and digital fabrication.">
     <meta name="author" content="Nir Dellus">
     <link rel="canonical" href="https://dellus.xyz/">
+    <!-- SEO-02: the preview card shown when dellus.xyz is pasted into a chat or feed.
+         The image is assets/share.png (1200x630, from favicon2.png); og:image must be an absolute URL. -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Nir Dellus">
+    <meta property="og:url" content="https://dellus.xyz/">
+    <meta property="og:title" content="Nir Dellus — Architecture &amp; Design Portfolio">
+    <meta property="og:description" content="Architecture and design portfolio of Nir Dellus — academic and professional projects spanning computational design, architectural theory, and digital fabrication.">
+    <meta property="og:image" content="https://dellus.xyz/assets/share.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="A hand-drawn house with a face, under a star">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Nir Dellus — Architecture &amp; Design Portfolio">
+    <meta name="twitter:description" content="Architecture and design portfolio of Nir Dellus — academic and professional projects spanning computational design, architectural theory, and digital fabrication.">
+    <meta name="twitter:image" content="https://dellus.xyz/assets/share.png">
     <!-- Google Search Console ownership check — must stay, or verification lapses -->
     <meta name="google-site-verification" content="E7NFNW7eEk9w2HNO0Meq4gX14b-bwUpo_o9XLxeTa7Y">
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
@@ -113,36 +128,9 @@
             user-select: none; margin-bottom: 16px;
         }
 
-        .menu-title {
-            font-size: 0.95rem; letter-spacing: 0.18em;
-            text-transform: uppercase; font-weight: bold;
-            margin-bottom: 18px; user-select: none;
-        }
-
-        .menu-nav {
-            display: flex; align-items: center; gap: 5px;
-            margin-bottom: 14px; flex-wrap: wrap;
-        }
-
-        .nav-link {
-            font-size: 0.6rem; letter-spacing: 0.1em;
-            text-transform: uppercase; cursor: pointer;
-            opacity: 0.45; transition: opacity 0.15s, font-weight 0.15s;
-            user-select: none;
-        }
-        .nav-link:hover { opacity: 1; font-weight: bold; }
-
-        .nav-sep { font-size: 0.55rem; opacity: 0.25; user-select: none; }
-
         .menu-rule {
             border: none; border-top: 1px solid var(--border-soft);
             margin: 12px 0;
-        }
-
-        .cat-label {
-            font-size: 0.5rem; letter-spacing: 0.14em;
-            text-transform: uppercase; opacity: 0.3;
-            margin: 10px 0 5px 0; user-select: none;
         }
 
         .proj-row {
@@ -359,16 +347,6 @@
             opacity: 0.75; flex-shrink: 0;
         }
 
-        .info-tags {
-            display: flex; flex-wrap: wrap; gap: 5px;
-        }
-
-        .tag {
-            font-size: 0.38rem; letter-spacing: 0.1em;
-            text-transform: uppercase; opacity: 0.3;
-            border: 1px solid var(--border-soft); padding: 2px 6px;
-        }
-
         .info-actions {
             display: flex; gap: 8px; margin-top: 4px;
             border-top: 1px solid var(--border-faint);
@@ -446,37 +424,12 @@
 
         .thumb-label {
             position: absolute; bottom: 0; left: 0; right: 0;
-            font-size: 0.38rem; letter-spacing: 0.08em;
-            text-transform: uppercase; padding: 4px 6px;
+            font-size: 0.38rem; letter-spacing: 0.03em;
+            padding: 4px 6px;
             background: color-mix(in srgb, var(--bg) 85%, transparent);
             opacity: 0; transition: opacity 0.2s;
         }
         .gallery-thumb:hover .thumb-label { opacity: 1; }
-
-        .gallery-present {
-            display: flex; flex-direction: column; flex: 1; height: 100%;
-        }
-        .gallery-present img {
-            flex: 1; width: 100%; object-fit: contain;
-            display: block; background: var(--bg); min-height: 0;
-        }
-        .present-bar {
-            display: flex; align-items: center; gap: 8px;
-            padding: 6px 10px; border-top: 1px solid var(--border-strong);
-            flex-shrink: 0;
-        }
-        .present-nav, .present-back {
-            font-family: var(--font-family);
-            font-size: 0.5rem; letter-spacing: 0.1em;
-            background: none; border: none; cursor: pointer;
-            opacity: 0.4; transition: opacity 0.15s; color: var(--fg);
-            padding: 2px 4px;
-        }
-        .present-nav:hover, .present-back:hover { opacity: 1; }
-        .present-label {
-            flex: 1; font-size: 0.45rem; letter-spacing: 0.08em;
-            text-transform: uppercase; opacity: 0.4; text-align: center;
-        }
 
         /* -- THEME WINDOW -- */
         .theme-body {
@@ -844,8 +797,8 @@
             pointer-events: auto;
         }
         .img-float-title {
-            font-size: 0.5rem; letter-spacing: 0.12em;
-            text-transform: uppercase; opacity: 0.5; flex: 1;
+            font-size: 0.5rem; letter-spacing: 0.03em;
+            opacity: 0.5; flex: 1;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             pointer-events: none;
         }
@@ -2398,8 +2351,8 @@
             const content = STATIC[key];
             if (!content) return;
             focusOrCreate(`text-${key}`, () => {
-                const tagLabel = key === 'cv' ? 'CV' : key[0].toUpperCase() + key.slice(1);
-                const frame = makeFrame({ title: content.title, tag: tagLabel, w: 420, h: 460, key: `text-${key}`, bodyDrag: true, kind: key });
+                // No type tag: "About" / "CV" only restated the window's own title (DSG-03).
+                const frame = makeFrame({ title: content.title, w: 420, h: 460, key: `text-${key}`, bodyDrag: true, kind: key });
                 const body = frame.querySelector('.win-body');
                 body.className += ' text-body';
                 body.innerHTML = `<div class="text-content">${content.html}</div>`;
@@ -3080,6 +3033,10 @@
                             <button class="charset-option mode-btn" data-mode="wireframe">Wire</button>
                             <button class="charset-option mode-btn" data-mode="solid">Solid</button>
                         </div></div>
+                        <div class="setting-row"><span class="setting-label">Projection</span><div class="charset-group proj-group span-ctrl" role="radiogroup" aria-label="Projection">
+                            <button class="charset-option proj-btn active" data-proj="perspective" role="radio" aria-checked="true">Perspective</button>
+                            <button class="charset-option proj-btn" data-proj="parallel" role="radio" aria-checked="false">Parallel</button>
+                        </div></div>
                         <div class="settings-inner ascii-settings">
                             <div class="setting-row"><span class="setting-label">Res</span><input type="range" class="ctrl-slider res-slider span-ctrl" min="0.1" max="1.0" step="0.05" value="0.4" aria-label="ASCII resolution"></div>
                             <div class="setting-row"><span class="setting-label">Invert</span><button class="ctrl-toggle on invert-toggle">On</button></div>
@@ -3376,7 +3333,48 @@
                     modelPanel.style.display = '';
                 }
 
-                function setActiveCam(cam) { activeCam = cam; orbit.camera = cam; resizeVP(); }
+                function setActiveCam(cam) { activeCam = cam; orbit.camera = cam; resizeVP(); syncProjection(); }
+
+                // ── PROJECTION (3D-05, Nir 2026-11-24) ────────────────────
+                // Perspective or parallel, as radio buttons in the panel. The
+                // opening view decides which one a visitor starts in: the .glb's
+                // first camera (orthographic in Blender = parallel), then a
+                // `projection` key in a view: line on top of it.
+                //
+                // A switch keeps the plane through the orbit target the same
+                // size on screen, and keeps the lens and the distance, so
+                // switching there and back lands exactly where it started.
+                // Parallel has no distance: orthoCam.top / orthoRefRadius is
+                // the lens's tan(fov/2), so `zoom` still reads as the distance.
+                const halfTan = () => Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+                function syncProjection() {
+                    const p = activeCam === orthoCam ? 'parallel' : 'perspective';
+                    body.querySelectorAll('.proj-btn').forEach(b => {
+                        const on = b.dataset.proj === p;
+                        b.classList.toggle('active', on);
+                        b.setAttribute('aria-checked', on ? 'true' : 'false');
+                    });
+                }
+                function setProjection(p) {
+                    const toParallel = p === 'parallel';
+                    if (toParallel === (activeCam === orthoCam)) return;
+                    // An authored orthographic frame would keep resetting
+                    // orthoCam.top on every resize; the lens fit stays.
+                    if (authoredFrame) authoredFrame = { ...authoredFrame, halfH: 0 };
+                    if (toParallel) {
+                        orthoRefRadius = orbit.radius;
+                        orthoCam.top = orbit.radius * halfTan(); orthoCam.bottom = -orthoCam.top;
+                        orthoCam.zoom = 1;
+                        setActiveCam(orthoCam);
+                    } else {
+                        // The half-height on screen, read before the swap.
+                        const halfH = orthoCam.top / Math.max(1e-6, orthoCam.zoom);
+                        setActiveCam(camera);   // resizeVP settles the lens first
+                        orbit.radius = Math.max(0.3, Math.min(200, halfH / halfTan()));
+                    }
+                }
+                body.querySelectorAll('.proj-btn').forEach(b =>
+                    b.addEventListener('click', () => setProjection(b.dataset.proj)));
 
                 // ── SAVED VIEW ────────────────────────────────────────────
                 // Everything that decides how this model LOOKS, read back out
@@ -3402,6 +3400,10 @@
                         zoom:  r1(orbit.radius),
                         spin:  r3(orbit.autoSpeed),
                         mode,
+                        projection: activeCam === orthoCam ? 'parallel' : 'perspective',
+                        // What the .glb opens in, so a saved line only writes
+                        // `projection` when it differs from the model's own camera.
+                        projectionDefault: (firstAuthoredView && firstAuthoredView.orthoHalfH) ? 'parallel' : 'perspective',
                     };
                     const t = orbit.target;
                     if (t.lengthSq() > 1e-6) v.pan = [r1(t.x), r1(t.y), r1(t.z)];
@@ -3452,6 +3454,8 @@
                         setDecon(v.decon);
                     }
                     // Camera last: setMode can swap the active camera.
+                    // Projection before zoom: a switch resets the radius.
+                    if (v.projection) setProjection(v.projection);
                     if (v.angle) {
                         orbit.tRotY = orbit.rotY = v.angle[0] / DEG;
                         orbit.tRotX = orbit.rotX = v.angle[1] / DEG;
@@ -3688,6 +3692,7 @@
                         if (v.width !== undefined && v.width !== 1) bits.push(`width ${v.width}`);
                         if (v.edges) bits.push('edges on');
                         if (v.decon) bits.push(`decon ${v.decon}`);
+                        if (v.projection && v.projection !== v.projectionDefault) bits.push(`projection ${v.projection}`);
                         out.value = 'view: ' + bits.join(' ');
                         out.select();
                         try { await navigator.clipboard.writeText(out.value); } catch { /* select + copy */ }
@@ -3739,11 +3744,14 @@
 
                 const _mc = new THREE.Vector3(0, 0, 0);
                 focusBtn.addEventListener('click', () => {
+                    // Re-centres without changing the projection the visitor chose.
+                    const wasParallel = activeCam === orthoCam;
                     authoredFrame = null;
                     camera.fov = 50; camera.updateProjectionMatrix();
                     setActiveCam(camera);
                     viewsGroup.querySelectorAll('.charset-option').forEach(b => b.classList.remove('active'));
                     orbit.target.set(0, 0, 0); orbit.radius = 5; orbit.tRotX = 0.4;
+                    if (wasParallel) setProjection('parallel');
                 });
 
                 function resizeVP() {
@@ -4846,6 +4854,7 @@
                         if (v.width !== undefined && v.width !== 1) bits.push(`width ${v.width}`);
                         if (v.edges) bits.push('edges on');
                         if (v.decon) bits.push(`decon ${v.decon}`);
+                        if (v.projection && v.projection !== v.projectionDefault) bits.push(`projection ${v.projection}`);
                         if (bits.length) line += '  ' + bits.join(' ');
                     }
                     return line;

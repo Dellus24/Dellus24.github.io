@@ -274,6 +274,7 @@ how the model looks is written onto its line beside `at`/`size`:
 | `lines edges\|all\|hidden`, `width <n>` | wireframe |
 | `edges on` | solid |
 | `decon <n>` | Deconstruct position, 0-100 |
+| `projection perspective\|parallel` | only written if it differs from the model's own first camera (orthographic in Blender = parallel). Visitors can still switch it in Settings → Projection |
 
 **An image window's frame follows its picture.** You set the width by
 dragging; the height comes from the image, so the border hugs it rather than
