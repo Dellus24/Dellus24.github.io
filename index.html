@@ -2339,6 +2339,9 @@
                     zIndex: ++topZ,
                 });
                 if (r.frame) r.el.dispatchEvent(new CustomEvent('win-resize'));
+                // The tiler owns this window's size from now on — see the
+                // load handler in openImage.
+                r.el._tiled = true;
             }
         }
 
@@ -2461,6 +2464,15 @@
                 // — sizing the window is the whole point of composing a landing,
                 // and this handler would otherwise snap it back on load.
                 if (el.dataset.sizeLocked) return;
+                // A project's picture that tileProjectWindows has already
+                // placed keeps the tiler's size (fixed 2026-11-24). A cached
+                // picture knows its size before this event fires, so the tiler
+                // could size it (360x360) with no reason to wait — and then
+                // this handler, arriving a moment later, blew it up to the
+                // picture's natural size (675x675) over the gallery. Which of
+                // the two came last depended on load timing. If the tiler had
+                // to guess the aspect, it re-tiles on this same load itself.
+                if (el._tiled) return;
                 const maxW = window.innerWidth  * 0.80;
                 const maxH = window.innerHeight * 0.75;
                 const scale = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight);
