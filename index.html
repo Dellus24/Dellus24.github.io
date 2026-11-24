@@ -1223,7 +1223,20 @@
         }
         html.phone.board .cv-canvas, html.phone.board .cv-ascii,
         html.phone.board .build-canvas { bottom: var(--panel-h, 0px); }
-        html.phone.board .build-hint { bottom: calc(52px + var(--panel-h, 0px)); }
+        /* The two invitations sit at the drawing's top-left side, not over
+           the house (Nir, 2026-11-24: "they land on the house they can be on
+           the side"), the turning sign beside its words rather than above. */
+        html.phone.board [data-win-kind="build"] .build-hint {
+            top: 14px; bottom: auto; left: 16px; transform: none;
+            align-items: flex-start; gap: 6px;
+        }
+        html.phone.board [data-win-kind="build"] .build-hint .build-turn { flex-direction: row; gap: 6px; }
+        html.phone.board [data-win-kind="build"] .build-hint .build-ask { padding-left: 0; }
+        /* Their own strip: the drawing starts below them, so a house framed
+           to fill the drawing can never run under them. Permanent, not only
+           while they show — they arrive after the first assembly, and the
+           drawing changing size then would jump the view. */
+        html.phone.board [data-win-kind="build"] .build-canvas { top: 84px; }
         html.phone.board .side-divider,
         html.phone.board .side-divider.collapsed {
             top: auto; left: 0; right: 0; width: auto; margin: 0;
@@ -4335,8 +4348,14 @@
                     const { data, lay } = view;
                     const box = new THREE.Box3();
                     box.expandByPoint(new THREE.Vector3(0, 0, 0)).expandByPoint(new THREE.Vector3(...data.size));
-                    for (const s of lay.sheets) box.expandByPoint(new THREE.Vector3(s.x, s.y, 0)).expandByPoint(new THREE.Vector3(s.x + SHEET.w, s.y + SHEET.h, 0));
-                    for (const f of lay.flat) box.expandByPoint(f);
+                    // PHONE: frame the HOUSE, as it is first seen (Nir,
+                    // 2026-11-24). Holding the flat sheets in view as well left
+                    // the assembled house small in a narrow window; taken apart
+                    // it may spill out, and Orient on model brings it back.
+                    if (!boardOn) {
+                        for (const s of lay.sheets) box.expandByPoint(new THREE.Vector3(s.x, s.y, 0)).expandByPoint(new THREE.Vector3(s.x + SHEET.w, s.y + SHEET.h, 0));
+                        for (const f of lay.flat) box.expandByPoint(f);
+                    }
                     const s = box.getBoundingSphere(new THREE.Sphere());
                     // Back off until the sphere fits the narrower of the two fields of view.
                     const vfov = THREE.MathUtils.degToRad(camera.fov);
