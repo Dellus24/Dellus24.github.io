@@ -2058,7 +2058,7 @@
             closeLanding();
             clearTint();
             announce('Home');
-            setTimeout(openLanding, 260);
+            setTimeout(() => openHomeLanding(), 260);
         }
 
         // Menu feedback: `hot` is the hover signal, shown both when you hover
@@ -5163,6 +5163,10 @@
         // tinting, same hatch — and differs only in WHICH list it builds and
         // HOW the geometry is read. Called with no arguments it is the desktop
         // landing it has always been (Nir 2026-10-11: desktop must not change).
+        // What Home reopens. The desktop's landing by default; the phone board
+        // replaces it with its own (it used to reopen the DESKTOP composition
+        // on the phone, found 2026-11-24).
+        let openHomeLanding = () => openLanding();
         function openLanding(list = null, place = placeLanding) {
             if (typeof LANDING === 'undefined' || !LANDING) { menuFrame._toggleCollapse(); return; }
             if (!list) list = LANDING.windows;
@@ -5958,7 +5962,24 @@
                 openPhoneGate();
                 return;
             }
-            openLanding(board, placeCanvas);
+            // A ONE-WINDOW landing fills the screen (Nir, 2026-11-24: "it needs
+            // to understand what is the width and then fit it"). A fixed size
+            // cannot: Safari's bars take a different share of the height on
+            // every phone, and a window sized for 844px came out height-bound
+            // at ~75%, with empty sides. So it is measured from the screen —
+            // full width less the 16px sides, and the height between the +
+            // band and the foot — and fits at 100%. Re-measured on rotation.
+            // With more than one window the authored at/size are used as is.
+            const fillsScreen = board.length === 1;
+            const fillSize = () => [Math.max(260, innerWidth - 32), Math.max(300, innerHeight - BAND - FIT_FOOT)];
+            const placePhone = (el, entry) =>
+                placeCanvas(el, fillsScreen ? { ...entry, at: [0, 0], size: fillSize() } : entry);
+            openLanding(board, placePhone);
+            openHomeLanding = () => {
+                armed = false;                 // not a destination: Home fits the board
+                openLanding(board, placePhone);
+                setTimeout(() => { fit(); armed = true; }, 450);
+            };
 
             // ── FLY TO WHATEVER JUST OPENED (Nir, 2026-10-11) ─────────────
             // "if i open a new image or a model from a project it needs to zoom
@@ -6014,7 +6035,17 @@
                 armed = true;        // from here on, a new window is a destination
             };
             requestAnimationFrame(settleFit);
-            window.addEventListener('resize', () => fit(false));
+            window.addEventListener('resize', () => {
+                if (fillsScreen) {
+                    const lw = ws.querySelector('[data-landing]:not(.closing)');
+                    if (lw) {
+                        const [w, h] = fillSize();
+                        lw.style.width = w + 'px'; lw.style.height = h + 'px';
+                        lw.dispatchEvent(new CustomEvent('win-resize'));
+                    }
+                }
+                fit(false);
+            });
             window.addEventListener('orientationchange', () => requestAnimationFrame(() => fit(false)));
         }
 
