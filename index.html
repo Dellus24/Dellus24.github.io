@@ -1143,6 +1143,12 @@
             right: 14px;
             bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         }
+        /* Expand sits beside Fit (its right edge is set from Fit's width in
+           JS) and shows only while one window covers >70% of the screen. */
+        html.phone.board .board-expand {
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        }
+        html.phone.board .board-expand:not(.on) { display: none; }
         html.phone.board .board-zoom {
             left: 14px;
             bottom: calc(14px + env(safe-area-inset-bottom, 0px));
@@ -4437,7 +4443,10 @@
                     if (!userMoved) fitView();
                 }
                 frame.addEventListener('win-resize', resize);
-                attachSidePanel(body, sideEl, resize);
+                // Closed on the phone (Nir, 2026-11-24), where it is a sheet
+                // over half the window; open on the desktop as always. The
+                // phone's bar needs a word beside its ^.
+                attachSidePanel(body, sideEl, resize, boardOn ? { label: 'settings', closed: true } : {});
                 resize();
 
                 const onThemeChange = () => {
@@ -5435,7 +5444,12 @@
             fitBtn.type = 'button';
             fitBtn.className = 'board-btn board-fit';
             fitBtn.textContent = 'Fit';
-            document.body.append(zoomLabel, fitBtn);
+            const expandBtn = document.createElement('button');
+            expandBtn.type = 'button';
+            expandBtn.className = 'board-btn board-expand';
+            expandBtn.textContent = 'Expand';
+            document.body.append(zoomLabel, fitBtn, expandBtn);
+            let syncExpand = () => {};     // set once the windows exist, below
 
             const applyView = () => {
                 ws.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`;
@@ -5485,6 +5499,7 @@
                 }
                 for (const f of ws.querySelectorAll('.win-frame[data-win-kind="model"]'))
                     if (!f._offBoard) f._setBoardScale && f._setBoardScale(view.z);
+                syncExpand();
             };
 
             let tweenId = null;
@@ -5682,41 +5697,56 @@
                 });
             }
 
-            // ── TAP A WINDOW: FULL SCREEN (Nir, 2026-11-24) ───────────────
-            // A tap — down and up in place, quickly — on any part of a window
-            // that is not itself a control. A drag still does what it always
-            // did (a model still orbits under one finger, a window still moves
-            // by its bar), and a tap on a button, a thumbnail or a slider is
-            // still that control.
+            // ── EXPAND: FULL SCREEN FOR THE WINDOW YOU ZOOMED INTO ─────────
+            // (Nir, 2026-11-24.) A tap on a window used to open it full screen,
+            // and a finger landing near a 3D window's × did exactly that. Now a
+            // tap is only ever the window's own. When the board comes to rest
+            // with one window covering more than 70% of the screen, an Expand
+            // button appears beside Fit and opens THAT window full screen.
+            // settle() runs this at the end of every pan, pinch, double-tap and
+            // fly-to.
             const CONTROL = 'button, a, input, select, textarea, label, [role="button"], [role="radio"], [role="slider"], [role="tab"], [role="option"], .gallery-thumb, .win-resize-edge, .img-float-resize, .side-panel, .side-divider';
-            const downs = new Map();
-            // WHICH window: by geometry (hitAt), never e.target — Chrome's
-            // touch adjustment hands a finger to a NEIGHBOURING window, and
-            // measured 2026-11-24 a tap on the gallery's bar opened the picture
-            // beside it. Whether it is a CONTROL: either reading counts, since
-            // a control that touch adjustment chose is the one that will act.
+            let expandFor = null;
+            syncExpand = () => {
+                const W = innerWidth, H = innerHeight;
+                let best = null, bc = 0;
+                for (const f of ws.querySelectorAll(WINS)) {
+                    if (f.classList.contains('closing')) continue;
+                    const r = f.getBoundingClientRect();
+                    const ix = Math.max(0, Math.min(r.right, W) - Math.max(r.left, 0));
+                    const iy = Math.max(0, Math.min(r.bottom, H) - Math.max(r.top, 0));
+                    const c = ix * iy / (W * H);
+                    if (c > bc) { bc = c; best = f; }
+                }
+                expandFor = bc > 0.7 ? best : null;
+                expandBtn.classList.toggle('on', !!expandFor);
+                if (expandFor) expandBtn.style.right = (14 + fitBtn.offsetWidth + 8) + 'px';
+            };
+            expandBtn.addEventListener('click', () => {
+                if (expandFor && expandFor.isConnected) enterFs(expandFor);
+            });
+            // A window opening or closing changes what covers the screen too.
+            new MutationObserver(() => syncExpand()).observe(ws, { childList: true });
+
+            // An image and a slideshow carry their bar OVER their picture, so
+            // it cannot just be on (see the CSS). A tap brings it back for a
+            // few seconds — restored 2026-11-24 now that a tap no longer opens
+            // full screen; it is how a picture's × is reached on the board.
+            // A drag is not a tap: moving a window must not flash its bar.
+            const barT = new WeakMap(), downAt = new WeakMap();
             ws.addEventListener('pointerdown', e => {
-                const win = hitAt(e.clientX, e.clientY);
-                if (!win || !ws.contains(win)) return;
-                const under = document.elementFromPoint(e.clientX, e.clientY);
-                const ctl = !!e.target.closest(CONTROL) || !!(under && under.closest(CONTROL));
-                downs.set(e.pointerId, { win, x: e.clientX, y: e.clientY, t: e.timeStamp, ctl });
+                const host = e.target.closest('.img-float');
+                if (host) downAt.set(host, [e.clientX, e.clientY]);
             }, true);
             ws.addEventListener('pointerup', e => {
-                const d = downs.get(e.pointerId); downs.delete(e.pointerId);
-                if (!d || d.ctl || downs.size) return;
-                if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10 || e.timeStamp - d.t > 500) return;
-                if (d.win.classList.contains('closing')) return;
-                enterFs(d.win);
-                // The browser fires this tap's click AFTER pointerup — by then
-                // on the full-screen window, at the same spot. Measured: a tap
-                // on the gallery's bar went full screen, then its click landed
-                // on a thumbnail and opened that picture. Swallow it.
-                const eat = ev => { ev.stopPropagation(); ev.preventDefault(); };
-                window.addEventListener('click', eat, { capture: true, once: true });
-                setTimeout(() => window.removeEventListener('click', eat, true), 400);
+                const host = e.target.closest('.img-float');
+                if (!host) return;
+                const from = downAt.get(host);
+                if (!from || Math.hypot(e.clientX - from[0], e.clientY - from[1]) > 12) return;
+                host.classList.add('bar-on');
+                clearTimeout(barT.get(host));
+                barT.set(host, setTimeout(() => host.classList.remove('bar-on'), 3500));
             }, true);
-            ws.addEventListener('pointercancel', e => downs.delete(e.pointerId), true);
 
             let fs = null;     // { win, layer, home, next, ro }
             const titleOf = win =>
